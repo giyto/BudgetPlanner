@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Операции</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+input::placeholder{color:currentColor;opacity:0.6}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; display: flex; flex-direction: column; background: {{t.bg}}; color: {{t.ink}}; font-family: 'Onest', system-ui, sans-serif; overflow: hidden">
+
+<header style="padding: 20px 16px 10px 20px; display: flex; flex-direction: column; gap: 12px">
+<h1 style="margin: 0; font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 600">Операции</h1>
+<div style="display: flex; align-items: center; gap: 10px; height: 48px; background: {{t.card}}; border-radius: 16px; padding: 0 14px; color: {{t.muted}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<input type="search" aria-label="Поиск по операциям" placeholder="Магазин, категория или сумма" style="flex: 1; border: 0; outline: none; background: transparent; font-family: inherit; font-size: 15px; color: {{t.ink}}">
+</div>
+<div role="group" aria-label="Фильтр" style="display: flex; gap: 8px">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+<button type="button" onClick="{{f.pick}}" aria-pressed="{{f.pressed}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: {{f.border}}; background: {{f.bg}}; color: {{f.fg}}; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">{{f.label}}</button>
+</sc-for>
+</div>
+</header>
+
+<main style="flex: 1; min-height: 0; overflow: hidden; padding: 4px 16px 0; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+<section style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; justify-content: space-between; padding: 0 4px; font-size: 13px; color: {{g.muted}}">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; color: {{g.sub}}">{{g.day}}</h2>
+<span>{{g.total}}</span>
+</div>
+<div style="background: {{g.card}}; border-radius: 20px; padding: 2px 14px">
+<sc-for list="{{g.ops}}" as="op" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: {{op.border}}">
+<span style="width: 40px; height: 40px; border-radius: 13px; background: {{op.bg}}; color: {{op.fg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<sc-if value="{{op.isCart}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.3"></circle><circle cx="18" cy="20" r="1.3"></circle><path d="M2.5 3.5h3l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.1L21 8H6.2"></path></svg></sc-if>
+<sc-if value="{{op.isCup}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z"></path><path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17"></path><path d="M8 3v2M12 3v2"></path></svg></sc-if>
+<sc-if value="{{op.isBus}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="15" rx="3"></rect><path d="M5 11h14"></path><path d="M8 21l1-3M16 21l-1-3"></path></svg></sc-if>
+<sc-if value="{{op.isPill}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7z"></path><path d="M7 7l7 7"></path></svg></sc-if>
+<sc-if value="{{op.isOther}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"></circle><circle cx="12" cy="12" r="1.2"></circle><circle cx="19" cy="12" r="1.2"></circle></svg></sc-if>
+<sc-if value="{{op.isIncome}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"></path></svg></sc-if>
+</span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 15px; font-weight: 500">{{op.name}}</span>
+<span style="display: flex; align-items: center; gap: 5px; font-size: 13px; color: {{op.muted}}">{{op.meta}}
+<sc-if value="{{op.auto}}" hint-placeholder-val="{{true}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Из уведомления банка" style="color: {{op.muted}}"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"></path></svg></sc-if>
+</span>
+</span>
+<span style="font-size: 15px; font-weight: 600; color: {{op.amountColor}}">{{op.amount}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</main>
+
+<a href="Add.dc.html" aria-label="Добавить трату" style="position: absolute; right: 20px; bottom: 96px; width: 60px; height: 60px; border-radius: 20px; background: {{t.primary}}; color: {{t.onPrimary}}; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px {{t.shadow}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+</a>
+
+<nav aria-label="Основная навигация" style="height: 76px; flex-shrink: 0; background: {{t.navBg}}; border-top: 1px solid {{t.line}}; display: flex; justify-content: space-around; align-items: center; padding: 0 8px; box-sizing: border-box">
+<a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 72px; text-decoration: none; color: {{t.muted}}; font-size: 12px; font-weight: 500">
+<span style="width: 56px; height: 30px; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V20h14V9.5"></path></svg></span>Главная</a>
+<a href="Operations.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 72px; text-decoration: none; color: {{t.ink}}; font-size: 12px; font-weight: 600">
+<span style="width: 56px; height: 30px; border-radius: 15px; background: {{t.primarySoft}}; color: {{t.primaryText}}; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"></path></svg></span>Операции</a>
+<a href="Stats.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 72px; text-decoration: none; color: {{t.muted}}; font-size: 12px; font-weight: 500">
+<span style="width: 56px; height: 30px; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"></path><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"></path></svg></span>Статистика</a>
+<a href="Assistant.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 72px; text-decoration: none; color: {{t.muted}}; font-size: 12px; font-weight: 500">
+<span style="width: 56px; height: 30px; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"></path><path d="M19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z"></path></svg></span>Помощник</a>
+</nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { filter: 'all' };
+  }
+  renderVals() {
+    const THEMES = {
+      light: {
+        bg: '#EFF1F5', card: '#FFFFFF', card2: '#E4E7ED', ink: '#191C1F', muted: '#575E68', sub: '#3A4048',
+        line: '#E2E5EA', chipBorder: '#CDD2DA',
+        primary: '#4B52E0', onPrimary: '#FFFFFF', primaryText: '#4B52E0', primarySoft: '#E4E5FC',
+        hero: '#191C1F', heroBorder: '#191C1F', heroText: '#FFFFFF', heroMuted: '#B9BEC7', heroProgress: '#5EE0A8',
+        positive: '#0B7650', positiveSoft: '#DDF5EA', warn: '#B23A0A', warnSoft: '#FDE7DA', warnOnHero: '#FFB088',
+        hint: '#6D3FD1', hintSoft: '#EFE7FD', segTrack: '#E4E7ED', segOn: '#FFFFFF',
+        reserve: '#9AA1AC', left: '#9FE3C5', shadow: 'rgba(25,28,31,0.25)', navBg: '#FFFFFF',
+        cat: { cart: ['#DDF5EA', '#0B7650'], cup: ['#FDE7DA', '#B4400B'], bus: ['#E4E5FC', '#4B52E0'], pill: ['#EFE7FD', '#6D3FD1'], other: ['#E9ECF0', '#575E68'], shop: ['#E9ECF0', '#575E68'], transfer: ['#E9ECF0', '#575E68'] },
+        chart: { products: '#0E8A5F', cafe: '#D9701F', transport: '#4B52E0', health: '#A98BEF', other: '#B5BCC6', barOk: '#4B52E0', barOver: '#D9701F', limitLine: '#575E68' }
+      },
+      dark: {
+        bg: '#0F1114', card: '#1A1D21', card2: '#24282D', ink: '#F2F4F7', muted: '#A3AAB5', sub: '#C9CED6',
+        line: '#2C3036', chipBorder: '#3A3F46',
+        primary: '#5B62F0', onPrimary: '#FFFFFF', primaryText: '#A4A8FF', primarySoft: '#262A4D',
+        hero: '#23272C', heroBorder: '#353A41', heroText: '#FFFFFF', heroMuted: '#B9BEC7', heroProgress: '#5EE0A8',
+        positive: '#4ADE9A', positiveSoft: '#16332A', warn: '#FF9A62', warnSoft: '#3A2418', warnOnHero: '#FFB088',
+        hint: '#C4A8FF', hintSoft: '#2E2547', segTrack: '#1A1D21', segOn: '#33383F',
+        reserve: '#5F6772', left: '#3FAE84', shadow: 'rgba(0,0,0,0.55)', navBg: '#16191C',
+        cat: { cart: ['#16332A', '#4ADE9A'], cup: ['#3A2418', '#FF9A62'], bus: ['#262A4D', '#A4A8FF'], pill: ['#2E2547', '#C4A8FF'], other: ['#2A2E34', '#A3AAB5'], shop: ['#2A2E34', '#A3AAB5'], transfer: ['#2A2E34', '#A3AAB5'] },
+        chart: { products: '#34C38A', cafe: '#F08A3C', transport: '#7C82FF', health: '#B79CFF', other: '#6B7380', barOk: '#7C82FF', barOver: '#F08A3C', limitLine: '#A3AAB5' }
+      }
+    };
+    const t = THEMES[this.props.theme] || THEMES.light;
+    const data = [
+      { day: 'Сегодня, 13 октября', ops: [
+        { name: 'Пятёрочка', meta: 'Продукты · 12:40', amount: '−450 ₽', rub: 450, icon: 'cart', auto: true }
+      ] },
+      { day: 'Вчера, 12 октября', ops: [
+        { name: 'Пополнение от Анны М.', meta: 'Доход · 19:05', amount: '+2 000 ₽', rub: 0, inc: 2000, icon: 'income', auto: true },
+        { name: 'Кофейня «Зерно»', meta: 'Кафе · 09:15', amount: '−240 ₽', rub: 240, icon: 'cup', auto: false },
+        { name: 'Метро', meta: 'Транспорт · 08:52', amount: '−90 ₽', rub: 90, icon: 'bus', auto: true }
+      ] },
+      { day: 'Воскресенье, 11 октября', ops: [
+        { name: 'ВкусВилл', meta: 'Продукты · 18:31', amount: '−1 120 ₽', rub: 1120, icon: 'cart', auto: true },
+        { name: 'Аптека', meta: 'Здоровье · 17:05', amount: '−386 ₽', rub: 386, icon: 'pill', auto: true }
+      ] },
+      { day: 'Суббота, 10 октября', ops: [
+        { name: 'Кинотеатр «Звезда»', meta: 'Другое · 20:10', amount: '−640 ₽', rub: 640, icon: 'other', auto: false },
+        { name: 'Самокат', meta: 'Продукты · 13:22', amount: '−570 ₽', rub: 570, icon: 'cart', auto: true }
+      ] }
+    ];
+    const f = this.state.filter;
+    const keep = (op) => f === 'all' || (f === 'auto' ? op.auto : !op.auto);
+    const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    const groups = data.map((g) => {
+      const ops = g.ops.filter(keep);
+      const total = ops.reduce((s, o) => s + o.rub, 0);
+      const inc = ops.reduce((s, o) => s + (o.inc || 0), 0);
+      return {
+        day: g.day,
+        total: '−' + fmt(total) + ' ₽' + (inc ? ' · +' + fmt(inc) + ' ₽' : ''),
+        sub: t.sub, muted: t.muted, card: t.card,
+        ops: ops.map((o, i) => ({
+          ...o,
+          bg: o.icon === 'income' ? t.positiveSoft : t.cat[o.icon][0],
+          fg: o.icon === 'income' ? t.positive : t.cat[o.icon][1],
+          amountColor: o.icon === 'income' ? t.positive : t.ink,
+          muted: t.muted,
+          isCart: o.icon === 'cart', isCup: o.icon === 'cup', isBus: o.icon === 'bus', isPill: o.icon === 'pill', isOther: o.icon === 'other', isIncome: o.icon === 'income',
+          border: i < ops.length - 1 ? '1px solid ' + t.line : '0'
+        }))
+      };
+    }).filter((g) => g.ops.length > 0);
+    const filters = [['all', 'Все'], ['auto', 'Из уведомлений'], ['manual', 'Вручную']].map(([id, label]) => {
+      const on = f === id;
+      return {
+        label,
+        pressed: on ? 'true' : 'false',
+        bg: on ? t.primary : t.card,
+        fg: on ? t.onPrimary : t.ink,
+        border: on ? '1px solid ' + t.primary : '1px solid ' + t.chipBorder,
+        pick: () => this.setState({ filter: id })
+      };
+    });
+    return { t, groups, filters };
+  }
+}
+</script>
+</body>
+</html>

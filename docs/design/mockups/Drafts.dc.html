@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Черновики из уведомлений</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: {{t.bg}}; color: {{t.ink}}; font-family: 'Onest', system-ui, sans-serif; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 8px; padding: 16px 16px 12px 8px">
+<a href="Main.dc.html" aria-label="Назад" style="width: 44px; height: 44px; border-radius: 22px; color: {{t.ink}}; display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</a>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h1 style="margin: 0; font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 600">Черновики</h1>
+<span style="font-size: 13px; color: {{t.muted}}">3 операции из уведомлений банка</span>
+</div>
+</header>
+
+<main style="flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 16px; min-height: 0">
+<sc-for list="{{drafts}}" as="d" hint-placeholder-count="3">
+<article style="background: {{d.cardBg}}; border-radius: 22px; padding: 14px 0 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 12px; padding: 0 16px">
+<span style="width: 40px; height: 40px; border-radius: 13px; background: {{d.tileBg}}; color: {{d.tileFg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<sc-if value="{{d.isTransfer}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h14l-3-3M20 16H6l3 3"></path></svg></sc-if>
+<sc-if value="{{d.isShop}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 13H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg></sc-if>
+</span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 15px; font-weight: 600">{{d.name}}</span><span style="font-size: 13px; color: {{d.muted}}">{{d.meta}}</span></span>
+<span style="font-size: 16px; font-weight: 600">{{d.amount}}</span>
+</div>
+<sc-if value="{{d.hasHint}}" hint-placeholder-val="{{false}}">
+<span style="margin: 0 16px; align-self: flex-start; font-size: 12px; font-weight: 600; color: {{d.hintFg}}; background: {{d.hintBg}}; border-radius: 8px; padding: 3px 8px">{{d.hint}}</span>
+</sc-if>
+<div role="group" aria-label="Категория" style="display: flex; gap: 8px; overflow-x: auto; padding: 0 16px; scrollbar-width: none">
+<sc-for list="{{d.chips}}" as="c" hint-placeholder-count="5">
+<button type="button" onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" style="flex-shrink: 0; height: 36px; padding: 0 14px; border-radius: 18px; border: {{c.border}}; background: {{c.bg}}; color: {{c.fg}}; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">{{c.label}}</button>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 16px; min-height: 32px">
+<input type="checkbox" id="remember-{{$index}}" style="width: 20px; height: 20px; margin: 0; accent-color: {{d.accent}}">
+<label for="remember-{{$index}}" style="font-size: 14px; color: {{d.labelColor}}">{{d.rememberText}}</label>
+</div>
+</article>
+</sc-for>
+</main>
+
+<footer style="flex-shrink: 0; padding: 12px 16px 20px; background: {{t.bg}}; border-top: 1px solid {{t.line}}">
+<a href="Main.dc.html" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 18px; background: {{t.primary}}; color: {{t.onPrimary}}; text-decoration: none; font-size: 16px; font-weight: 600">{{saveText}}</a>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: ['Покупки', null, 'Переводы'] };
+  }
+  renderVals() {
+    const THEMES = {
+      light: {
+        bg: '#EFF1F5', card: '#FFFFFF', card2: '#E4E7ED', ink: '#191C1F', muted: '#575E68', sub: '#3A4048',
+        line: '#E2E5EA', chipBorder: '#CDD2DA',
+        primary: '#4B52E0', onPrimary: '#FFFFFF', primaryText: '#4B52E0', primarySoft: '#E4E5FC',
+        hero: '#191C1F', heroBorder: '#191C1F', heroText: '#FFFFFF', heroMuted: '#B9BEC7', heroProgress: '#5EE0A8',
+        positive: '#0B7650', positiveSoft: '#DDF5EA', warn: '#B23A0A', warnSoft: '#FDE7DA', warnOnHero: '#FFB088',
+        hint: '#6D3FD1', hintSoft: '#EFE7FD', segTrack: '#E4E7ED', segOn: '#FFFFFF',
+        reserve: '#9AA1AC', left: '#9FE3C5', shadow: 'rgba(25,28,31,0.25)', navBg: '#FFFFFF',
+        cat: { cart: ['#DDF5EA', '#0B7650'], cup: ['#FDE7DA', '#B4400B'], bus: ['#E4E5FC', '#4B52E0'], pill: ['#EFE7FD', '#6D3FD1'], other: ['#E9ECF0', '#575E68'], shop: ['#E9ECF0', '#575E68'], transfer: ['#E9ECF0', '#575E68'] },
+        chart: { products: '#0E8A5F', cafe: '#D9701F', transport: '#4B52E0', health: '#A98BEF', other: '#B5BCC6', barOk: '#4B52E0', barOver: '#D9701F', limitLine: '#575E68' }
+      },
+      dark: {
+        bg: '#0F1114', card: '#1A1D21', card2: '#24282D', ink: '#F2F4F7', muted: '#A3AAB5', sub: '#C9CED6',
+        line: '#2C3036', chipBorder: '#3A3F46',
+        primary: '#5B62F0', onPrimary: '#FFFFFF', primaryText: '#A4A8FF', primarySoft: '#262A4D',
+        hero: '#23272C', heroBorder: '#353A41', heroText: '#FFFFFF', heroMuted: '#B9BEC7', heroProgress: '#5EE0A8',
+        positive: '#4ADE9A', positiveSoft: '#16332A', warn: '#FF9A62', warnSoft: '#3A2418', warnOnHero: '#FFB088',
+        hint: '#C4A8FF', hintSoft: '#2E2547', segTrack: '#1A1D21', segOn: '#33383F',
+        reserve: '#5F6772', left: '#3FAE84', shadow: 'rgba(0,0,0,0.55)', navBg: '#16191C',
+        cat: { cart: ['#16332A', '#4ADE9A'], cup: ['#3A2418', '#FF9A62'], bus: ['#262A4D', '#A4A8FF'], pill: ['#2E2547', '#C4A8FF'], other: ['#2A2E34', '#A3AAB5'], shop: ['#2A2E34', '#A3AAB5'], transfer: ['#2A2E34', '#A3AAB5'] },
+        chart: { products: '#34C38A', cafe: '#F08A3C', transport: '#7C82FF', health: '#B79CFF', other: '#6B7380', barOk: '#7C82FF', barOver: '#F08A3C', limitLine: '#A3AAB5' }
+      }
+    };
+    const t = THEMES[this.props.theme] || THEMES.light;
+    const cats = ['Продукты', 'Кафе', 'Транспорт', 'Покупки', 'Здоровье', 'Переводы', 'Другое'];
+    const base = [
+      { name: 'Ozon', meta: 'Сегодня, 11:02 · покупка', amount: '−1 249 ₽', isShop: true, isTransfer: false, hint: 'Подсказка ИИ', rememberText: 'Запомнить для «Ozon»' },
+      { name: 'ИП Смирнова А. В.', meta: 'Сегодня, 10:20 · покупка', amount: '−350 ₽', isShop: true, isTransfer: false, hint: '', rememberText: 'Запомнить для «ИП Смирнова А. В.»' },
+      { name: 'Перевод: Олег К.', meta: 'Вчера, 21:47 · исходящий перевод', amount: '−500 ₽', isShop: false, isTransfer: true, hint: 'По типу операции', rememberText: 'Запомнить для «Олег К.»' }
+    ];
+    const sel = this.state.sel;
+    const drafts = base.map((d, i) => {
+      const kind = d.isTransfer ? 'transfer' : 'shop';
+      return {
+        ...d,
+        cardBg: t.card,
+        tileBg: t.cat[kind][0],
+        tileFg: t.cat[kind][1],
+        muted: t.muted,
+        hintFg: t.hint,
+        hintBg: t.hintSoft,
+        accent: t.primary,
+        labelColor: t.sub,
+        hasHint: d.hint !== '' && sel[i] !== null,
+        chips: cats.map((label) => {
+          const on = sel[i] === label;
+          return {
+            label,
+            pressed: on ? 'true' : 'false',
+            bg: on ? t.primary : t.card,
+            fg: on ? t.onPrimary : t.ink,
+            border: on ? '1px solid ' + t.primary : '1px solid ' + t.chipBorder,
+            pick: () => {
+              const next = sel.slice();
+              next[i] = on ? null : label;
+              this.setState({ sel: next });
+            }
+          };
+        })
+      };
+    });
+    const n = sel.filter((s) => s !== null).length;
+    const word = n === 1 ? 'операцию' : (n >= 2 && n <= 4 ? 'операции' : 'операций');
+    return { t, drafts, saveText: n === 0 ? 'Выберите категории' : 'Сохранить ' + n + ' ' + word };
+  }
+}
+</script>
+</body>
+</html>
