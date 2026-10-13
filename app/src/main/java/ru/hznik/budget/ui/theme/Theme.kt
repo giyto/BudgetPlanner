@@ -1,58 +1,78 @@
 package ru.hznik.budget.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+private val LocalBudgetColors = staticCompositionLocalOf { LightBudgetColors }
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+/** Доступ к токенам палитры, которых нет в Material 3: главная карточка, «осталось», перерасход, категории. */
+object BudgetTheme {
+    val colors: BudgetColors
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalBudgetColors.current
+}
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
-
+/**
+ * Тема приложения. Цвета всегда берутся из макетов: динамические цвета Android 12+ не используются,
+ * чтобы приложение выглядело одинаково на любом телефоне.
+ */
 @Composable
 fun BudgetPlannerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val colors = if (darkTheme) DarkBudgetColors else LightBudgetColors
+    CompositionLocalProvider(LocalBudgetColors provides colors) {
+        MaterialTheme(
+            colorScheme = colors.toColorScheme(),
+            typography = BudgetTypography,
+            content = content,
+        )
     }
+}
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
+private fun BudgetColors.toColorScheme(): ColorScheme {
+    val base = if (isDark) darkColorScheme() else lightColorScheme()
+    return base.copy(
+        primary = primary,
+        onPrimary = onPrimary,
+        primaryContainer = primarySoft,
+        onPrimaryContainer = primaryText,
+        secondary = primaryText,
+        onSecondary = onPrimary,
+        // Индикатор активной вкладки NavigationBar.
+        secondaryContainer = primarySoft,
+        onSecondaryContainer = primaryText,
+        tertiary = positive,
+        tertiaryContainer = positiveSoft,
+        onTertiaryContainer = positive,
+        background = background,
+        onBackground = ink,
+        surface = card,
+        onSurface = ink,
+        surfaceVariant = card2,
+        onSurfaceVariant = muted,
+        surfaceContainerLowest = card,
+        surfaceContainerLow = card,
+        surfaceContainer = navBar,
+        surfaceContainerHigh = card,
+        surfaceContainerHighest = card2,
+        inverseSurface = hero,
+        inverseOnSurface = heroText,
+        outline = chipBorder,
+        outlineVariant = line,
+        error = warn,
+        onError = onPrimary,
+        errorContainer = warnSoft,
+        onErrorContainer = warn,
+        scrim = shadow,
     )
 }

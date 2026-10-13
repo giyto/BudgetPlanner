@@ -1,0 +1,156 @@
+package ru.hznik.budget.ui
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.dropUnlessResumed
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.navigation
+import androidx.navigation.compose.rememberNavController
+import ru.hznik.budget.ui.assistant.AssistantScreen
+import ru.hznik.budget.ui.home.HomeScreen
+import ru.hznik.budget.ui.navigation.AddOperation
+import ru.hznik.budget.ui.navigation.Assistant
+import ru.hznik.budget.ui.navigation.AssistantGraph
+import ru.hznik.budget.ui.navigation.Home
+import ru.hznik.budget.ui.navigation.HomeGraph
+import ru.hznik.budget.ui.navigation.Operations
+import ru.hznik.budget.ui.navigation.OperationsGraph
+import ru.hznik.budget.ui.navigation.Settings
+import ru.hznik.budget.ui.navigation.Stats
+import ru.hznik.budget.ui.navigation.StatsGraph
+import ru.hznik.budget.ui.navigation.TopLevelDestination
+import ru.hznik.budget.ui.operations.AddOperationScreen
+import ru.hznik.budget.ui.operations.OperationsScreen
+import ru.hznik.budget.ui.settings.SettingsScreen
+import ru.hznik.budget.ui.stats.StatsScreen
+import ru.hznik.budget.ui.theme.BudgetTheme
+
+const val BOTTOM_BAR_TAG = "bottom_bar"
+
+@Composable
+fun BudgetApp(navController: NavHostController = rememberNavController()) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = backStackEntry?.destination
+    // Нижняя панель видна только внутри разделов, на «Новой операции» и «Настройках» её нет.
+    val resolvedTab = TopLevelDestination.entries.firstOrNull { currentDestination.isIn(it) }
+    // В первом кадре NavHost ещё не выбрал экран. Без запомненной вкладки панель появлялась бы
+    // кадром позже и сдвигала содержимое, поэтому до этого момента показываем последнее известное состояние.
+    var lastKnownTab by rememberSaveable { mutableStateOf<TopLevelDestination?>(TopLevelDestination.HOME) }
+    if (currentDestination != null) {
+        SideEffect { lastKnownTab = resolvedTab }
+    }
+    val currentTab = if (currentDestination == null) lastKnownTab else resolvedTab
+
+    Scaffold(
+        containerColor = BudgetTheme.colors.background,
+        bottomBar = {
+            if (currentTab != null) {
+                BudgetBottomBar(
+                    currentTab = currentTab,
+                    onTabClick = { navController.navigateToTab(it, reselected = it == currentTab) },
+                )
+            }
+        },
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = HomeGraph,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            // dropUnlessResumed: уходящий экран остаётся нажимаемым во время анимации перехода,
+            // без защиты двойное нажатие открывало бы экран дважды или снимало со стека лишнее.
+            navigation<HomeGraph>(startDestination = Home) {
+                composable<Home> {
+                    HomeScreen(
+                        onAddOperation = dropUnlessResumed { navController.navigate(AddOperation) },
+                        onOpenSettings = dropUnlessResumed { navController.navigate(Settings) },
+                    )
+                }
+            }
+            navigation<OperationsGraph>(startDestination = Operations) {
+                composable<Operations> { OperationsScreen() }
+            }
+            navigation<StatsGraph>(startDestination = Stats) {
+                composable<Stats> { StatsScreen() }
+            }
+            navigation<AssistantGraph>(startDestination = Assistant) {
+                composable<Assistant> { AssistantScreen() }
+            }
+            composable<AddOperation> { AddOperationScreen(onClose = dropUnlessResumed { navController.popBackStack() }) }
+            composable<Settings> { SettingsScreen(onBack = dropUnlessResumed { navController.popBackStack() }) }
+        }
+    }
+}
+
+@Composable
+private fun BudgetBottomBar(
+    currentTab: TopLevelDestination,
+    onTabClick: (TopLevelDestination) -> Unit,
+) {
+    val colors = BudgetTheme.colors
+    Column(modifier = Modifier.testTag(BOTTOM_BAR_TAG)) {
+        HorizontalDivider(color = colors.line)
+        NavigationBar(containerColor = colors.navBar) {
+            TopLevelDestination.entries.forEach { tab ->
+                NavigationBarItem(
+                    selected = tab == currentTab,
+                    onClick = { onTabClick(tab) },
+                    // Подпись вкладки озвучивается TalkBack, поэтому у иконки описания нет.
+                    icon = { Icon(painterResource(tab.icon), contentDescription = null) },
+                    label = { Text(stringResource(tab.label)) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = colors.primaryText,
+                        selectedTextColor = colors.ink,
+                        indicatorColor = colors.primarySoft,
+                        unselectedIconColor = colors.muted,
+                        unselectedTextColor = colors.muted,
+                    ),
+                )
+            }
+        }
+    }
+}
+
+private fun NavDestination?.isIn(tab: TopLevelDestination): Boolean =
+    this?.hierarchy?.any { it.hasRoute(tab.graph::class) } == true
+
+private fun NavHostController.navigateToTab(tab: TopLevelDestination, reselected: Boolean) {
+    if (reselected) {
+        // Повторное нажатие возвращает раздел к его начальному экрану.
+        popBackStack(tab.startRoute, inclusive = false)
+        return
+    }
+    navigate(tab.graph) {
+        // Стек главной остаётся внизу: «Назад» из любого раздела ведёт на главную.
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}

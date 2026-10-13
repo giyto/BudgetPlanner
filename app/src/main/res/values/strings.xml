@@ -1,3 +1,26 @@
 <resources>
     <string name="app_name">BudgetPlanner</string>
+
+    <string name="tab_home">Главная</string>
+    <string name="tab_operations">Операции</string>
+    <string name="tab_stats">Статистика</string>
+    <string name="tab_assistant">Помощник</string>
+
+    <string name="action_add_operation">Добавить операцию</string>
+    <string name="action_settings">Настройки</string>
+    <string name="action_close">Закрыть</string>
+    <string name="action_back">Назад</string>
+
+    <string name="home_title">Бюджет</string>
+    <string name="home_placeholder">Здесь будет сумма «можно сегодня» и прогресс периода.</string>
+    <string name="operations_title">Операции</string>
+    <string name="operations_placeholder">Здесь будет список операций с поиском и фильтрами.</string>
+    <string name="stats_title">Статистика</string>
+    <string name="stats_placeholder">Здесь будут расходы по категориям и по дням.</string>
+    <string name="assistant_title">Помощник</string>
+    <string name="assistant_placeholder">Здесь можно будет спросить о расходах обычным языком.</string>
+    <string name="add_operation_title">Новая трата</string>
+    <string name="add_operation_placeholder">Здесь будет ввод суммы и выбор категории.</string>
+    <string name="settings_title">Настройки</string>
+    <string name="settings_placeholder">Здесь будут категории, автоимпорт, защита входа и уведомления.</string>
 </resources>
