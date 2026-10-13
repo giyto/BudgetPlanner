@@ -1,0 +1,40 @@
+schema: spec-driven
+
+context: |
+  Language: ru
+  All artifacts must be written in ru.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Project: BudgetPlanner, Android budget app (package ru.hznik.budget).
+  Source of requirements: docs/technical-specification.md (FR-01..FR-13, NFR,
+  section 16 stages). Each stage of section 16 is one change; do not decide
+  open questions from section 17, list them as open.
+  Mockups: docs/design/mockups (see docs/design/README.md).
+  Stack: Kotlin, Jetpack Compose, Material 3, Clean Architecture + MVVM, Hilt,
+  Room + SQLCipher, DataStore, Ktor Client (OkHttp), Glance, WorkManager,
+  Biometric, Vico. minSdk 29, targetSdk 37. Versions in gradle/libs.versions.toml.
+  Money is Long kopecks, never Double. Time comes from an injected Clock.
+  Domain layer is pure Kotlin without Android dependencies.
+  No account, no backend; data stays on the phone.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
