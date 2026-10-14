@@ -30,6 +30,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -63,6 +64,9 @@ private const val COLLAPSED_ROWS = 5
 
 /** Выбор доли кольца: id категории или «Остальное». */
 private const val REST_KEY = -1L
+
+/** Тег кольца для UI-тестов: по долям кольца TalkBack и тесты отдельно не ходят. */
+const val STATS_DONUT_TAG = "stats_donut"
 
 /** Номер доли под углом [angleFromTop] (градусы по часовой стрелке от верха) для долей с суммами [values]. */
 internal fun sliceAt(angleFromTop: Float, values: List<Long>): Int? {
@@ -123,7 +127,7 @@ fun CategoryCard(range: DateRange, breakdown: CategoryBreakdown, onOpenCategory:
                     selected = if (selected == key) null else key
                     if (key == REST_KEY && selected == REST_KEY) expanded = true
                 },
-                modifier = Modifier.size(DONUT_SIZE),
+                modifier = Modifier.size(DONUT_SIZE).testTag(STATS_DONUT_TAG),
             )
             Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
                 if (selectedSlice == null) {
