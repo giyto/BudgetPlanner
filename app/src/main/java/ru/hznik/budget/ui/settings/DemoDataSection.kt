@@ -73,7 +73,7 @@ class DemoDataViewModel @Inject constructor(private val demo: DemoData) : ViewMo
 
 /** Раздел «Для разработки»: показывается только в отладочной сборке (BuildConfig.DEBUG). */
 @Composable
-fun DemoDataSection(viewModel: DemoDataViewModel = hiltViewModel()) {
+fun DemoDataSection(onOpenSamples: () -> Unit, viewModel: DemoDataViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = BudgetTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -96,6 +96,7 @@ fun DemoDataSection(viewModel: DemoDataViewModel = hiltViewModel()) {
             onClick = viewModel::clear,
         )
         state.message?.let { Text(it, fontSize = 13.sp, color = colors.sub, modifier = Modifier.padding(start = 4.dp)) }
+        NotificationSamplesItems(onOpen = onOpenSamples)
     }
 }
 

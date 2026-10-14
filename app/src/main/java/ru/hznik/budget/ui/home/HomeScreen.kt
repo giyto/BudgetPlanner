@@ -50,6 +50,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.hznik.budget.R
 import ru.hznik.budget.domain.budget.PeriodStatus
 import ru.hznik.budget.domain.model.PlannedPayment
+import ru.hznik.budget.ui.autoimport.AutoImportStoppedBanner
+import ru.hznik.budget.ui.autoimport.AutoImportViewModel
+import ru.hznik.budget.ui.autoimport.RefreshOnResume
+import ru.hznik.budget.ui.autoimport.rememberStepOpener
 import ru.hznik.budget.ui.components.formatDayMonth
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
@@ -69,10 +73,30 @@ fun HomeRoute(
     onStartNewPeriod: () -> Unit,
     onOpenOperation: (Long) -> Unit,
     onAllOperations: () -> Unit,
+    onOpenDrafts: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
+    autoImport: AutoImportViewModel = hiltViewModel(),
+    importBanners: ImportBannersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    HomeScreen(state, onAddOperation, onOpenSettings, onOpenPeriod, onStartNewPeriod, onOpenOperation, onAllOperations)
+    val importState by autoImport.state.collectAsStateWithLifecycle()
+    val bannersState by importBanners.state.collectAsStateWithLifecycle()
+    val openStep = rememberStepOpener(autoImport)
+    RefreshOnResume(autoImport)
+    HomeScreen(
+        state, onAddOperation, onOpenSettings, onOpenPeriod, onStartNewPeriod, onOpenOperation, onAllOperations,
+        topBanner = {
+            // Плашка дня дохода главнее: вторую в этот день не показываем (design.md add-notification-import, решение 7).
+            val income = bannersState.suggestedIncome
+            if (income != null && state.status?.isIncomeDue == false) {
+                IncomeSuggestionBanner(income, onStart = onStartNewPeriod, onDismiss = importBanners::dismissSuggestion)
+            }
+        },
+        banners = {
+            DraftsBanner(bannersState.drafts, onOpenDrafts)
+            AutoImportStoppedBanner(importState, onFix = openStep)
+        },
+    )
 }
 
 /** Главная по макету Main.dc.html. */
@@ -86,6 +110,8 @@ fun HomeScreen(
     onOpenOperation: (Long) -> Unit,
     onAllOperations: () -> Unit,
     modifier: Modifier = Modifier,
+    topBanner: @Composable () -> Unit = {},
+    banners: @Composable () -> Unit = {},
 ) {
     val colors = BudgetTheme.colors
     val status = state.status
@@ -101,8 +127,10 @@ fun HomeScreen(
             if (status != null) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
                     if (status.isIncomeDue) IncomeDayBanner(onStartNewPeriod)
+                    topBanner()
                     HeroCard(status)
                     PeriodCard(status, state.nextPayment, onOpenPeriod)
+                    banners()
                     RecentOperations(state, onOpenOperation, onAllOperations)
                 }
             }

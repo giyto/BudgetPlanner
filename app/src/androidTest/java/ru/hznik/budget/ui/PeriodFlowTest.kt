@@ -46,20 +46,23 @@ class OnboardingFlowTest : FlowTestBase() {
 
     @Test
     fun firstLaunchWithRegularIncome() {
-        rule.onNodeWithText("Шаг 1 из 4").assertIsDisplayed()
+        rule.onNodeWithText("Шаг 1 из 5").assertIsDisplayed()
         rule.onNodeWithTag(BOTTOM_BAR_TAG).assertDoesNotExist()
         next()
 
-        rule.onNodeWithText("Шаг 2 из 4").assertIsDisplayed()
+        rule.onNodeWithText("Шаг 2 из 5").assertIsDisplayed()
         typeAmount("18000")
         tapText("Выберите число")
         tapText("25")
         rule.onNodeWithText("Следующий доход: 25 октября").assertIsDisplayed()
         next()
 
-        rule.onNodeWithText("Шаг 3 из 4").assertIsDisplayed()
+        rule.onNodeWithText("Шаг 3 из 5").assertIsDisplayed()
         tapText("Готово")
-        rule.onNodeWithText("Шаг 4 из 4").assertIsDisplayed()
+        rule.onNodeWithText("Шаг 4 из 5").assertIsDisplayed()
+        rule.onNodeWithText("Траты будут добавляться сами").assertIsDisplayed()
+        tapText("Вводить вручную")
+        rule.onNodeWithText("Шаг 5 из 5").assertIsDisplayed()
         tapText("Не сейчас")
 
         // 18 000 ₽ на 12 дней до 25 октября.
@@ -69,7 +72,7 @@ class OnboardingFlowTest : FlowTestBase() {
         // Повторный запуск сразу на главной.
         rule.activityRule.scenario.recreate()
         waitForHero("Можно потратить сегодня 1500 рублей")
-        rule.onNodeWithText("Шаг 1 из 4").assertDoesNotExist()
+        rule.onNodeWithText("Шаг 1 из 5").assertDoesNotExist()
     }
 
     @Test
@@ -90,6 +93,7 @@ class OnboardingFlowTest : FlowTestBase() {
         tapText("Добавить")
         waitForText("Интернет")
         tapText("Готово")
+        tapText("Вводить вручную")
         tapText("Не сейчас")
 
         // (18 000 − 600) ₽ на 10 дней до 23 октября.
@@ -105,6 +109,7 @@ class OnboardingFlowTest : FlowTestBase() {
         tapText("25")
         next()
         tapText("Пропустить")
+        tapText("Пропустить") // шаг автоимпорта
         tapText("Не сейчас")
         waitForHero("Можно потратить сегодня 416 рублей")
         assertEquals(emptyList<Any>(), allPayments())
@@ -115,7 +120,7 @@ class OnboardingFlowTest : FlowTestBase() {
         next()
         typeAmount("5000")
         next()
-        rule.onNodeWithText("Шаг 2 из 4").assertIsDisplayed()
+        rule.onNodeWithText("Шаг 2 из 5").assertIsDisplayed()
     }
 
     @Test
@@ -128,7 +133,7 @@ class OnboardingFlowTest : FlowTestBase() {
     fun backOnSecondStepReturnsToFirst() {
         next()
         Espresso.pressBack()
-        rule.onNodeWithText("Шаг 1 из 4").assertIsDisplayed()
+        rule.onNodeWithText("Шаг 1 из 5").assertIsDisplayed()
     }
 }
 

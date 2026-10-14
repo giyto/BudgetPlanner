@@ -24,7 +24,12 @@ object MoneyFormat {
 
     /** Сумма операции со знаком по её типу. */
     fun operation(money: Money, type: OperationType): String =
-        (if (type.isOutgoing) MINUS else '+') + amount(money.kopecks)
+        when {
+            // Перевод себе не трата и не доход — без знака.
+            type == OperationType.OWN_TRANSFER -> amount(money.kopecks)
+            type.isOutgoing -> MINUS + amount(money.kopecks)
+            else -> "+" + amount(money.kopecks)
+        }
 
     /** Итог дня: траты минус возвраты со знаком «−» и доходы со знаком «+», через «·». */
     fun dayTotal(netSpentKopecks: Long, incomeKopecks: Long): String {

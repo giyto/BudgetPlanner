@@ -28,8 +28,8 @@ import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
 
-/** Шаги онбординга. Этап 6 вставит шаг автоимпорта перед защитой входа (сценарий 5.1). */
-enum class OnboardingStep { INTRO, MONEY, PAYMENTS, PROTECTION }
+/** Шаги онбординга (сценарий 5.1): автоимпорт перед защитой входа. */
+enum class OnboardingStep { INTRO, MONEY, PAYMENTS, AUTO_IMPORT, PROTECTION }
 
 data class OnboardingUiState(
     val step: OnboardingStep = OnboardingStep.INTRO,
@@ -57,7 +57,7 @@ data class OnboardingUiState(
     val canContinue: Boolean get() = when (step) {
         OnboardingStep.INTRO -> true
         OnboardingStep.MONEY -> amountInput.isNotEmpty() && nextIncome?.isAfter(today) == true
-        OnboardingStep.PAYMENTS, OnboardingStep.PROTECTION -> !busy
+        OnboardingStep.PAYMENTS, OnboardingStep.AUTO_IMPORT, OnboardingStep.PROTECTION -> !busy
     }
 }
 
@@ -93,7 +93,9 @@ class OnboardingViewModel @Inject constructor(
         when (state.step) {
             OnboardingStep.INTRO -> form.update { it.copy(step = OnboardingStep.MONEY) }
             OnboardingStep.MONEY -> form.update { it.copy(step = OnboardingStep.PAYMENTS) }
-            OnboardingStep.PAYMENTS -> form.update { it.copy(step = OnboardingStep.PROTECTION) }
+            OnboardingStep.PAYMENTS -> form.update { it.copy(step = OnboardingStep.AUTO_IMPORT) }
+            // «Дальше», «Вводить вручную» и «Пропустить» на шаге автоимпорта — к защите входа.
+            OnboardingStep.AUTO_IMPORT -> form.update { it.copy(step = OnboardingStep.PROTECTION) }
             OnboardingStep.PROTECTION -> finish(enableProtection = false)
         }
     }
@@ -137,7 +139,7 @@ class OnboardingViewModel @Inject constructor(
 
     /** «Пропустить» на шаге платежей: дальше без платежей. */
     fun skipPayments() {
-        form.update { it.copy(payments = emptyList(), step = OnboardingStep.PROTECTION) }
+        form.update { it.copy(payments = emptyList(), step = OnboardingStep.AUTO_IMPORT) }
     }
 
     /** «Включить» на шаге защиты после успешной проверки разблокировкой. */

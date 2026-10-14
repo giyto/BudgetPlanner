@@ -27,6 +27,17 @@ fun Operation.toEntity(createdAt: Long): OperationEntity = OperationEntity(
     utcOffsetSeconds = occurredAt.offset.totalSeconds,
     localDate = occurredAt.toLocalDate().toEpochDay(),
     createdAt = createdAt,
+    isDraft = isDraft,
+    bankId = bankId,
+    cardLast4 = cardLast4,
+    notificationKey = notificationKey,
+    suggestsNewPeriod = suggestsNewPeriod,
+    originalType = originalType?.name,
+    counterBankId = counterBankId,
+    counterCardLast4 = counterCardLast4,
+    counterNotificationKey = counterNotificationKey,
+    counterMerchant = counterMerchant,
+    counterOccurredAt = counterOccurredAt?.toEpochMilli(),
 )
 
 fun OperationEntity.toDomain(): Operation = Operation(
@@ -38,6 +49,17 @@ fun OperationEntity.toDomain(): Operation = Operation(
     comment = comment,
     source = OperationSource.valueOf(source),
     occurredAt = OffsetDateTime.ofInstant(Instant.ofEpochMilli(occurredAt), ZoneOffset.ofTotalSeconds(utcOffsetSeconds)),
+    isDraft = isDraft,
+    bankId = bankId,
+    cardLast4 = cardLast4,
+    notificationKey = notificationKey,
+    suggestsNewPeriod = suggestsNewPeriod,
+    originalType = originalType?.let(OperationType::valueOf),
+    counterBankId = counterBankId,
+    counterCardLast4 = counterCardLast4,
+    counterNotificationKey = counterNotificationKey,
+    counterMerchant = counterMerchant,
+    counterOccurredAt = counterOccurredAt?.let(Instant::ofEpochMilli),
 )
 
 fun Category.toEntity(): CategoryEntity = CategoryEntity(

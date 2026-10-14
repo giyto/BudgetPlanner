@@ -131,13 +131,13 @@ class PeriodUseCasesTest {
     @Test
     fun `starting a new period closes the current one`() = runTest {
         periods.startNew(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 25), rub(18_000))
-        assertEquals(PeriodSetupResult.Done, StartNewPeriod(periods, TEST_CLOCK)(rub(2_500), LocalDate.of(2026, 11, 13)))
+        assertEquals(PeriodSetupResult.Done, StartNewPeriod(periods, FakeOperationRepository(FakeCategoryRepository()), TEST_CLOCK)(rub(2_500), LocalDate.of(2026, 11, 13)))
 
         val (old, current) = periods.state.value
         assertEquals(TODAY, old.endDate)
         assertEquals(TODAY, current.startDate)
         assertNull(current.endDate)
-        assertEquals(PeriodSetupResult.IncomeDateNotInFuture, StartNewPeriod(periods, TEST_CLOCK)(rub(1), TODAY))
+        assertEquals(PeriodSetupResult.IncomeDateNotInFuture, StartNewPeriod(periods, FakeOperationRepository(FakeCategoryRepository()), TEST_CLOCK)(rub(1), TODAY))
     }
 
     @Test

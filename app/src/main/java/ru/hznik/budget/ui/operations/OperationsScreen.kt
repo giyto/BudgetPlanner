@@ -67,6 +67,7 @@ import ru.hznik.budget.ui.components.CategoryTile
 import ru.hznik.budget.ui.components.ScreenTitle
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
+import ru.hznik.budget.ui.format.ownTransferRoute
 import ru.hznik.budget.ui.theme.BudgetTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -305,14 +306,22 @@ internal fun OperationRow(item: OperationItem, onOpen: (Long) -> Unit) {
     val colors = BudgetTheme.colors
     val op = item.operation
     val refundLabel = stringResource(R.string.operations_refund)
+    val draftLabel = stringResource(R.string.operations_draft)
     val openLabel = stringResource(R.string.operations_open)
+    // У черновика категория предварительная, поэтому вместо неё — «ждёт категорию» (spec operations).
+    val own = op.type == OperationType.OWN_TRANSFER
+    val ownTitle = stringResource(R.string.own_transfer_title)
+    val ownRoute = if (own) ownTransferRoute(op, stringResource(R.string.own_account)) else null
     val meta = listOfNotNull(
         refundLabel.takeIf { op.type == OperationType.REFUND },
-        item.category.name.takeIf { item.title != item.category.name },
+        draftLabel.takeIf { op.isDraft },
+        ownRoute,
+        item.category.name.takeIf { item.title != item.category.name && !op.isDraft && !own },
         TIME.format(op.occurredAt),
     ).joinToString(" · ")
-    val incoming = !op.type.isOutgoing
-    val description = "${item.title}. $meta. ${SpokenMoney.operation(op.amount, op.type)}"
+    val title = if (own) ownTitle else item.title
+    val incoming = !op.type.isOutgoing && !own
+    val description = "$title. $meta. ${SpokenMoney.operation(op.amount, op.type)}"
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -328,7 +337,7 @@ internal fun OperationRow(item: OperationItem, onOpen: (Long) -> Unit) {
         CategoryTile(item.category)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(meta, fontSize = 13.sp, color = colors.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.width(8.dp))
@@ -336,7 +345,11 @@ internal fun OperationRow(item: OperationItem, onOpen: (Long) -> Unit) {
             MoneyFormat.operation(op.amount, op.type),
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
-            color = if (incoming) colors.positive else colors.ink,
+            color = when {
+                own -> colors.muted
+                incoming -> colors.positive
+                else -> colors.ink
+            },
         )
     }
 }

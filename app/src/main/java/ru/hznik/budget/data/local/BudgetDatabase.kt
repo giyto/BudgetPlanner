@@ -5,8 +5,11 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [CategoryEntity::class, OperationEntity::class, PeriodEntity::class, PlannedPaymentEntity::class],
-    version = 2,
+    entities = [
+        CategoryEntity::class, OperationEntity::class, PeriodEntity::class, PlannedPaymentEntity::class,
+        BankBalanceEntity::class, NotificationKeyEntity::class, NotificationSampleEntity::class,
+    ],
+    version = 4,
     exportSchema = true,
 )
 abstract class BudgetDatabase : RoomDatabase() {
@@ -19,6 +22,8 @@ abstract class BudgetDatabase : RoomDatabase() {
     abstract fun plannedPaymentDao(): PlannedPaymentDao
 
     abstract fun statisticsDao(): StatisticsDao
+
+    abstract fun notificationDao(): NotificationDao
 
     /** Заполняет категории по умолчанию в той же транзакции, что и создание схемы. */
     object SeedCallback : Callback() {

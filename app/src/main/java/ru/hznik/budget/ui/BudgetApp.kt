@@ -52,15 +52,18 @@ import ru.hznik.budget.domain.stats.DateRange
 import ru.hznik.budget.ui.assistant.AssistantScreen
 import ru.hznik.budget.ui.categories.CategoriesRoute
 import ru.hznik.budget.ui.categories.CategoryEditorRoute
+import ru.hznik.budget.ui.drafts.DraftsRoute
 import ru.hznik.budget.ui.home.HomeRoute
 import ru.hznik.budget.ui.navigation.Assistant
 import ru.hznik.budget.ui.navigation.AssistantGraph
 import ru.hznik.budget.ui.navigation.Categories
 import ru.hznik.budget.ui.navigation.CategoryEditor
 import ru.hznik.budget.ui.navigation.CategoryOperations
+import ru.hznik.budget.ui.navigation.Drafts
 import ru.hznik.budget.ui.navigation.Home
 import ru.hznik.budget.ui.navigation.HomeGraph
 import ru.hznik.budget.ui.navigation.NewPeriod
+import ru.hznik.budget.ui.navigation.NotificationSamples
 import ru.hznik.budget.ui.navigation.Onboarding
 import ru.hznik.budget.ui.navigation.OperationEditor
 import ru.hznik.budget.ui.navigation.Operations
@@ -78,7 +81,9 @@ import ru.hznik.budget.ui.operations.OperationsRoute
 import ru.hznik.budget.ui.period.NewPeriodRoute
 import ru.hznik.budget.ui.period.PaymentEditorRoute
 import ru.hznik.budget.ui.period.PeriodRoute
+import ru.hznik.budget.ui.settings.AutoImportSection
 import ru.hznik.budget.ui.settings.DemoDataSection
+import ru.hznik.budget.ui.settings.NotificationSamplesRoute
 import ru.hznik.budget.ui.settings.ProtectionSection
 import ru.hznik.budget.ui.settings.SettingsScreen
 import ru.hznik.budget.ui.stats.CategoryOperationsRoute
@@ -152,6 +157,7 @@ fun BudgetApp(
                         },
                         // «Все» открывает раздел так же, как его вкладка.
                         onAllOperations = dropUnlessResumed { navController.navigateToTab(TopLevelDestination.OPERATIONS, reselected = false) },
+                        onOpenDrafts = dropUnlessResumed { navController.navigate(Drafts) },
                     )
                 }
             }
@@ -228,8 +234,9 @@ fun BudgetApp(
                     onBack = dropUnlessResumed { navController.popBackStack() },
                     onOpenCategories = dropUnlessResumed { navController.navigate(Categories) },
                     onOpenPeriod = dropUnlessResumed { navController.navigate(Period) },
+                    autoImport = { AutoImportSection() },
                     protection = { ProtectionSection() },
-                    extra = { if (BuildConfig.DEBUG) DemoDataSection() },
+                    extra = { if (BuildConfig.DEBUG) DemoDataSection(onOpenSamples = dropUnlessResumed { navController.navigate(NotificationSamples) }) },
                 )
             }
             composable<Categories> {
@@ -241,6 +248,13 @@ fun BudgetApp(
                     onEdit = { category -> if (resumed()) navController.navigate(CategoryEditor(category.kind.name, category.id)) },
                 )
             }
+            composable<Drafts> { entry ->
+                DraftsRoute(
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    onEmpty = { if (navController.currentBackStackEntry?.id == entry.id) navController.popBackStack() },
+                )
+            }
+            composable<NotificationSamples> { NotificationSamplesRoute(onBack = dropUnlessResumed { navController.popBackStack() }) }
             composable<CategoryEditor> { CategoryEditorRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
         }
     }

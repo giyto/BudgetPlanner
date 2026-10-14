@@ -3,6 +3,7 @@ package ru.hznik.budget.data.local
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -109,6 +110,62 @@ interface OperationDao {
 
     @Query("DELETE FROM operations WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query(
+        """
+        SELECT o.*,
+            c.id AS c_id, c.kind AS c_kind, c.name AS c_name, c.name_search AS c_name_search,
+            c.icon AS c_icon, c.color AS c_color, c.default_key AS c_default_key,
+            c.sort_order AS c_sort_order, c.hidden AS c_hidden
+        FROM operations o
+        JOIN categories c ON c.id = o.category_id
+        WHERE o.is_draft = 1
+        ORDER BY o.occurred_at DESC, o.id DESC
+        """,
+    )
+    fun observeDrafts(): Flow<List<OperationWithCategory>>
+
+    @Query("UPDATE operations SET category_id = :categoryId, type = :type, is_draft = 0 WHERE id = :id AND is_draft = 1")
+    suspend fun confirmDraft(id: Long, categoryId: Long, type: String)
+
+    @Transaction
+    suspend fun confirmDrafts(items: List<Triple<Long, Long, String>>) {
+        items.forEach { (id, categoryId, type) -> confirmDraft(id, categoryId, type) }
+    }
+
+    /** Ключ любой из сторон, в том числе второй стороны склеенного перевода себе. */
+    @Query("SELECT COUNT(*) FROM operations WHERE notification_key = :key OR counter_notification_key = :key")
+    suspend fun countByNotificationKey(key: String): Int
+
+    /**
+     * Кандидаты в дубли: операции этого банка или склеенные переводы, где этот банк — вторая сторона. Тип и магазин
+     * сравниваются в коде: NOCASE в SQLite не знает кириллицы, а у склеенной пары тип стороны хранится отдельно.
+     */
+    @Query(
+        """
+        SELECT * FROM operations
+        WHERE (bank_id = :bankId OR counter_bank_id = :bankId) AND amount_kopecks = :amountKopecks
+            AND occurred_at BETWEEN :fromMillis AND :toMillis
+        """,
+    )
+    suspend fun importCandidates(bankId: String, amountKopecks: Long, fromMillis: Long, toMillis: Long): List<OperationEntity>
+
+    @Query(
+        """
+        SELECT * FROM operations
+        WHERE bank_id IS NOT NULL AND bank_id != :otherThanBank AND amount_kopecks = :amountKopecks
+            AND occurred_at BETWEEN :fromMillis AND :toMillis
+            AND ((type = :type AND is_draft = 1) OR (type = 'OWN_TRANSFER' AND original_type = :type AND counter_bank_id IS NULL))
+        ORDER BY ABS(occurred_at - (:fromMillis + :toMillis) / 2) LIMIT 1
+        """,
+    )
+    suspend fun findTransferCounterpart(otherThanBank: String, type: String, amountKopecks: Long, fromMillis: Long, toMillis: Long): OperationEntity?
+
+    @Query("SELECT * FROM operations WHERE suggests_new_period = 1 ORDER BY occurred_at DESC LIMIT 1")
+    fun observeNewPeriodSuggestion(): Flow<OperationEntity?>
+
+    @Query("UPDATE operations SET suggests_new_period = 0 WHERE suggests_new_period = 1")
+    suspend fun clearNewPeriodSuggestion()
 }
 
 @Dao

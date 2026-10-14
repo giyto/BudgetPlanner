@@ -130,9 +130,9 @@ class DatabaseEncryptionTest {
 
     @Test
     fun plaintextDatabaseIsMigratedWithAllRows() {
-        room(FrameworkSQLiteOpenHelperFactory()).apply {
+        val schemaVersion = room(FrameworkSQLiteOpenHelperFactory()).run {
             fillUserData()
-            close()
+            openHelper.readableDatabase.version.also { close() }
         }
         assertTrue(DatabaseEncryption.isPlaintext(dbFile))
 
@@ -147,7 +147,7 @@ class DatabaseEncryptionTest {
             assertEquals(2, count("periods"))
             assertEquals(1, count("planned_payments"))
             assertTrue(count("categories") > 0)
-            assertEquals(2, openHelper.readableDatabase.version)
+            assertEquals("версия схемы перенесена", schemaVersion, openHelper.readableDatabase.version)
             close()
         }
     }

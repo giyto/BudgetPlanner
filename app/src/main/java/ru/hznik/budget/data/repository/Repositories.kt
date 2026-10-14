@@ -9,13 +9,17 @@ import ru.hznik.budget.data.local.toDomain
 import ru.hznik.budget.data.local.toEntity
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.CategoryKind
+import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationItem
+import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.domain.repository.CategoryRepository
+import ru.hznik.budget.domain.repository.DraftConfirmation
 import ru.hznik.budget.domain.repository.OperationFilter
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.search.normalizeForSearch
 import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -60,6 +64,25 @@ class RoomOperationRepository @Inject constructor(
     override suspend fun restore(operation: Operation) {
         dao.insert(operation.toEntity(createdAt = clock.millis()))
     }
+
+    override fun observeDrafts(): Flow<List<OperationItem>> = dao.observeDrafts().map { rows -> rows.map { it.toDomain() } }
+
+    override suspend fun confirmDrafts(confirmations: List<DraftConfirmation>) =
+        dao.confirmDrafts(confirmations.map { Triple(it.operationId, it.categoryId, it.type.name) })
+
+    override suspend fun existsByNotificationKey(key: String): Boolean = dao.countByNotificationKey(key) > 0
+
+    override suspend fun existsSimilarImport(bankId: String, type: OperationType, amount: Money, merchant: String?, from: Instant, to: Instant): Boolean =
+        dao.importCandidates(bankId, amount.kopecks, from.toEpochMilli(), to.toEpochMilli())
+            .map { it.toDomain() }
+            .any { op -> op.isSameImport(bankId, type, merchant) }
+
+    override fun observeNewPeriodSuggestion(): Flow<Operation?> = dao.observeNewPeriodSuggestion().map { it?.toDomain() }
+
+    override suspend fun clearNewPeriodSuggestion() = dao.clearNewPeriodSuggestion()
+
+    override suspend fun findTransferCounterpart(otherThanBank: String, type: OperationType, amount: Money, from: Instant, to: Instant): Operation? =
+        dao.findTransferCounterpart(otherThanBank, type.name, amount.kopecks, from.toEpochMilli(), to.toEpochMilli())?.toDomain()
 }
 
 class RoomCategoryRepository @Inject constructor(private val dao: CategoryDao) : CategoryRepository {
@@ -79,4 +102,20 @@ class RoomCategoryRepository @Inject constructor(private val dao: CategoryDao) :
     override suspend fun update(category: Category) = dao.update(category.toEntity())
 
     override suspend fun delete(id: Long) = dao.delete(id)
+}
+
+/** Та же операция банка: напрямую, как сторона склеенного перевода себе или как его вторая сторона. */
+internal fun Operation.isSameImport(bankId: String, type: OperationType, merchant: String?): Boolean {
+    fun same(a: String?) = normalizeForSearch(a.orEmpty()) == normalizeForSearch(merchant.orEmpty())
+    val counterType = when (originalType) {
+        OperationType.TRANSFER -> OperationType.INCOME
+        OperationType.INCOME -> OperationType.TRANSFER
+        else -> null
+    }
+    return when {
+        this.bankId == bankId && this.type == type -> same(this.merchant)
+        this.bankId == bankId && this.type == OperationType.OWN_TRANSFER && originalType == type -> same(this.merchant)
+        counterBankId == bankId && this.type == OperationType.OWN_TRANSFER && counterType == type -> same(counterMerchant)
+        else -> false
+    }
 }

@@ -1,5 +1,6 @@
 package ru.hznik.budget.domain.model
 
+import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
 
@@ -11,7 +12,10 @@ enum class OperationType {
     REFUND,
 
     /** Исходящий перевод: считается тратой в категории «Переводы» (FR-05). */
-    TRANSFER;
+    TRANSFER,
+
+    /** Перевод между своими счетами в разных банках: не трата и не доход, в бюджет и статистику не входит. */
+    OWN_TRANSFER;
 
     /** Деньги уходят: трата или перевод. */
     val isOutgoing: Boolean get() = this == EXPENSE || this == TRANSFER
@@ -35,6 +39,23 @@ data class Operation(
     val comment: String? = null,
     val source: OperationSource,
     val occurredAt: OffsetDateTime,
+    /** Черновик из уведомления банка: уже в расчёте, категория не подтверждена (spec drafts). */
+    val isDraft: Boolean = false,
+    /** Банк и последние 4 цифры карты для операций из уведомлений. */
+    val bankId: String? = null,
+    val cardLast4: String? = null,
+    val notificationKey: String? = null,
+    /** Зачисление похоже на стипендию или зарплату: на главной предложить новый период (сценарий 5.8). */
+    val suggestsNewPeriod: Boolean = false,
+    /** Для перевода себе — каким он пришёл из уведомления (исходящий перевод или зачисление), чтобы отменить склейку. */
+    val originalType: OperationType? = null,
+    /** Вторая сторона перевода себе, если пришла пара уведомлений из двух банков. */
+    val counterBankId: String? = null,
+    val counterCardLast4: String? = null,
+    val counterNotificationKey: String? = null,
+    /** Имя и время из уведомления второй стороны — чтобы разделить пару без потерь. */
+    val counterMerchant: String? = null,
+    val counterOccurredAt: Instant? = null,
 ) {
     val localDate: LocalDate get() = occurredAt.toLocalDate()
 }

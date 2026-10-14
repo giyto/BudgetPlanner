@@ -19,7 +19,7 @@ enum class InputType(val operationType: OperationType) {
 
     companion object {
         fun of(type: OperationType): InputType = when (type) {
-            OperationType.EXPENSE, OperationType.TRANSFER -> EXPENSE
+            OperationType.EXPENSE, OperationType.TRANSFER, OperationType.OWN_TRANSFER -> EXPENSE
             OperationType.INCOME -> INCOME
             OperationType.REFUND -> REFUND
         }
@@ -59,6 +59,8 @@ class SaveOperation @Inject constructor(
         if (comment != null && comment.length > MAX_COMMENT_LENGTH) return invalid(SaveError.COMMENT_TOO_LONG)
 
         val type = if (draft.inputType == InputType.EXPENSE && category.isTransfers) OperationType.TRANSFER else draft.inputType.operationType
+        // Перевод себе, открытый в редакторе с той же категорией «Переводы», остаётся переводом себе.
+        val keepOwnTransfer = draft.id != null && type == OperationType.TRANSFER && operations.get(draft.id)?.type == OperationType.OWN_TRANSFER
 
         if (draft.id == null) {
             val operation = Operation(
@@ -72,10 +74,17 @@ class SaveOperation @Inject constructor(
             return SaveResult.Saved(operations.insert(operation))
         }
 
-        // При редактировании источник и магазин остаются прежними.
+        // При редактировании источник и магазин остаются прежними; сохранение черновика подтверждает его (spec drafts).
         val existing = operations.get(draft.id) ?: return invalid(SaveError.NOT_FOUND)
         operations.update(
-            existing.copy(type = type, amount = amount, categoryId = categoryId, comment = comment, occurredAt = draft.occurredAt),
+            existing.copy(
+                type = if (keepOwnTransfer) OperationType.OWN_TRANSFER else type,
+                amount = amount,
+                categoryId = categoryId,
+                comment = comment,
+                occurredAt = draft.occurredAt,
+                isDraft = false,
+            ),
         )
         return SaveResult.Saved(existing.id)
     }

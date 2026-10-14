@@ -39,7 +39,7 @@ data class CategoryEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index("local_date"), Index("category_id"), Index("source")],
+    indices = [Index("local_date"), Index("category_id"), Index("source"), Index("is_draft"), Index("notification_key")],
 )
 data class OperationEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -58,6 +58,22 @@ data class OperationEntity(
     /** День операции по её часовому поясу, номер дня от эпохи. Вычисляется только в OperationMapper. */
     @ColumnInfo(name = "local_date") val localDate: Long,
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    /** Черновик из уведомления банка: в расчёте, но категория не подтверждена (spec drafts). */
+    @ColumnInfo(name = "is_draft", defaultValue = "0") val isDraft: Boolean = false,
+    @ColumnInfo(name = "bank_id") val bankId: String? = null,
+    @ColumnInfo(name = "card_last4") val cardLast4: String? = null,
+    /** Ключ уведомления, по которому создана операция (дедупликация). */
+    @ColumnInfo(name = "notification_key") val notificationKey: String? = null,
+    /** Зачисление похоже на стипендию или зарплату: на главной предложить новый период (сценарий 5.8). */
+    @ColumnInfo(name = "suggests_new_period", defaultValue = "0") val suggestsNewPeriod: Boolean = false,
+    /** Перевод себе: исходный тип и вторая сторона пары (этап add-notification-import, решение 11). */
+    @ColumnInfo(name = "original_type") val originalType: String? = null,
+    @ColumnInfo(name = "counter_bank_id") val counterBankId: String? = null,
+    @ColumnInfo(name = "counter_card_last4") val counterCardLast4: String? = null,
+    @ColumnInfo(name = "counter_notification_key") val counterNotificationKey: String? = null,
+    @ColumnInfo(name = "counter_merchant") val counterMerchant: String? = null,
+    /** Время уведомления второй стороны, мс UTC. */
+    @ColumnInfo(name = "counter_occurred_at") val counterOccurredAt: Long? = null,
 )
 
 /** Строка списка: операция и её категория (колонки категории с префиксом c_). */
@@ -106,4 +122,35 @@ data class PlannedPaymentEntity(
 data class PlannedPaymentWithPaidDate(
     @Embedded val payment: PlannedPaymentEntity,
     @ColumnInfo(name = "paid_local_date") val paidLocalDate: Long?,
+)
+
+/** Остаток из уведомления банка; копится для сверки на этапе 7 (FR-13). */
+@Entity(tableName = "bank_balances", indices = [Index(value = ["bank_id", "card_last4", "observed_at"])])
+data class BankBalanceEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "bank_id") val bankId: String,
+    @ColumnInfo(name = "card_last4") val cardLast4: String?,
+    @ColumnInfo(name = "balance_kopecks") val balanceKopecks: Long,
+    /** Время уведомления, мс UTC. */
+    @ColumnInfo(name = "observed_at") val observedAt: Long,
+)
+
+/** Ключ уже обработанного уведомления банка: удалённая операция не возвращается при повторной доставке. */
+@Entity(tableName = "notification_keys", indices = [Index("seen_at")])
+data class NotificationKeyEntity(
+    @PrimaryKey val key: String,
+    @ColumnInfo(name = "bank_id") val bankId: String,
+    @ColumnInfo(name = "seen_at") val seenAt: Long,
+)
+
+/** Замаскированный текст уведомления банка в режиме сбора образцов; живёт 24 часа. */
+@Entity(
+    tableName = "notification_samples",
+    indices = [Index("posted_at"), Index(value = ["bank_id", "posted_at", "text"], unique = true)],
+)
+data class NotificationSampleEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "bank_id") val bankId: String,
+    @ColumnInfo(name = "posted_at") val postedAt: Long,
+    val text: String,
 )

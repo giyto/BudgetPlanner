@@ -3,6 +3,7 @@ package ru.hznik.budget.ui.lock
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.Lazy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,6 +17,7 @@ import ru.hznik.budget.domain.lock.LockSettingsRepository
 import ru.hznik.budget.domain.lock.LockState
 import ru.hznik.budget.domain.security.DatabaseAccess
 import ru.hznik.budget.domain.security.DatabaseState
+import ru.hznik.budget.notifications.NotificationIntake
 import javax.inject.Inject
 
 /** Что показывает активность: фон, экран потери ключа, экран блокировки или приложение. */
@@ -36,6 +38,8 @@ class AppRootViewModel @Inject constructor(
     private val lockSettings: LockSettingsRepository,
     private val appLock: AppLock,
     private val authenticator: DeviceAuthenticator,
+    // Lazy: приём уведомлений тянет за собой Room, а базу можно создавать только после проверки ключа.
+    private val notificationIntake: Lazy<NotificationIntake>,
 ) : ViewModel() {
     private val databaseState = MutableStateFlow<DatabaseState?>(null)
     private val settings = MutableStateFlow<LockSettings?>(null)
@@ -51,7 +55,11 @@ class AppRootViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, RootState.Loading)
 
     init {
-        viewModelScope.launch { databaseState.value = database.open() }
+        viewModelScope.launch {
+            databaseState.value = database.open()
+            // Образцы старше суток удаляются и при запуске, даже если режим сбора выключен.
+            runCatching { notificationIntake.get().purgeExpired() }
+        }
         viewModelScope.launch {
             lockSettings.observe().collect { current ->
                 settings.value = current

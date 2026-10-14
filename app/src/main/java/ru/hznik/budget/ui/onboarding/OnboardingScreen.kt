@@ -58,6 +58,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import ru.hznik.budget.R
+import ru.hznik.budget.domain.notifications.SetupStep
+import ru.hznik.budget.ui.autoimport.AutoImportState
+import ru.hznik.budget.ui.autoimport.AutoImportViewModel
+import ru.hznik.budget.ui.autoimport.RefreshOnResume
+import ru.hznik.budget.ui.autoimport.rememberStepOpener
 import ru.hznik.budget.ui.components.AmountInput
 import ru.hznik.budget.ui.components.AmountKey
 import ru.hznik.budget.ui.components.AmountKeypad
@@ -73,8 +78,16 @@ import ru.hznik.budget.ui.theme.BudgetTheme
 import java.time.LocalDate
 
 @Composable
-fun OnboardingRoute(onFinished: () -> Unit, onExit: () -> Unit, viewModel: OnboardingViewModel = hiltViewModel()) {
+fun OnboardingRoute(
+    onFinished: () -> Unit,
+    onExit: () -> Unit,
+    viewModel: OnboardingViewModel = hiltViewModel(),
+    autoImport: AutoImportViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val importState by autoImport.state.collectAsStateWithLifecycle()
+    val openStep = rememberStepOpener(autoImport)
+    RefreshOnResume(autoImport)
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(viewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) { viewModel.events.collect { onFinished() } }
@@ -83,6 +96,8 @@ fun OnboardingRoute(onFinished: () -> Unit, onExit: () -> Unit, viewModel: Onboa
     BackHandler { if (!viewModel.back()) onExit() }
     OnboardingScreen(
         state = state,
+        importState = importState,
+        onOpenImportStep = openStep,
         onBack = { viewModel.back() },
         onNext = viewModel::next,
         onSkip = viewModel::skipPayments,
@@ -102,6 +117,8 @@ fun OnboardingRoute(onFinished: () -> Unit, onExit: () -> Unit, viewModel: Onboa
 @Composable
 fun OnboardingScreen(
     state: OnboardingUiState,
+    importState: AutoImportState,
+    onOpenImportStep: (SetupStep) -> Unit,
     onBack: () -> Unit,
     onNext: () -> Unit,
     onSkip: () -> Unit,
@@ -124,8 +141,8 @@ fun OnboardingScreen(
                 IconButton(onClick = onBack) { Icon(painterResource(R.drawable.ic_back), stringResource(R.string.action_back), tint = colors.ink) }
             }
             Spacer(Modifier.weight(1f))
-            if (state.step == OnboardingStep.PAYMENTS) {
-                TextButton(onClick = onSkip, enabled = !state.busy) {
+            if (state.step == OnboardingStep.PAYMENTS || state.step == OnboardingStep.AUTO_IMPORT) {
+                TextButton(onClick = if (state.step == OnboardingStep.PAYMENTS) onSkip else onNext, enabled = !state.busy) {
                     Text(stringResource(R.string.onboarding_skip), color = colors.primaryText, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 }
             }
@@ -142,11 +159,14 @@ fun OnboardingScreen(
                 OnboardingStep.INTRO -> IntroStep()
                 OnboardingStep.MONEY -> MoneyStep(state, onKey, onIncomeRegular, onIncomeDay, onIncomeDate)
                 OnboardingStep.PAYMENTS -> PaymentsStep(state, onOpenPaymentForm, onRemovePayment)
+                OnboardingStep.AUTO_IMPORT -> AutoImportStep(importState)
                 OnboardingStep.PROTECTION -> ProtectionStep(protection)
             }
         }
 
-        if (state.step == OnboardingStep.PROTECTION) {
+        if (state.step == OnboardingStep.AUTO_IMPORT) {
+            AutoImportButtons(importState, busy = state.busy, onOpen = onOpenImportStep, onNext = onNext)
+        } else if (state.step == OnboardingStep.PROTECTION) {
             ProtectionButtons(protection, busy = state.busy, onEnabled = onProtectionEnabled, onLater = onNext)
         } else {
             Button(

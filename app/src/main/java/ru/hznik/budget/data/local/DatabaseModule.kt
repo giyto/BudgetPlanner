@@ -70,6 +70,9 @@ object DatabaseModule {
 
     @Provides
     fun provideStatisticsDao(db: BudgetDatabase): StatisticsDao = db.statisticsDao()
+
+    @Provides
+    fun provideNotificationDao(db: BudgetDatabase): NotificationDao = db.notificationDao()
 }
 
 @Module

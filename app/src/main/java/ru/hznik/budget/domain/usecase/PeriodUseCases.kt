@@ -148,6 +148,7 @@ class SuggestNewPeriod @Inject constructor(
 /** Новый период с сегодняшнего дня; текущий закрывается этой датой и остаётся в истории. */
 class StartNewPeriod @Inject constructor(
     private val periods: PeriodRepository,
+    private val operations: OperationRepository,
     private val clock: Clock,
 ) {
     suspend operator fun invoke(amountKopecks: Long, nextIncome: LocalDate?): PeriodSetupResult {
@@ -155,6 +156,8 @@ class StartNewPeriod @Inject constructor(
         if (amountKopecks < 0) return PeriodSetupResult.NegativeAmount
         if (nextIncome == null || !nextIncome.isAfter(today)) return PeriodSetupResult.IncomeDateNotInFuture
         periods.startNew(today, nextIncome, amountKopecks)
+        // Предложение «Пришло N ₽ — начать новый период?» больше не нужно (сценарий 5.8).
+        operations.clearNewPeriodSuggestion()
         return PeriodSetupResult.Done
     }
 }

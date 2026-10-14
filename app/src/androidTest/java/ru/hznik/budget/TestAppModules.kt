@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.update
 import ru.hznik.budget.data.local.BudgetDatabase
 import ru.hznik.budget.data.local.CategoryDao
 import ru.hznik.budget.data.local.DatabaseModule
+import ru.hznik.budget.data.local.NotificationDao
 import ru.hznik.budget.data.local.OperationDao
 import ru.hznik.budget.data.local.PeriodDao
 import ru.hznik.budget.data.local.PlannedPaymentDao
@@ -195,6 +196,9 @@ object TestDatabaseModule {
 
     @Provides
     fun provideStatisticsDao(db: BudgetDatabase): StatisticsDao = db.statisticsDao()
+
+    @Provides
+    fun provideNotificationDao(db: BudgetDatabase): NotificationDao = db.notificationDao()
 }
 
 /** «Сегодня» в UI-тестах — [TestStart.now] по Москве, по умолчанию 13 октября 2026, 12:00 (вторник). */

@@ -23,10 +23,20 @@
 | Экран блокировки | ![](screenshots/LockScreen.png) | ![](screenshots/DarkLockScreen.png) |
 | Настройки: защита входа | ![](screenshots/SettingsProtection.png) | ![](screenshots/DarkSettingsProtection.png) |
 | Потеря ключа базы | ![](screenshots/KeyLost.png) | ![](screenshots/DarkKeyLost.png) |
+| Онбординг: снять ограничение (Android 13+, установка файлом) | ![](screenshots/OnboardingRestricted.png) | ![](screenshots/DarkOnboardingRestricted.png) |
+| Онбординг: автозапуск на Xiaomi | ![](screenshots/OnboardingAutostart.png) | ![](screenshots/DarkOnboardingAutostart.png) |
+| Настройки: автоимпорт | ![](screenshots/SettingsAutoImport.png) | ![](screenshots/DarkSettingsAutoImport.png) |
+| Главная: новый период после зачисления и «Автоимпорт остановлен» | ![](screenshots/MainImportBanners.png) | ![](screenshots/DarkMainImportBanners.png) |
+| Черновики: перевод себе, пара найдена сама | ![](screenshots/DraftsOwnTransfer.png) | ![](screenshots/DarkDraftsOwnTransfer.png) |
+| Черновики: «Это перевод себе» и запоминание имени | ![](screenshots/DraftsOwnName.png) | ![](screenshots/DarkDraftsOwnName.png) |
+| Операции: перевод себе | ![](screenshots/OperationsOwnTransfer.png) | ![](screenshots/DarkOperationsOwnTransfer.png) |
+| Сверка с банком по каждой карте (этап 7) | ![](screenshots/ReconcileCards.png) | ![](screenshots/DarkReconcileCards.png) |
 
 Исходник каждого снимка лежит в `mockups/` под тем же именем с расширением `.dc.html`. Исключение — экраны статистики (`Stats*`, `CategoryOperations`): на этапе add-statistics карточку категорий переделали (список категорий под кольцом, раскрытие «Остального», переход к операциям категории), поэтому старый макет статистики удалён, а снимки сделаны с самого приложения на эмуляторе в том же размере. Запись о статистике в `canvas.json` относится к удалённому макету.
 
 Экраны этапа add-data-protection (`OnboardingProtection`, `LockScreen`, `SettingsProtection`, `KeyLost`) нарисованы отдельно, в редакторе их нет: исходник всех четырёх — обычный HTML `mockups/DataProtection.html`, он открывается в любом браузере. Экран и тема выбираются параметрами, например `DataProtection.html?screen=LockScreen&theme=dark`.
+
+Экраны автоимпорта (`OnboardingRestricted`, `OnboardingAutostart`, `SettingsAutoImport`, `MainImportBanners`, `DraftsOwnTransfer`, `DraftsOwnName`, `OperationsOwnTransfer`) и сверка по картам (`ReconcileCards`, этап 7) нарисованы так же: исходник — `mockups/NotificationImport.html`, экран и тема выбираются параметрами, например `NotificationImport.html?screen=DraftsOwnTransfer&theme=dark`.
 
 Тёмные варианты и `MainMismatch` не содержат своей вёрстки: они подключают светлый экран с параметром `theme="dark"` или `state="mismatch"`. Палитра обеих тем описана в объекте `THEMES` в начале скрипта каждого экрана, состояние «перерасход» главного экрана задаётся параметром `state="overspend"` в `Main.dc.html`.
 

@@ -6,30 +6,34 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import ru.hznik.budget.data.repository.isSameImport
 import ru.hznik.budget.domain.lock.LockSettings
 import ru.hznik.budget.domain.lock.LockSettingsRepository
 import ru.hznik.budget.domain.lock.LockTimeout
 import ru.hznik.budget.domain.model.Category
-import ru.hznik.budget.domain.model.IncomeSchedule
-import ru.hznik.budget.domain.model.Period
-import ru.hznik.budget.domain.model.PlannedPayment
 import ru.hznik.budget.domain.model.CategoryKind
 import ru.hznik.budget.domain.model.DefaultCategories
+import ru.hznik.budget.domain.model.IncomeSchedule
+import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationItem
 import ru.hznik.budget.domain.model.OperationType
+import ru.hznik.budget.domain.model.Period
+import ru.hznik.budget.domain.model.PlannedPayment
 import ru.hznik.budget.domain.repository.CategoryRepository
+import ru.hznik.budget.domain.repository.DraftConfirmation
 import ru.hznik.budget.domain.repository.IncomeScheduleRepository
-import ru.hznik.budget.domain.repository.PeriodRepository
-import ru.hznik.budget.domain.repository.PlannedPaymentRepository
 import ru.hznik.budget.domain.repository.OperationFilter
 import ru.hznik.budget.domain.repository.OperationRepository
+import ru.hznik.budget.domain.repository.PeriodRepository
+import ru.hznik.budget.domain.repository.PlannedPaymentRepository
 import ru.hznik.budget.domain.repository.StatisticsRepository
 import ru.hznik.budget.domain.search.normalizeForSearch
 import ru.hznik.budget.domain.stats.DateRange
 import ru.hznik.budget.domain.stats.MerchantSpending
 import ru.hznik.budget.domain.stats.RangeTotals
 import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -138,6 +142,35 @@ class FakeOperationRepository(val categories: FakeCategoryRepository) : Operatio
     override suspend fun delete(id: Long) = state.update { list -> list.filterNot { it.id == id } }
 
     override suspend fun restore(operation: Operation) = state.update { it + operation }
+
+    override fun observeDrafts(): Flow<List<OperationItem>> = observe(OperationFilter()).map { list -> list.filter { it.operation.isDraft } }
+
+    override suspend fun confirmDrafts(confirmations: List<DraftConfirmation>) = state.update { list ->
+        list.map { op ->
+            val c = confirmations.firstOrNull { it.operationId == op.id && op.isDraft } ?: return@map op
+            op.copy(categoryId = c.categoryId, type = c.type, isDraft = false)
+        }
+    }
+
+    override suspend fun existsByNotificationKey(key: String): Boolean = state.value.any { it.notificationKey == key || it.counterNotificationKey == key }
+
+    override suspend fun existsSimilarImport(bankId: String, type: OperationType, amount: Money, merchant: String?, from: Instant, to: Instant): Boolean =
+        state.value.any {
+            (it.bankId == bankId || it.counterBankId == bankId) && it.amount == amount &&
+                !it.occurredAt.toInstant().isBefore(from) && !it.occurredAt.toInstant().isAfter(to) &&
+                it.isSameImport(bankId, type, merchant)
+        }
+
+    override fun observeNewPeriodSuggestion(): Flow<Operation?> = state.map { list -> list.filter { it.suggestsNewPeriod }.maxByOrNull { it.occurredAt } }
+
+    override suspend fun clearNewPeriodSuggestion() = state.update { list -> list.map { it.copy(suggestsNewPeriod = false) } }
+
+    override suspend fun findTransferCounterpart(otherThanBank: String, type: OperationType, amount: Money, from: Instant, to: Instant): Operation? =
+        state.value.firstOrNull {
+            it.bankId != null && it.bankId != otherThanBank && it.amount == amount &&
+                !it.occurredAt.toInstant().isBefore(from) && !it.occurredAt.toInstant().isAfter(to) &&
+                ((it.type == type && it.isDraft) || (it.type == OperationType.OWN_TRANSFER && it.originalType == type && it.counterBankId == null))
+        }
 }
 
 /** Платежи нового периода сохраняются в [payments], как в одной транзакции у Room. */
@@ -226,7 +259,7 @@ class FakeStatisticsRepository(private val operations: FakeOperationRepository) 
     private fun Operation.spending(): Long = when (type) {
         OperationType.EXPENSE, OperationType.TRANSFER -> amount.kopecks
         OperationType.REFUND -> -amount.kopecks
-        OperationType.INCOME -> 0
+        OperationType.INCOME, OperationType.OWN_TRANSFER -> 0
     }
 
     override fun spendingByCategory(range: DateRange): Flow<Map<Long, Long>> =

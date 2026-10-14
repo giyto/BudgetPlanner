@@ -9,7 +9,11 @@ import ru.hznik.budget.domain.model.OperationType
  */
 object SpokenMoney {
     fun operation(money: Money, type: OperationType): String =
-        (if (type.isOutgoing) "минус " else "плюс ") + amount(money.kopecks)
+        when {
+            type == OperationType.OWN_TRANSFER -> "перевод себе " + amount(money.kopecks)
+            type.isOutgoing -> "минус " + amount(money.kopecks)
+            else -> "плюс " + amount(money.kopecks)
+        }
 
     /** Сумма без знака: «1234 рубля 50 копеек», «50 копеек», «3 рубля». */
     fun amount(kopecks: Long): String {

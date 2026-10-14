@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Автоимпорт</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;overflow:hidden}
+.light{--bg:#EFF1F5;--card:#FFFFFF;--card2:#E4E7ED;--ink:#191C1F;--muted:#575E68;--sub:#3A4048;--line:#E2E5EA;--chip:#CDD2DA;--pri:#4B52E0;--priT:#4B52E0;--priS:#E4E5FC;--pos:#0B7650;--posS:#DDF5EA;--warn:#B23A0A;--warnS:#FDE7DA;--hero:#191C1F;--heroB:#191C1F;--track:#2E3338;--segOn:#FFFFFF;--nav:#FFFFFF}
+.dark{--bg:#0F1114;--card:#1A1D21;--card2:#24282D;--ink:#F2F4F7;--muted:#A3AAB5;--sub:#C9CED6;--line:#2C3036;--chip:#3A3F46;--pri:#5B62F0;--priT:#A4A8FF;--priS:#262A4D;--pos:#4ADE9A;--posS:#16332A;--warn:#FF9A62;--warnS:#3A2418;--hero:#23272C;--heroB:#353A41;--track:#3A4048;--segOn:#33383F;--nav:#16191C}
+.screen{width:390px;height:844px;box-sizing:border-box;display:none;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Onest',system-ui,sans-serif;overflow:hidden}
+.screen.on{display:flex}
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0 8px;height:44px;flex-shrink:0}
+.back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.skip{color:var(--priT);font-size:15px;font-weight:600}
+.title{font-family:'Unbounded',sans-serif;font-weight:600;font-size:20px}
+.sub2{font-size:14px;color:var(--muted)}
+.prog{padding:8px 20px 0;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.prog div{display:flex;gap:6px}.prog span{flex:1;height:4px;border-radius:2px}
+.badge{align-self:center;position:relative;width:120px;height:120px;border-radius:60px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:18px}
+.badge>span{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:34px;background:var(--priS);color:var(--priT)}
+.ok{position:absolute;right:0;bottom:0;width:36px;height:36px;box-sizing:border-box;border-radius:18px;border:3px solid var(--bg);background:var(--posS);color:var(--pos);display:flex;align-items:center;justify-content:center;font-size:18px}
+h1{margin:18px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans-serif;font-size:23px;font-weight:600;line-height:1.2}
+.p{margin:10px 0 0;padding:0 28px;text-align:center;font-size:15px;line-height:1.45;color:var(--sub)}
+.list{margin:16px 16px 0;padding:4px 16px;background:var(--card);border-radius:22px;flex-shrink:0}
+.li{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 0;box-sizing:border-box;font-size:14px;line-height:1.35}
+.li+.li{border-top:1px solid var(--line)}
+.tile{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px;background:var(--posS);color:var(--pos)}
+.bottom{margin-top:auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;border-radius:18px;font-size:17px;font-weight:600;text-align:center;padding:0 12px}
+.btn2{display:flex;align-items:center;justify-content:center;min-height:52px;box-sizing:border-box;border-radius:18px;border:1px solid var(--chip);font-size:16px;font-weight:600}
+.hint{font-size:13px;line-height:1.4;color:var(--muted);display:flex;gap:8px;padding:0 4px}
+.warncard{margin:16px 16px 0;padding:16px;border-radius:22px;background:var(--warnS)}
+.card{margin:0 16px;background:var(--card);border-radius:22px;padding:16px}
+.group{font-size:14px;color:var(--muted);margin:18px 22px 8px}
+.row{display:flex;align-items:center;gap:12px}
+.ic{width:40px;height:40px;border-radius:12px;background:var(--card2);color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;font-size:20px}
+.t1{font-size:16px;font-weight:600}.t2{font-size:13px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:16px;border:1px solid var(--chip);font-size:15px;font-weight:500;white-space:nowrap;box-sizing:border-box}
+.sel{background:var(--pri);color:#fff;border-color:var(--pri)}
+.tag{display:inline-block;font-size:12px;font-weight:500;padding:3px 8px;border-radius:8px;margin-top:10px}
+.sum{font-size:16px;font-weight:600;white-space:nowrap}
+.plaque{margin:0 16px;border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:72px;box-sizing:border-box}
+.navbar{margin-top:auto;display:flex;justify-content:space-around;padding:10px 0 18px;background:var(--nav);border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.navbar div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.navbar i{font-size:24px}
+.navbar .on{color:var(--ink);font-weight:600}
+.navbar .on i{background:var(--priS);color:var(--priT);border-radius:16px;padding:4px 18px}
+.dim{opacity:.55}
+</style>
+</head>
+<body>
+
+<!-- Онбординг: установлено файлом, Android 13+ -->
+<div class="screen" id="OnboardingRestricted">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="skip">Пропустить</span></div>
+  <div class="prog"><div><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--card2)"></span></div><span class="sub2" style="font-size:13px">Шаг 4 из 5</span></div>
+  <div class="badge"><span><i class="ti ti-bell"></i></span></div>
+  <h1>Траты будут добавляться сами</h1>
+  <p class="p">BudgetPlanner читает уведомления вашего банка и сам записывает покупки. Вводить суммы вручную почти не придётся.</p>
+  <div class="warncard">
+    <div style="font-size:16px;font-weight:600">Сначала снимите ограничение</div>
+    <div style="font-size:14px;line-height:1.45;color:var(--sub);margin-top:6px">Приложение установлено из файла, поэтому Android закрыл ему доступ к уведомлениям.</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px"><span style="background:var(--card);border-radius:8px;padding:4px 10px">⋮</span><i class="ti ti-arrow-right"></i><span style="background:var(--card);border-radius:8px;padding:4px 10px">Разрешить ограниченные настройки</span></div>
+  </div>
+  <div class="bottom">
+    <div class="btn" style="background:var(--pri);color:#fff">Снять ограничение</div>
+    <div class="btn2">Вводить вручную</div>
+  </div>
+</div>
+
+<!-- Онбординг: Xiaomi после выдачи доступа -->
+<div class="screen" id="OnboardingAutostart">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="skip">Пропустить</span></div>
+  <div class="prog"><div><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--card2)"></span></div><span class="sub2" style="font-size:13px">Шаг 4 из 5</span></div>
+  <div class="badge"><span><i class="ti ti-bell"></i></span><span class="ok"><i class="ti ti-check"></i></span></div>
+  <h1>Доступ есть. Последний шаг</h1>
+  <p class="p">На этом телефоне система выгружает фоновые приложения. Чтобы траты не терялись, разрешите BudgetPlanner работать в фоне.</p>
+  <div class="list">
+    <div class="li"><span class="tile"><i class="ti ti-check"></i></span>Доступ к уведомлениям</div>
+    <div class="li"><span class="tile"><i class="ti ti-refresh"></i></span>Автозапуск и батарея «Нет ограничений»</div>
+  </div>
+  <div class="bottom">
+    <div class="btn" style="background:var(--pri);color:#fff">Не давать системе выключать автоимпорт</div>
+    <div class="hint"><i class="ti ti-info-circle"></i><span>Включите для BudgetPlanner автозапуск, а в батарее выберите «Нет ограничений», затем вернитесь назад.</span></div>
+    <div class="btn2">Вводить вручную</div>
+  </div>
+</div>
+
+<!-- Настройки → Автоимпорт -->
+<div class="screen" id="SettingsAutoImport">
+  <div class="top" style="justify-content:flex-start;gap:4px"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Настройки</span></div>
+  <div class="group">Автоимпорт</div>
+  <div class="card" style="padding:6px 18px 12px">
+    <div class="row" style="min-height:64px"><span style="width:10px;height:10px;border-radius:5px;background:var(--warn);flex:none"></span><div><div class="t1">Нет доступа к уведомлениям</div><div class="t2">Без доступа операции нужно вводить вручную</div></div></div>
+    <div class="btn" style="background:var(--pri);color:#fff;min-height:52px;font-size:16px">Разрешить доступ к уведомлениям</div>
+    <div class="t2" style="margin-top:8px;line-height:1.4">Откроется переключатель BudgetPlanner: включите его и вернитесь назад.</div>
+    <div style="height:1px;background:var(--line);margin:12px 0 8px"></div>
+    <div class="t2">Поддерживаемые банки</div>
+    <div class="row" style="justify-content:space-between;min-height:44px;font-size:15px"><span>Сбер</span><span style="color:var(--pos);font-size:13px">установлен</span></div>
+    <div class="row" style="justify-content:space-between;min-height:44px;font-size:15px"><span>Т-Банк</span><span style="color:var(--muted);font-size:13px">не установлен</span></div>
+    <div class="row" style="justify-content:space-between;min-height:44px;font-size:15px"><span>Альфа-Банк</span><span style="color:var(--pos);font-size:13px">установлен</span></div>
+  </div>
+  <div class="group">Защита входа</div>
+  <div class="card dim" style="height:64px;box-sizing:border-box"></div>
+</div>
+
+<!-- Главная: предложение нового периода и «Автоимпорт остановлен» -->
+<div class="screen" id="MainImportBanners">
+  <div style="padding:18px 20px 4px;display:flex;justify-content:space-between;align-items:center"><div><div class="t2">Четверг, 23 октября</div><div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:24px">Бюджет</div></div><span style="width:48px;height:48px;border-radius:24px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:22px"><i class="ti ti-settings"></i></span></div>
+  <div style="margin:8px 16px 0;background:var(--posS);border-radius:18px;padding:14px">
+    <div style="font-size:15px;font-weight:600">Пришло 9 000 ₽ — начать новый период?</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4">Похоже на стипендию или зарплату. Новый период начнётся сегодня, этот доход в него войдёт.</div>
+    <div style="display:flex;gap:10px;margin-top:10px"><div class="btn" style="flex:1;min-height:48px;font-size:15px;background:var(--pri);color:#fff;border-radius:14px">Начать</div><div class="btn2" style="flex:1;min-height:48px;font-size:15px;border-radius:14px">Не сейчас</div></div>
+  </div>
+  <div style="margin:12px 16px 0;background:var(--hero);border:1px solid var(--heroB);color:#fff;border-radius:26px;padding:18px 20px">
+    <div style="font-size:14px;color:#B9BEC7">Можно потратить сегодня</div>
+    <div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:44px;margin-top:4px">1 120 ₽</div>
+    <div style="height:8px;border-radius:4px;background:var(--track);margin-top:12px"><div style="width:30%;height:8px;border-radius:4px;background:#5EE0A8"></div></div>
+  </div>
+  <div class="card dim" style="margin-top:12px;height:96px;box-sizing:border-box"></div>
+  <div class="plaque" style="background:var(--warnS);margin-top:12px">
+    <span style="width:44px;height:44px;border-radius:14px;background:var(--card);color:var(--warn);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none"><i class="ti ti-bell-off"></i></span>
+    <div style="flex:1"><div style="font-size:16px;font-weight:600">Автоимпорт остановлен</div><div class="t2">Траты из уведомлений банка не добавляются</div></div>
+    <span style="font-size:15px;font-weight:600;color:var(--priT)">Исправить</span>
+  </div>
+  <div class="navbar"><div class="on"><i class="ti ti-home"></i>Главная</div><div><i class="ti ti-list"></i>Операции</div><div><i class="ti ti-chart-pie"></i>Статистика</div><div><i class="ti ti-sparkles"></i>Помощник</div></div>
+</div>
+
+<!-- Черновики: пара найдена сама -->
+<div class="screen" id="DraftsOwnTransfer">
+  <div class="top" style="justify-content:flex-start;gap:4px;height:auto;padding-top:14px"><span class="back"><i class="ti ti-chevron-left"></i></span><div><div class="title">Черновики</div><div class="sub2">2 операции из уведомлений банка</div></div></div>
+  <div class="card" style="margin-top:14px">
+    <div class="row"><span class="ic" style="background:var(--posS);color:var(--pos)"><i class="ti ti-arrows-exchange"></i></span><div style="flex:1"><div class="t1">Перевод себе</div><div class="t2">Сбер *5678 → Альфа *1234 · Сегодня, 16:27</div></div><span class="sum" style="color:var(--muted)">5 000 ₽</span></div>
+    <span class="tag" style="background:var(--posS);color:var(--pos)">Нашлась пара: «ушло» и «пришло»</span>
+    <div style="font-size:13px;line-height:1.4;color:var(--sub);margin-top:8px">Не трата и не доход: бюджет не меняется. Остатки обеих карт учтутся в сверке.</div>
+    <div style="display:flex;gap:8px;margin-top:12px"><span class="chip sel" style="flex:1;justify-content:center">Верно</span><span class="chip" style="flex:1;justify-content:center">Это не перевод себе</span></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="row"><span class="ic"><i class="ti ti-shopping-bag"></i></span><div style="flex:1"><div class="t1">Ozon</div><div class="t2">Сегодня, 11:02 · покупка</div></div><span class="sum">−1 249 ₽</span></div>
+    <div style="display:flex;gap:8px;margin-top:12px;overflow:hidden"><span class="chip">Продукты</span><span class="chip">Кафе</span><span class="chip sel">Покупки</span><span class="chip">Транспорт</span></div>
+  </div>
+  <div class="bottom"><div class="btn" style="background:var(--pri);color:#fff">Сохранить 2 операции</div></div>
+</div>
+
+<!-- Черновики: одна сторона, «Это перевод себе» и вопрос про имя -->
+<div class="screen" id="DraftsOwnName">
+  <div class="top" style="justify-content:flex-start;gap:4px;height:auto;padding-top:14px"><span class="back"><i class="ti ti-chevron-left"></i></span><div><div class="title">Черновики</div><div class="sub2">1 операция из уведомлений банка</div></div></div>
+  <div class="card" style="margin-top:14px">
+    <div class="row"><span class="ic"><i class="ti ti-arrow-down-left"></i></span><div style="flex:1"><div class="t1">ИВАН П.</div><div class="t2">Сегодня, 23:00 · зачисление</div></div><span class="sum" style="color:var(--pos)">+10 ₽</span></div>
+    <div style="display:flex;gap:8px;margin-top:12px;overflow:hidden"><span class="chip">Подарок</span><span class="chip">Стипендия</span><span class="chip">Перевод</span><span class="chip">Другое</span></div>
+    <div class="row" style="margin-top:12px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--chip);color:var(--priT);font-size:14px;font-weight:500"><i class="ti ti-arrows-exchange" style="font-size:18px"></i><span style="flex:1">Это перевод себе</span><i class="ti ti-chevron-right" style="color:var(--muted)"></i></div>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 24px">
+    <div style="background:var(--card);border-radius:28px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.18);width:100%;box-sizing:border-box">
+      <div style="font-size:22px;font-weight:500">«ИВАН П.» — это вы?</div>
+      <div style="font-size:14px;line-height:1.45;color:var(--sub);margin-top:14px">Тогда переводы от «ИВАН П.» и на «ИВАН П.» будут сразу считаться переводами себе.</div>
+      <div style="display:flex;justify-content:flex-end;gap:20px;margin-top:20px;font-size:15px;font-weight:600;color:var(--priT)"><span>Только этот раз</span><span>Да, запомнить</span></div>
+    </div>
+  </div>
+  <div class="bottom"><div class="btn" style="background:var(--pri);color:#fff;opacity:.4">Сохранить 0 операций</div></div>
+</div>
+
+<!-- Операции: перевод себе -->
+<div class="screen" id="OperationsOwnTransfer">
+  <div style="padding:18px 20px 4px"><div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:24px">Операции</div></div>
+  <div style="margin:10px 16px 0;height:48px;border-radius:16px;background:var(--card);display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--muted);font-size:15px"><i class="ti ti-search" style="font-size:20px"></i>Магазин, категория или сумма</div>
+  <div style="display:flex;gap:8px;margin:12px 16px 0"><span class="chip sel">Все</span><span class="chip">Из уведомлений</span><span class="chip">Вручную</span></div>
+  <div class="group">Сегодня, 14 октября</div>
+  <div class="card" style="padding:4px 16px">
+    <div class="row" style="min-height:64px;border-bottom:1px solid var(--line)"><span class="ic" style="background:var(--posS);color:var(--pos)"><i class="ti ti-arrows-exchange"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:500">Перевод себе</div><div class="t2">Сбер *5678 → Альфа *1234 · 16:27</div></div><span class="sum" style="color:var(--muted);font-size:15px">5 000 ₽</span></div>
+    <div class="row" style="min-height:64px;border-bottom:1px solid var(--line)"><span class="ic"><i class="ti ti-shopping-bag"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:500">Ozon</div><div class="t2">Покупки · 11:02</div></div><span class="sum" style="font-size:15px">−1 249 ₽</span></div>
+    <div class="row" style="min-height:64px"><span class="ic" style="background:var(--posS);color:var(--pos)"><i class="ti ti-arrows-exchange"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:500">Перевод себе</div><div class="t2">ИВАН П. → Альфа · 23:00</div></div><span class="sum" style="color:var(--muted);font-size:15px">10 ₽</span></div>
+  </div>
+  <div style="margin:12px 22px 0;font-size:13px;line-height:1.45;color:var(--muted)">Переводы себе серым и без знака: они не уменьшают «можно сегодня» и не попадают в статистику трат.</div>
+  <div class="navbar"><div><i class="ti ti-home"></i>Главная</div><div class="on"><i class="ti ti-list"></i>Операции</div><div><i class="ti ti-chart-pie"></i>Статистика</div><div><i class="ti ti-sparkles"></i>Помощник</div></div>
+</div>
+
+<!-- Сверка по каждой карте (этап 7) -->
+<div class="screen" id="ReconcileCards">
+  <div class="top" style="justify-content:flex-start;gap:4px"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Сверка с банком</span></div>
+  <div style="margin:14px 16px 0;background:var(--warnS);border-radius:22px;padding:16px">
+    <div style="font-size:17px;font-weight:600">Расхождение на Альфе *1234</div>
+    <div style="font-size:14px;color:var(--sub);margin-top:6px;line-height:1.4">Банк показывает на 300 ₽ меньше, чем получается по операциям</div>
+  </div>
+  <div class="card" style="margin-top:12px;padding:4px 16px">
+    <div class="row" style="min-height:68px;border-bottom:1px solid var(--line)"><span class="ic"><i class="ti ti-credit-card"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:600">Альфа *1234</div><div class="t2">ожидали 4 710 ₽ · банк 4 410 ₽</div></div><span class="sum" style="color:var(--warn);font-size:15px">−300 ₽</span></div>
+    <div class="row" style="min-height:68px"><span class="ic"><i class="ti ti-credit-card"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:600">Сбер *5678</div><div class="t2">ожидали 12 300 ₽ · банк 12 300 ₽</div></div><span style="font-size:14px;color:var(--pos);font-weight:600">сходится</span></div>
+  </div>
+  <div class="group">Что сделать с разницей на Альфе?</div>
+  <div class="bottom" style="margin-top:0">
+    <div class="btn" style="background:var(--pri);color:#fff">Записать трату 300 ₽ без категории</div>
+    <div class="btn2">Найти пропущенную операцию</div>
+    <div class="btn2" style="border:none;color:var(--muted)">Пропустить</div>
+  </div>
+</div>
+
+<script>
+// ?screen=DraftsOwnTransfer&theme=dark — какой экран и тема; без параметров — первый экран в светлой теме.
+const q = new URLSearchParams(location.search);
+document.body.className = q.get('theme') === 'dark' ? 'dark' : 'light';
+document.getElementById(q.get('screen') || 'OnboardingRestricted').classList.add('on');
+</script>
+</body>
+</html>

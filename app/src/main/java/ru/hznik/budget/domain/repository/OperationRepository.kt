@@ -1,11 +1,14 @@
 package ru.hznik.budget.domain.repository
 
 import kotlinx.coroutines.flow.Flow
+import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationItem
 import ru.hznik.budget.domain.model.OperationSource
+import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.domain.search.SearchQuery
 import ru.hznik.budget.domain.stats.DateRange
+import java.time.Instant
 import java.time.LocalDate
 
 /** Условия списка операций. `null` в поле означает «без этого фильтра». */
@@ -43,4 +46,27 @@ interface OperationRepository {
 
     /** Вставляет удалённую операцию обратно с тем же id. */
     suspend fun restore(operation: Operation)
+
+    /** Черновики из уведомлений банка, новые сверху (spec drafts). */
+    fun observeDrafts(): Flow<List<OperationItem>>
+
+    /** Подтверждает категории черновиков одной транзакцией. */
+    suspend fun confirmDrafts(confirmations: List<DraftConfirmation>)
+
+    /** Операция с тем же ключом уведомления уже есть. */
+    suspend fun existsByNotificationKey(key: String): Boolean
+
+    /** Операция того же банка с той же суммой, типом и магазином в окне [from]–[to] (дедупликация FR-05). */
+    suspend fun existsSimilarImport(bankId: String, type: OperationType, amount: Money, merchant: String?, from: Instant, to: Instant): Boolean
+
+    /** Последнее зачисление, после которого стоит предложить новый период (сценарий 5.8). */
+    fun observeNewPeriodSuggestion(): Flow<Operation?>
+
+    suspend fun clearNewPeriodSuggestion()
+
+    /** Вторая сторона перевода себе: операция другого банка нужного типа на ту же сумму в окне [from]–[to]. */
+    suspend fun findTransferCounterpart(otherThanBank: String, type: OperationType, amount: Money, from: Instant, to: Instant): Operation?
 }
+
+/** Категория, выбранная пользователем для черновика, и тип операции под неё (перевод или трата). */
+data class DraftConfirmation(val operationId: Long, val categoryId: Long, val type: OperationType)

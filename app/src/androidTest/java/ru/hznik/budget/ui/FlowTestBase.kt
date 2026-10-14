@@ -60,7 +60,7 @@ fun calendarDay(day: Int) = SemanticsMatcher("день $day, 2026") { node ->
  */
 fun AndroidComposeTestRule<*, *>.waitForStartScreen() = waitUntil(10_000) {
     onAllNodes(
-        hasTestTag(BOTTOM_BAR_TAG) or hasText("Шаг 1 из 4") or hasTestTag(LOCK_SCREEN_TAG) or hasTestTag(KEY_LOST_TAG) or hasTestTag(DATABASE_ERROR_TAG),
+        hasTestTag(BOTTOM_BAR_TAG) or hasText("Шаг 1 из 5") or hasTestTag(LOCK_SCREEN_TAG) or hasTestTag(KEY_LOST_TAG) or hasTestTag(DATABASE_ERROR_TAG),
     ).fetchSemanticsNodes().isNotEmpty()
 }
 

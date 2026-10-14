@@ -5,6 +5,13 @@
     <!-- Вход по отпечатку (FR-10, раздел 11 ТЗ). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+    <!-- Пакеты банков: проверить, установлен ли банк (раздел «Автоимпорт» в настройках). -->
+    <queries>
+        <package android:name="ru.sberbankmobile" />
+        <package android:name="com.idamob.tinkoff.android" />
+        <package android:name="ru.alfabank.mobile.android" />
+    </queries>
+
     <application
         android:name=".BudgetApplication"
         android:allowBackup="false"
@@ -27,6 +34,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Доступ к уведомлениям банков (FR-05); включает пользователь в системных настройках. -->
+        <service
+            android:name=".notifications.BankNotificationListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

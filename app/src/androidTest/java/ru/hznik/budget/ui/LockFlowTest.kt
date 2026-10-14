@@ -162,7 +162,7 @@ class KeyLostFlowTest : FlowTestBase() {
 
         tap("Удалить данные и начать заново")
         tap("Удалить")
-        waitForText("Шаг 1 из 4")
+        waitForText("Шаг 1 из 5")
         assertTrue((database as FakeDatabaseAccess).wiped)
     }
 }
@@ -252,7 +252,8 @@ class OnboardingProtectionFlowTest : FlowTestBase() {
         tap("25")
         tap("Дальше")
         tap("Пропустить")
-        rule.onNodeWithText("Шаг 4 из 4").assertIsDisplayed()
+        tap("Вводить вручную")
+        rule.onNodeWithText("Шаг 5 из 5").assertIsDisplayed()
         rule.onNodeWithText("Защитить вход?").assertIsDisplayed()
     }
 
@@ -262,7 +263,7 @@ class OnboardingProtectionFlowTest : FlowTestBase() {
         TestAuth.result = AuthResult.Cancelled
         tap("Включить")
         rule.waitForIdle()
-        rule.onNodeWithText("Шаг 4 из 4").assertIsDisplayed()
+        rule.onNodeWithText("Шаг 5 из 5").assertIsDisplayed()
 
         TestAuth.result = AuthResult.Success
         tap("Включить")

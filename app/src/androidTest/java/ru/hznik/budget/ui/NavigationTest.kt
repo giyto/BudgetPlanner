@@ -162,9 +162,12 @@ class NavigationTest {
         assertTrue("Нет нажимаемых элементов", nodes.isNotEmpty())
         nodes.forEach { node ->
             val bounds = node.touchBoundsInRoot
+            // Ниже края прокручиваемого экрана видимая область элемента обрезана до нуля: тогда берём его размер.
+            val width = maxOf(bounds.width, node.size.width.toFloat())
+            val height = maxOf(bounds.height, node.size.height.toFloat())
             assertTrue(
-                "Элемент ${node.config} меньше 44 dp: ${bounds.width}×${bounds.height} px",
-                bounds.width >= minPx && bounds.height >= minPx,
+                "Элемент ${node.config} меньше 44 dp: $width×$height px",
+                width >= minPx && height >= minPx,
             )
         }
     }

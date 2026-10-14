@@ -14,6 +14,12 @@ import kotlinx.serialization.Serializable
 @Serializable data object Stats
 @Serializable data object Assistant
 
+/** Черновики из уведомлений банка (spec drafts). */
+@Serializable data object Drafts
+
+/** Образцы уведомлений банков (раздел «Для разработки», только отладочная сборка). */
+@Serializable data object NotificationSamples
+
 // Экраны поверх разделов, без нижней панели.
 
 /** Ввод новой операции ([operationId] = null) или редактирование существующей. */

@@ -79,6 +79,8 @@ class StageThreeViewModelsTest {
             cancelAndIgnoreRemainingEvents()
         }
         vm.next()
+        assertEquals(OnboardingStep.AUTO_IMPORT, vm.uiState.value.step)
+        vm.next() // «Вводить вручную»
         assertEquals(OnboardingStep.PROTECTION, vm.uiState.value.step)
         assertNull("данные пишутся только на последнем шаге", periods.getCurrent())
         vm.events.test {
@@ -118,6 +120,8 @@ class StageThreeViewModelsTest {
         }
         vm.next()
         vm.skipPayments()
+        assertEquals(OnboardingStep.AUTO_IMPORT, vm.uiState.value.step)
+        vm.next()
         assertEquals(OnboardingStep.PROTECTION, vm.uiState.value.step)
         vm.events.test {
             vm.finishWithProtection()
