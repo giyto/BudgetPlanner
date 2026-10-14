@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Защита данных</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;overflow:hidden}
+.light{--bg:#EFF1F5;--card:#FFFFFF;--card2:#E4E7ED;--ink:#191C1F;--muted:#575E68;--sub:#3A4048;--line:#E2E5EA;--chip:#CDD2DA;--pri:#4B52E0;--priT:#4B52E0;--priS:#E4E5FC;--pos:#0B7650;--posS:#DDF5EA;--warn:#B23A0A;--warnS:#FDE7DA;--onWarn:#FFFFFF;--hero:#191C1F;--heroB:#191C1F;--track:#2E3338;--segOn:#FFFFFF;--knobOff:#FFFFFF}
+.dark{--bg:#0F1114;--card:#1A1D21;--card2:#24282D;--ink:#F2F4F7;--muted:#A3AAB5;--sub:#C9CED6;--line:#2C3036;--chip:#3A3F46;--pri:#5B62F0;--priT:#A4A8FF;--priS:#262A4D;--pos:#4ADE9A;--posS:#16332A;--warn:#FF9A62;--warnS:#3A2418;--onWarn:#191C1F;--hero:#23272C;--heroB:#353A41;--track:#3A4048;--segOn:#33383F;--knobOff:#A3AAB5}
+.screen{width:390px;height:844px;box-sizing:border-box;display:none;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Onest',system-ui,sans-serif;overflow:hidden}
+.screen.on{display:flex}
+.top{display:flex;align-items:center;gap:4px;padding:12px 16px 0 8px;height:44px;flex-shrink:0}
+.back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.title{font-family:'Unbounded',sans-serif;font-weight:600;font-size:20px}
+.badge{align-self:center;width:120px;height:120px;border-radius:60px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.badge span{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:34px}
+h1{margin:20px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans-serif;font-size:24px;font-weight:600;line-height:1.2}
+.p{margin:10px 0 0;padding:0 28px;text-align:center;font-size:15px;line-height:1.45;color:var(--sub)}
+.list{margin:18px 16px 0;padding:4px 16px;background:var(--card);border-radius:22px;flex-shrink:0}
+.li{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 0;box-sizing:border-box;font-size:14px;line-height:1.35}
+.li+.li{border-top:1px solid var(--line)}
+.tile{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px}
+.bottom{margin-top:auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:18px;font-size:17px;font-weight:600}
+.btn2{display:flex;align-items:center;justify-content:center;height:52px;box-sizing:border-box;border-radius:18px;border:1px solid var(--chip);font-size:16px;font-weight:600}
+.group{font-size:14px;color:var(--muted);margin:18px 22px 8px}
+.card{margin:0 16px;background:var(--card);border-radius:22px;padding:4px 18px}
+.row{display:flex;align-items:center;gap:12px;min-height:64px;box-sizing:border-box;padding:8px 0}
+.row+.row{border-top:1px solid var(--line)}
+.rt{font-size:16px;font-weight:600}
+.rh{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.35}
+.sw{width:52px;height:32px;border-radius:16px;flex-shrink:0;position:relative}
+.sw i{position:absolute;top:4px;width:24px;height:24px;border-radius:12px}
+.seg{display:flex;background:var(--card2);border-radius:14px;padding:4px;margin-top:10px;font-size:14px;text-align:center}
+.seg span{flex:1;padding:11px 0;color:var(--muted);border-radius:11px}
+.seg .sel{background:var(--segOn);color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="screen" id="OnboardingProtection">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span></div>
+  <div style="padding:8px 20px 0;display:flex;flex-direction:column;gap:8px;flex-shrink:0">
+    <div style="display:flex;gap:6px"><span style="flex:1;height:4px;border-radius:2px;background:var(--pri)"></span><span style="flex:1;height:4px;border-radius:2px;background:var(--pri)"></span><span style="flex:1;height:4px;border-radius:2px;background:var(--pri)"></span><span style="flex:1;height:4px;border-radius:2px;background:var(--pri)"></span></div>
+    <span style="font-size:13px;color:var(--muted)">Шаг 4 из 4</span>
+  </div>
+  <div class="badge" style="margin-top:20px"><span style="background:var(--priS);color:var(--priT)"><i class="ti ti-fingerprint"></i></span></div>
+  <h1>Защитить вход?</h1>
+  <p class="p">Приложение будет открываться по отпечатку, лицу или PIN-коду телефона. Посторонний на разблокированном телефоне не увидит ваши суммы.</p>
+  <div class="list">
+    <div class="li"><span class="tile" style="background:var(--posS);color:var(--pos)"><i class="ti ti-check"></i></span>PIN и отпечатки остаются в телефоне, приложение их не хранит</div>
+    <div class="li"><span class="tile" style="background:var(--posS);color:var(--pos)"><i class="ti ti-check"></i></span>Блокируется через 1 минуту после ухода в фон</div>
+    <div class="li"><span class="tile" style="background:var(--posS);color:var(--pos)"><i class="ti ti-check"></i></span>Можно выключить или изменить в настройках</div>
+  </div>
+  <div class="bottom">
+    <div class="btn" style="background:var(--pri);color:#fff">Включить</div>
+    <div class="btn2">Не сейчас</div>
+  </div>
+</div>
+
+<div class="screen" id="LockScreen" style="background:var(--hero);color:#fff">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 28px">
+    <svg width="132" height="132" viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke="var(--track)" stroke-width="10"/><circle cx="50" cy="50" r="38" fill="none" stroke="#5EE0A8" stroke-width="10" stroke-linecap="round" stroke-dasharray="167 239" transform="rotate(-90 50 50)"/><text x="50" y="62" text-anchor="middle" font-size="34" font-weight="600" fill="#fff" font-family="Onest,sans-serif">₽</text></svg>
+    <div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:24px;line-height:1.2;margin-top:28px;text-align:center">BudgetPlanner заблокирован</div>
+    <div style="font-size:15px;color:#B9BEC7;margin-top:10px;text-align:center;line-height:1.45">Приложите палец или введите PIN-код телефона</div>
+  </div>
+  <div class="bottom"><div class="btn" style="background:var(--pri);color:#fff"><i class="ti ti-fingerprint" style="font-size:24px"></i>Разблокировать</div></div>
+</div>
+
+<div class="screen" id="SettingsProtection">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Настройки</span></div>
+  <div class="group">Защита входа</div>
+  <div class="card">
+    <div class="row"><div style="flex:1"><div class="rt">Вход по отпечатку или PIN</div><div class="rh">Разблокировка телефона</div></div><span class="sw" style="background:var(--pri)"><i style="right:4px;background:#fff"></i></span></div>
+    <div class="row" style="display:block;padding:14px 0 16px"><div class="rt">Блокировать</div>
+      <div class="seg"><span>Сразу</span><span class="sel">Через 1 мин</span><span>Через 5 мин</span></div></div>
+    <div class="row"><div style="flex:1"><div class="rt">Скрывать в недавних</div><div class="rh">Содержимое не видно в списке приложений, скриншоты запрещены</div></div><span class="sw" style="background:var(--chip)"><i style="left:4px;background:var(--knobOff)"></i></span></div>
+  </div>
+  <div class="group">Бюджет</div>
+  <div class="card">
+    <div class="row"><span class="rt" style="flex:1">Период и доход</span><i class="ti ti-chevron-right" style="color:var(--muted);font-size:20px"></i></div>
+    <div class="row"><span class="rt" style="flex:1">Категории</span><i class="ti ti-chevron-right" style="color:var(--muted);font-size:20px"></i></div>
+  </div>
+</div>
+
+<div class="screen" id="KeyLost">
+  <div class="badge" style="margin-top:96px"><span style="background:var(--warnS);color:var(--warn)"><i class="ti ti-lock-exclamation"></i></span></div>
+  <h1>Не удалось открыть данные</h1>
+  <p class="p">Ключ шифрования на этом телефоне пропал, поэтому сохранённые операции прочитать нельзя. Так бывает после сбоя хранилища ключей или обновления прошивки.</p>
+  <div class="list">
+    <div class="li"><span class="tile" style="background:var(--card2);color:var(--muted)"><i class="ti ti-database"></i></span>Данные останутся на телефоне, пока вы их не удалите</div>
+    <div class="li"><span class="tile" style="background:var(--card2);color:var(--muted)"><i class="ti ti-refresh"></i></span>После удаления приложение начнётся с онбординга</div>
+  </div>
+  <div class="bottom"><div class="btn" style="background:var(--warn);color:var(--onWarn)">Удалить данные и начать заново</div></div>
+</div>
+
+<script>
+// ?screen=LockScreen&theme=dark — какой экран и тема показываются; без параметров — шаг онбординга в светлой теме.
+const q = new URLSearchParams(location.search);
+document.body.className = q.get('theme') === 'dark' ? 'dark' : 'light';
+document.getElementById(q.get('screen') || 'OnboardingProtection').classList.add('on');
+</script>
+</body>
+</html>
