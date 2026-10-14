@@ -9,18 +9,29 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import ru.hznik.budget.R
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -33,19 +44,23 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import ru.hznik.budget.ui.assistant.AssistantScreen
 import ru.hznik.budget.ui.home.HomeScreen
-import ru.hznik.budget.ui.navigation.AddOperation
+import ru.hznik.budget.ui.categories.CategoriesRoute
+import ru.hznik.budget.ui.categories.CategoryEditorRoute
 import ru.hznik.budget.ui.navigation.Assistant
 import ru.hznik.budget.ui.navigation.AssistantGraph
+import ru.hznik.budget.ui.navigation.Categories
+import ru.hznik.budget.ui.navigation.CategoryEditor
 import ru.hznik.budget.ui.navigation.Home
 import ru.hznik.budget.ui.navigation.HomeGraph
 import ru.hznik.budget.ui.navigation.Operations
+import ru.hznik.budget.ui.navigation.OperationEditor
 import ru.hznik.budget.ui.navigation.OperationsGraph
 import ru.hznik.budget.ui.navigation.Settings
 import ru.hznik.budget.ui.navigation.Stats
 import ru.hznik.budget.ui.navigation.StatsGraph
 import ru.hznik.budget.ui.navigation.TopLevelDestination
-import ru.hznik.budget.ui.operations.AddOperationScreen
-import ru.hznik.budget.ui.operations.OperationsScreen
+import ru.hznik.budget.ui.operations.OperationEditorRoute
+import ru.hznik.budget.ui.operations.OperationsRoute
 import ru.hznik.budget.ui.settings.SettingsScreen
 import ru.hznik.budget.ui.stats.StatsScreen
 import ru.hznik.budget.ui.theme.BudgetTheme
@@ -53,7 +68,13 @@ import ru.hznik.budget.ui.theme.BudgetTheme
 const val BOTTOM_BAR_TAG = "bottom_bar"
 
 @Composable
-fun BudgetApp(navController: NavHostController = rememberNavController()) {
+fun BudgetApp(
+    navController: NavHostController = rememberNavController(),
+    appViewModel: AppViewModel = hiltViewModel(),
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    UndoDeletionSnackbar(appViewModel, snackbarHostState)
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     // Нижняя панель видна только внутри разделов, на «Новой операции» и «Настройках» её нет.
@@ -68,6 +89,7 @@ fun BudgetApp(navController: NavHostController = rememberNavController()) {
 
     Scaffold(
         containerColor = BudgetTheme.colors.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (currentTab != null) {
                 BudgetBottomBar(
@@ -89,13 +111,21 @@ fun BudgetApp(navController: NavHostController = rememberNavController()) {
             navigation<HomeGraph>(startDestination = Home) {
                 composable<Home> {
                     HomeScreen(
-                        onAddOperation = dropUnlessResumed { navController.navigate(AddOperation) },
+                        onAddOperation = dropUnlessResumed { navController.navigate(OperationEditor()) },
                         onOpenSettings = dropUnlessResumed { navController.navigate(Settings) },
                     )
                 }
             }
             navigation<OperationsGraph>(startDestination = Operations) {
-                composable<Operations> { OperationsScreen() }
+                composable<Operations> {
+                    val lifecycle = LocalLifecycleOwner.current.lifecycle
+                    OperationsRoute(
+                        onAddOperation = dropUnlessResumed { navController.navigate(OperationEditor()) },
+                        onOpenOperation = { id ->
+                            if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) navController.navigate(OperationEditor(id))
+                        },
+                    )
+                }
             }
             navigation<StatsGraph>(startDestination = Stats) {
                 composable<Stats> { StatsScreen() }
@@ -103,9 +133,41 @@ fun BudgetApp(navController: NavHostController = rememberNavController()) {
             navigation<AssistantGraph>(startDestination = Assistant) {
                 composable<Assistant> { AssistantScreen() }
             }
-            composable<AddOperation> { AddOperationScreen(onClose = dropUnlessResumed { navController.popBackStack() }) }
-            composable<Settings> { SettingsScreen(onBack = dropUnlessResumed { navController.popBackStack() }) }
+            composable<OperationEditor> { OperationEditorRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
+            composable<Settings> {
+                SettingsScreen(
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    onOpenCategories = dropUnlessResumed { navController.navigate(Categories) },
+                )
+            }
+            composable<Categories> {
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                val resumed = { lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) }
+                CategoriesRoute(
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    onAdd = { kind -> if (resumed()) navController.navigate(CategoryEditor(kind.name)) },
+                    onEdit = { category -> if (resumed()) navController.navigate(CategoryEditor(category.kind.name, category.id)) },
+                )
+            }
+            composable<CategoryEditor> { CategoryEditorRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
         }
+    }
+}
+
+/**
+ * «Операция удалена» с кнопкой «Отменить», пока AppViewModel держит удаление (5 секунд).
+ * Стандартная длительность Short — 4 секунды, поэтому сообщение показывается без срока, а убирает его
+ * смена состояния: когда срок истёк, эффект перезапускается и прежний показ отменяется.
+ */
+@Composable
+private fun UndoDeletionSnackbar(viewModel: AppViewModel, hostState: SnackbarHostState) {
+    val message = stringResource(R.string.operation_deleted)
+    val action = stringResource(R.string.action_undo)
+    val pending by viewModel.pendingUndo.collectAsStateWithLifecycle()
+    LaunchedEffect(pending) {
+        if (pending == null) return@LaunchedEffect
+        val result = hostState.showSnackbar(message, actionLabel = action, duration = SnackbarDuration.Indefinite)
+        if (result == SnackbarResult.ActionPerformed) viewModel.undo() else viewModel.dismiss()
     }
 }
 

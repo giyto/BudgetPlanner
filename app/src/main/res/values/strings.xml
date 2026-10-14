@@ -10,17 +10,86 @@
     <string name="action_settings">Настройки</string>
     <string name="action_close">Закрыть</string>
     <string name="action_back">Назад</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_done">Готово</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_undo">Отменить</string>
+    <string name="action_more">Ещё</string>
+    <string name="action_reset">Сбросить</string>
 
     <string name="home_title">Бюджет</string>
     <string name="home_placeholder">Здесь будет сумма «можно сегодня» и прогресс периода.</string>
-    <string name="operations_title">Операции</string>
-    <string name="operations_placeholder">Здесь будет список операций с поиском и фильтрами.</string>
     <string name="stats_title">Статистика</string>
     <string name="stats_placeholder">Здесь будут расходы по категориям и по дням.</string>
     <string name="assistant_title">Помощник</string>
     <string name="assistant_placeholder">Здесь можно будет спросить о расходах обычным языком.</string>
-    <string name="add_operation_title">Новая трата</string>
-    <string name="add_operation_placeholder">Здесь будет ввод суммы и выбор категории.</string>
     <string name="settings_title">Настройки</string>
-    <string name="settings_placeholder">Здесь будут категории, автоимпорт, защита входа и уведомления.</string>
+    <string name="settings_categories">Категории</string>
+    <string name="settings_categories_hint">Свои категории, иконки и цвета, скрытые категории</string>
+
+    <!-- Ввод и редактирование операции -->
+    <string name="editor_new_title">Новая операция</string>
+    <string name="editor_edit_title">Операция</string>
+    <string name="editor_type_group">Тип операции</string>
+    <string name="editor_type_expense">Трата</string>
+    <string name="editor_type_income">Доход</string>
+    <string name="editor_type_refund">Возврат</string>
+    <string name="editor_amount">Сумма</string>
+    <string name="editor_categories_label">Категория · сначала частые</string>
+    <string name="editor_all_categories">Все категории</string>
+    <string name="editor_today">Сегодня</string>
+    <string name="editor_yesterday">Вчера</string>
+    <string name="editor_comment">Комментарий</string>
+    <string name="editor_comment_hint">Например, «обед с друзьями»</string>
+    <string name="editor_keypad">Цифровая клавиатура</string>
+    <string name="editor_key_comma">Запятая</string>
+    <string name="editor_key_backspace">Стереть</string>
+    <string name="editor_delete">Удалить операцию</string>
+    <string name="editor_pick_date">Дата операции</string>
+
+    <!-- Список операций -->
+    <string name="operations_title">Операции</string>
+    <string name="operations_search">Поиск по операциям</string>
+    <string name="operations_search_hint">Магазин, категория или сумма</string>
+    <string name="operations_filter">Фильтр</string>
+    <string name="operations_filter_all">Все</string>
+    <string name="operations_filter_notification">Из уведомлений</string>
+    <string name="operations_filter_manual">Вручную</string>
+    <string name="operations_filter_category">Категория</string>
+    <string name="operations_filter_category_clear">Все категории</string>
+    <string name="operations_empty_title">Операций пока нет</string>
+    <string name="operations_empty_text">Добавьте первую трату или доход кнопкой «+».</string>
+    <string name="operations_not_found_title">Ничего не найдено</string>
+    <string name="operations_not_found_text">Попробуйте другой запрос или сбросьте фильтры.</string>
+    <string name="operations_refund">Возврат</string>
+    <string name="operations_open">Изменить</string>
+    <string name="operation_deleted">Операция удалена</string>
+
+    <!-- Категории -->
+    <string name="categories_title">Категории</string>
+    <string name="categories_tab_expense">Траты</string>
+    <string name="categories_tab_income">Доходы</string>
+    <string name="categories_add">Новая категория</string>
+    <string name="categories_hidden">Скрыта</string>
+    <string name="categories_show">Показать</string>
+    <string name="categories_hide">Скрыть</string>
+    <string name="category_new_title">Новая категория</string>
+    <string name="category_edit_title">Категория</string>
+    <string name="category_name">Название</string>
+    <string name="category_icon">Иконка</string>
+    <string name="category_color">Цвет</string>
+    <string name="category_delete">Удалить категорию</string>
+    <string name="category_error_empty">Введите название</string>
+    <string name="category_error_long">Не больше 30 символов</string>
+    <string name="category_error_duplicate">Такая категория уже есть</string>
+    <string name="category_must_hide_title">Удалить нельзя</string>
+    <string name="category_must_hide_text">У категории есть операции или она создана по умолчанию. Её можно скрыть: она пропадёт из выбора, а операции останутся.</string>
+    <string name="category_color_green">Зелёный</string>
+    <string name="category_color_orange">Оранжевый</string>
+    <string name="category_color_blue">Синий</string>
+    <string name="category_color_purple">Фиолетовый</string>
+    <string name="category_color_pink">Розовый</string>
+    <string name="category_color_teal">Бирюзовый</string>
+    <string name="category_color_amber">Янтарный</string>
+    <string name="category_color_gray">Серый</string>
 </resources>

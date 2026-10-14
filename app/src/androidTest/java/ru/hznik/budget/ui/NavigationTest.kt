@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -24,9 +26,13 @@ import org.junit.runner.RunWith
 import ru.hznik.budget.MainActivity
 
 /** Сценарии spec app-navigation и требования к размеру и подписям кнопок из app-theme. */
+@HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class NavigationTest {
-    @get:Rule
+    @get:Rule(order = 0)
+    val hiltRule = HiltAndroidRule(this)
+
+    @get:Rule(order = 1)
     val rule = createAndroidComposeRule<MainActivity>()
 
     private val tabs = listOf("Главная", "Операции", "Статистика", "Помощник")
@@ -34,6 +40,9 @@ class NavigationTest {
 
     private fun tab(label: String) = rule.onNode(hasText(label) and isSelectable())
     private fun title(text: String) = rule.onNode(hasText(text) and isHeading())
+
+    /** Экран ввода операции узнаётся по выбранному типу «Трата» в переключателе. */
+    private fun editorTypeSwitch() = rule.onNode(hasText("Трата") and isSelectable())
     private fun assertOnTab(label: String) {
         tab(label).assertIsSelected()
         title(titles.getValue(label)).assertIsDisplayed()
@@ -79,7 +88,7 @@ class NavigationTest {
     @Test
     fun addButtonOpensNewOperationWithoutBottomBar() {
         rule.onNodeWithContentDescription("Добавить операцию").performClick()
-        title("Новая трата").assertIsDisplayed()
+        editorTypeSwitch().assertIsDisplayed()
         rule.onNodeWithTag(BOTTOM_BAR_TAG).assertDoesNotExist()
 
         Espresso.pressBack()
@@ -94,7 +103,7 @@ class NavigationTest {
     @Test
     fun doubleTapOnCloseReturnsToHomeOnce() {
         rule.onNodeWithContentDescription("Добавить операцию").performClick()
-        title("Новая трата").assertIsDisplayed()
+        editorTypeSwitch().assertIsDisplayed()
 
         // Без продвижения часов уходящий экран остаётся на месте, как во время анимации перехода.
         rule.mainClock.autoAdvance = false

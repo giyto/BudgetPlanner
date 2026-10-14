@@ -15,5 +15,13 @@ import kotlinx.serialization.Serializable
 @Serializable data object Assistant
 
 // Экраны поверх разделов, без нижней панели.
-@Serializable data object AddOperation
+
+/** Ввод новой операции ([operationId] = null) или редактирование существующей. */
+@Serializable data class OperationEditor(val operationId: Long? = null)
+
 @Serializable data object Settings
+
+@Serializable data object Categories
+
+/** Новая категория вида [kind] ([categoryId] = null) или изменение существующей. */
+@Serializable data class CategoryEditor(val kind: String, val categoryId: Long? = null)

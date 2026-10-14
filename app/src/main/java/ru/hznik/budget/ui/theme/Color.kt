@@ -49,6 +49,9 @@ data class BudgetColors(
     val categoryTransport: CategoryColors,
     val categoryHealth: CategoryColors,
     val categoryOther: CategoryColors,
+    val categoryPink: CategoryColors,
+    val categoryTeal: CategoryColors,
+    val categoryAmber: CategoryColors,
     val chartProducts: Color,
     val chartCafe: Color,
     val chartTransport: Color,
@@ -96,6 +99,9 @@ val LightBudgetColors = BudgetColors(
     categoryTransport = CategoryColors(Color(0xFFE4E5FC), Color(0xFF4B52E0)),
     categoryHealth = CategoryColors(Color(0xFFEFE7FD), Color(0xFF6D3FD1)),
     categoryOther = CategoryColors(Color(0xFFE9ECF0), Color(0xFF575E68)),
+    categoryPink = CategoryColors(Color(0xFFFCE4EF), Color(0xFFB0306A)),
+    categoryTeal = CategoryColors(Color(0xFFDDF3F5), Color(0xFF0B6E78)),
+    categoryAmber = CategoryColors(Color(0xFFFBF0D4), Color(0xFF8A5A00)),
     chartProducts = Color(0xFF0E8A5F),
     chartCafe = Color(0xFFD9701F),
     chartTransport = Color(0xFF4B52E0),
@@ -143,6 +149,9 @@ val DarkBudgetColors = BudgetColors(
     categoryTransport = CategoryColors(Color(0xFF262A4D), Color(0xFFA4A8FF)),
     categoryHealth = CategoryColors(Color(0xFF2E2547), Color(0xFFC4A8FF)),
     categoryOther = CategoryColors(Color(0xFF2A2E34), Color(0xFFA3AAB5)),
+    categoryPink = CategoryColors(Color(0xFF3A1F2C), Color(0xFFFF8FBF)),
+    categoryTeal = CategoryColors(Color(0xFF15313A), Color(0xFF5ED3E0)),
+    categoryAmber = CategoryColors(Color(0xFF362B12), Color(0xFFF2C14E)),
     chartProducts = Color(0xFF34C38A),
     chartCafe = Color(0xFFF08A3C),
     chartTransport = Color(0xFF7C82FF),
@@ -152,3 +161,18 @@ val DarkBudgetColors = BudgetColors(
     chartBarOver = Color(0xFFF08A3C),
     chartLimitLine = Color(0xFFA3AAB5),
 )
+
+/** Ключи цвета категории в порядке показа в палитре. Красного нет: он означает перерасход. */
+val CategoryColorKeys = listOf("green", "orange", "blue", "purple", "pink", "teal", "amber", "gray")
+
+/** Пара цветов плитки по ключу цвета категории; неизвестный ключ показывается серым. */
+fun BudgetColors.categoryColors(key: String): CategoryColors = when (key) {
+    "green" -> categoryProducts
+    "orange" -> categoryCafe
+    "blue" -> categoryTransport
+    "purple" -> categoryHealth
+    "pink" -> categoryPink
+    "teal" -> categoryTeal
+    "amber" -> categoryAmber
+    else -> categoryOther
+}
