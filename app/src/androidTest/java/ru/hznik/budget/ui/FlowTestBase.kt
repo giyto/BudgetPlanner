@@ -23,6 +23,7 @@ import org.junit.Rule
 import ru.hznik.budget.MainActivity
 import ru.hznik.budget.TEST_TODAY
 import ru.hznik.budget.TEST_ZONE
+import ru.hznik.budget.TestAuth
 import ru.hznik.budget.TestStart
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.CategoryKind
@@ -36,6 +37,9 @@ import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.repository.PlannedPaymentRepository
 import ru.hznik.budget.ui.home.HOME_HERO_TAG
+import ru.hznik.budget.ui.lock.DATABASE_ERROR_TAG
+import ru.hznik.budget.ui.lock.KEY_LOST_TAG
+import ru.hznik.budget.ui.lock.LOCK_SCREEN_TAG
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -55,7 +59,9 @@ fun calendarDay(day: Int) = SemanticsMatcher("день $day, 2026") { node ->
  * а загрузку из базы Compose-тест сам не ждёт (на медленном API 29 кнопок ещё нет).
  */
 fun AndroidComposeTestRule<*, *>.waitForStartScreen() = waitUntil(10_000) {
-    onAllNodes(hasTestTag(BOTTOM_BAR_TAG) or hasText("Шаг 1 из 3")).fetchSemanticsNodes().isNotEmpty()
+    onAllNodes(
+        hasTestTag(BOTTOM_BAR_TAG) or hasText("Шаг 1 из 4") or hasTestTag(LOCK_SCREEN_TAG) or hasTestTag(KEY_LOST_TAG) or hasTestTag(DATABASE_ERROR_TAG),
+    ).fetchSemanticsNodes().isNotEmpty()
 }
 
 /** Общее для сквозных UI-тестов: Hilt с базой в памяти, фиксированные часы и шаги по экранам. */
@@ -79,7 +85,10 @@ abstract class FlowTestBase {
     }
 
     @After
-    fun resetStart() = TestStart.reset()
+    fun resetStart() {
+        TestStart.reset()
+        TestAuth.reset()
+    }
 
     // --- Данные напрямую в базу ---
 

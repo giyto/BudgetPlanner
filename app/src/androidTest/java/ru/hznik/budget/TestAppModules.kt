@@ -2,6 +2,10 @@ package ru.hznik.budget
 
 import android.content.Context
 import android.os.SystemClock
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.fragment.app.FragmentActivity
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -11,6 +15,9 @@ import dagger.Provides
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dagger.hilt.testing.TestInstallIn
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import ru.hznik.budget.data.local.BudgetDatabase
 import ru.hznik.budget.data.local.CategoryDao
 import ru.hznik.budget.data.local.DatabaseModule
@@ -19,9 +26,21 @@ import ru.hznik.budget.data.local.PeriodDao
 import ru.hznik.budget.data.local.PlannedPaymentDao
 import ru.hznik.budget.data.local.StatisticsDao
 import ru.hznik.budget.data.settings.SettingsBindings
+import ru.hznik.budget.data.settings.SettingsModule
 import ru.hznik.budget.data.time.TimeModule
+import ru.hznik.budget.domain.lock.ElapsedClock
+import ru.hznik.budget.domain.lock.LockSettings
+import ru.hznik.budget.domain.lock.LockSettingsRepository
+import ru.hznik.budget.domain.lock.LockTimeout
 import ru.hznik.budget.domain.model.IncomeSchedule
 import ru.hznik.budget.domain.repository.IncomeScheduleRepository
+import ru.hznik.budget.domain.security.DatabaseAccess
+import ru.hznik.budget.domain.security.DatabaseState
+import ru.hznik.budget.ui.lock.AuthAvailability
+import ru.hznik.budget.ui.lock.AuthResult
+import ru.hznik.budget.ui.lock.AuthenticatorModule
+import ru.hznik.budget.ui.lock.DeviceAuthenticator
+import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -29,8 +48,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 
 val TEST_ZONE: ZoneId = ZoneId.of("Europe/Moscow")
 val TEST_TODAY: LocalDate = LocalDate.of(2026, 10, 13)
@@ -50,6 +67,15 @@ object TestStart {
     /** Часы идут в реальном времени от [now]: так проверяется смена дня в полночь. */
     var clockRuns = false
 
+    /** Настройки защиты входа при запуске; по умолчанию защита выключена. */
+    var lock = LockSettings()
+
+    /** Ключ базы пропал: вместо приложения экран «Не удалось открыть данные». */
+    var keyLost = false
+
+    /** Первое открытие базы — временный сбой, повтор проходит. */
+    var databaseError = false
+
     fun reset() {
         onboarded = true
         periodStart = LocalDate.of(2026, 10, 1)
@@ -57,6 +83,76 @@ object TestStart {
         startAmountKopecks = 18_000_00L
         now = TEST_TODAY.atTime(12, 0)
         clockRuns = false
+        lock = LockSettings()
+        keyLost = false
+        databaseError = false
+        TestElapsedClock.now = 0
+    }
+}
+
+/** Монотонные часы блокировки в UI-тестах: тест сам переводит их вперёд. */
+object TestElapsedClock : ElapsedClock {
+    @Volatile
+    var now = 0L
+
+    override fun elapsedMillis(): Long = now
+}
+
+/**
+ * Системное окно проверки Compose-тест нажать не может, поэтому в UI-тестах проверка подменена:
+ * тест задаёт доступность и ответ, а проверка возвращает его сразу.
+ */
+object TestAuth : DeviceAuthenticator {
+    @Volatile
+    var availability = AuthAvailability.AVAILABLE
+
+    @Volatile
+    var result: AuthResult = AuthResult.Success
+
+    @Volatile
+    var calls = 0
+
+    override fun availability(): AuthAvailability = availability
+
+    override suspend fun authenticate(activity: FragmentActivity, title: String, subtitle: String): AuthResult {
+        calls++
+        return result
+    }
+
+    fun reset() {
+        availability = AuthAvailability.AVAILABLE
+        result = AuthResult.Success
+        calls = 0
+    }
+}
+
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [AuthenticatorModule::class])
+object TestAuthenticatorModule {
+    @Provides
+    fun provideDeviceAuthenticator(): DeviceAuthenticator = TestAuth
+}
+
+/** База в памяти без шифрования; шифрование проверяют отдельные тесты на файлах. */
+@Singleton
+class FakeDatabaseAccess @Inject constructor() : DatabaseAccess {
+    @Volatile
+    var wiped = false
+
+    @Volatile
+    var opens = 0
+
+    override suspend fun open(): DatabaseState {
+        opens++
+        return when {
+            TestStart.keyLost && !wiped -> DatabaseState.KEY_LOST
+            TestStart.databaseError && opens == 1 -> DatabaseState.ERROR
+            else -> DatabaseState.READY
+        }
+    }
+
+    override suspend fun wipe() {
+        wiped = true
     }
 }
 
@@ -81,6 +177,9 @@ object TestDatabaseModule {
             )
         }
     }
+
+    @Provides
+    fun provideDatabaseAccess(impl: FakeDatabaseAccess): DatabaseAccess = impl
 
     @Provides
     fun provideCategoryDao(db: BudgetDatabase): CategoryDao = db.categoryDao()
@@ -108,6 +207,9 @@ object TestTimeModule {
         val start = TestStart.now.atZone(TEST_ZONE).toInstant()
         return if (TestStart.clockRuns) RunningClock(start, TEST_ZONE) else Clock.fixed(start, TEST_ZONE)
     }
+
+    @Provides
+    fun provideElapsedClock(): ElapsedClock = TestElapsedClock
 }
 
 /** Часы, которые идут от [start] вместе с монотонным временем устройства. */
@@ -121,12 +223,43 @@ private class RunningClock(private val start: Instant, private val zone: ZoneId)
     override fun instant(): Instant = start.plusMillis(SystemClock.elapsedRealtime() - startedAt)
 }
 
+/**
+ * DataStore настроек в отдельном файле на каждый тест: Hilt создаёт синглтоны заново для каждого теста,
+ * а два DataStore на одном файле в одном процессе DataStore запрещает.
+ */
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [SettingsModule::class])
+object TestDataStoreModule {
+    @Provides
+    @Singleton
+    fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+        PreferenceDataStoreFactory.create(
+            produceFile = { File(context.cacheDir, "test_settings_${System.nanoTime()}.preferences_pb").apply { deleteOnExit() } },
+        )
+}
+
 /** Расписание дохода в памяти вместо DataStore: у каждого теста своё. */
 @Module
 @TestInstallIn(components = [SingletonComponent::class], replaces = [SettingsBindings::class])
 abstract class TestSettingsModule {
     @Binds
     abstract fun bindIncomeScheduleRepository(impl: InMemoryIncomeScheduleRepository): IncomeScheduleRepository
+
+    @Binds
+    abstract fun bindLockSettingsRepository(impl: InMemoryLockSettingsRepository): LockSettingsRepository
+}
+
+@Singleton
+class InMemoryLockSettingsRepository @Inject constructor() : LockSettingsRepository {
+    val state = MutableStateFlow(TestStart.lock)
+
+    override fun observe(): Flow<LockSettings> = state
+
+    override suspend fun setEnabled(enabled: Boolean) = state.update { it.copy(enabled = enabled) }
+
+    override suspend fun setTimeout(timeout: LockTimeout) = state.update { it.copy(timeout = timeout) }
+
+    override suspend fun setHideInRecents(hide: Boolean) = state.update { it.copy(hideInRecents = hide) }
 }
 
 @Singleton

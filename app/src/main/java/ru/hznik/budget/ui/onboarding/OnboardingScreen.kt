@@ -86,6 +86,7 @@ fun OnboardingRoute(onFinished: () -> Unit, onExit: () -> Unit, viewModel: Onboa
         onBack = { viewModel.back() },
         onNext = viewModel::next,
         onSkip = viewModel::skipPayments,
+        onProtectionEnabled = viewModel::finishWithProtection,
         onKey = viewModel::onKey,
         onIncomeRegular = viewModel::onIncomeRegular,
         onIncomeDay = viewModel::onIncomeDay,
@@ -104,6 +105,7 @@ fun OnboardingScreen(
     onBack: () -> Unit,
     onNext: () -> Unit,
     onSkip: () -> Unit,
+    onProtectionEnabled: () -> Unit,
     onKey: (AmountKey) -> Unit,
     onIncomeRegular: (Boolean) -> Unit,
     onIncomeDay: (Int) -> Unit,
@@ -115,6 +117,7 @@ fun OnboardingScreen(
     onRemovePayment: (Int) -> Unit,
 ) {
     val colors = BudgetTheme.colors
+    val protection = rememberProtectionStepState()
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp)) {
             if (state.step != OnboardingStep.INTRO) {
@@ -139,21 +142,26 @@ fun OnboardingScreen(
                 OnboardingStep.INTRO -> IntroStep()
                 OnboardingStep.MONEY -> MoneyStep(state, onKey, onIncomeRegular, onIncomeDay, onIncomeDate)
                 OnboardingStep.PAYMENTS -> PaymentsStep(state, onOpenPaymentForm, onRemovePayment)
+                OnboardingStep.PROTECTION -> ProtectionStep(protection)
             }
         }
 
-        Button(
-            onClick = onNext,
-            enabled = state.canContinue,
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-            modifier = Modifier.padding(16.dp).fillMaxWidth().height(56.dp),
-        ) {
-            Text(
-                stringResource(if (state.step == OnboardingStep.PAYMENTS) R.string.onboarding_done else R.string.onboarding_next),
-                fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
+        if (state.step == OnboardingStep.PROTECTION) {
+            ProtectionButtons(protection, busy = state.busy, onEnabled = onProtectionEnabled, onLater = onNext)
+        } else {
+            Button(
+                onClick = onNext,
+                enabled = state.canContinue,
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
+                modifier = Modifier.padding(16.dp).fillMaxWidth().height(56.dp),
+            ) {
+                Text(
+                    stringResource(if (state.step == OnboardingStep.PAYMENTS) R.string.onboarding_done else R.string.onboarding_next),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
     }
 

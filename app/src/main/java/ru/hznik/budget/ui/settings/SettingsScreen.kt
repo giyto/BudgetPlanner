@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,14 +36,27 @@ fun SettingsScreen(
     onOpenCategories: () -> Unit,
     onOpenPeriod: () -> Unit,
     modifier: Modifier = Modifier,
+    protection: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
 ) {
     val colors = BudgetTheme.colors
-    Column(modifier = modifier.fillMaxSize().background(colors.background), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         NavigationHeader(stringResource(R.string.settings_title), R.drawable.ic_back, stringResource(R.string.action_back), onBack)
-        SettingsItem(stringResource(R.string.settings_period), stringResource(R.string.settings_period_hint), onOpenPeriod)
-        SettingsItem(stringResource(R.string.settings_categories), stringResource(R.string.settings_categories_hint), onOpenCategories)
-        extra()
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
+        ) {
+            protection()
+            Text(
+                stringResource(R.string.settings_group_budget),
+                fontSize = 14.sp,
+                color = colors.muted,
+                modifier = Modifier.padding(start = 22.dp, top = 6.dp).semantics { heading() },
+            )
+            SettingsItem(stringResource(R.string.settings_period), stringResource(R.string.settings_period_hint), onOpenPeriod)
+            SettingsItem(stringResource(R.string.settings_categories), stringResource(R.string.settings_categories_hint), onOpenCategories)
+            extra()
+        }
     }
 }
 

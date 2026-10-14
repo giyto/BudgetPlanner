@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ru.hznik.budget.domain.lock.LockSettingsRepository
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.CategoryKind
 import ru.hznik.budget.domain.model.IncomeSchedule
@@ -27,8 +28,8 @@ import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
 
-/** Шаги онбординга. Этапы 5 и 6 добавят свои шаги в этот список (design.md, решение 6). */
-enum class OnboardingStep { INTRO, MONEY, PAYMENTS }
+/** Шаги онбординга. Этап 6 вставит шаг автоимпорта перед защитой входа (сценарий 5.1). */
+enum class OnboardingStep { INTRO, MONEY, PAYMENTS, PROTECTION }
 
 data class OnboardingUiState(
     val step: OnboardingStep = OnboardingStep.INTRO,
@@ -56,7 +57,7 @@ data class OnboardingUiState(
     val canContinue: Boolean get() = when (step) {
         OnboardingStep.INTRO -> true
         OnboardingStep.MONEY -> amountInput.isNotEmpty() && nextIncome?.isAfter(today) == true
-        OnboardingStep.PAYMENTS -> !busy
+        OnboardingStep.PAYMENTS, OnboardingStep.PROTECTION -> !busy
     }
 }
 
@@ -68,6 +69,7 @@ sealed interface OnboardingEvent {
 class OnboardingViewModel @Inject constructor(
     categories: CategoryRepository,
     private val completeOnboarding: CompleteOnboarding,
+    private val lockSettings: LockSettingsRepository,
     private val clock: Clock,
 ) : ViewModel() {
     private val form = MutableStateFlow(OnboardingUiState(today = clock.today()))
@@ -91,7 +93,8 @@ class OnboardingViewModel @Inject constructor(
         when (state.step) {
             OnboardingStep.INTRO -> form.update { it.copy(step = OnboardingStep.MONEY) }
             OnboardingStep.MONEY -> form.update { it.copy(step = OnboardingStep.PAYMENTS) }
-            OnboardingStep.PAYMENTS -> finish()
+            OnboardingStep.PAYMENTS -> form.update { it.copy(step = OnboardingStep.PROTECTION) }
+            OnboardingStep.PROTECTION -> finish(enableProtection = false)
         }
     }
 
@@ -132,13 +135,16 @@ class OnboardingViewModel @Inject constructor(
 
     fun removePayment(index: Int) = form.update { it.copy(payments = it.payments.filterIndexed { i, _ -> i != index }) }
 
-    /** «Пропустить» на шаге платежей: завершить без платежей. */
+    /** «Пропустить» на шаге платежей: дальше без платежей. */
     fun skipPayments() {
-        form.update { it.copy(payments = emptyList()) }
-        finish()
+        form.update { it.copy(payments = emptyList(), step = OnboardingStep.PROTECTION) }
     }
 
-    private fun finish() {
+    /** «Включить» на шаге защиты после успешной проверки разблокировкой. */
+    fun finishWithProtection() = finish(enableProtection = true)
+
+    /** Данные онбординга записываются одним действием в конце, на шаге защиты (design.md add-data-protection, решение 10). */
+    private fun finish(enableProtection: Boolean) {
         val state = form.value
         val schedule = state.schedule ?: return
         if (state.busy) return
@@ -151,7 +157,10 @@ class OnboardingViewModel @Inject constructor(
                 paymentDrafts = state.payments,
             )
             when (result) {
-                PeriodSetupResult.Done -> _events.send(OnboardingEvent.Finished)
+                PeriodSetupResult.Done -> {
+                    if (enableProtection) lockSettings.setEnabled(true)
+                    _events.send(OnboardingEvent.Finished)
+                }
                 // Экран простоял за полночь и выбранная дата дохода уже не в будущем: вернуться к её выбору.
                 PeriodSetupResult.IncomeDateNotInFuture ->
                     form.update { it.copy(busy = false, today = clock.today(), incomeDate = null, step = OnboardingStep.MONEY) }

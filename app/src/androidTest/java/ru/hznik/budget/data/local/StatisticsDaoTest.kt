@@ -17,6 +17,7 @@ import ru.hznik.budget.data.repository.RoomStatisticsRepository
 import ru.hznik.budget.domain.model.CategoryKind
 import ru.hznik.budget.domain.stats.DateRange
 import java.time.LocalDate
+import kotlin.time.Duration
 import kotlin.time.measureTime
 
 /** Запросы статистики на настоящей SQLite (spec statistics: что считается тратой, скорость на 50 000 операций). */
@@ -88,38 +89,47 @@ class StatisticsDaoTest {
     @LargeTest
     @Test
     fun aggregatesOn50000OperationsAreFast() = runTest {
-        val ids = RoomCategoryRepository(db.categoryDao()).observeAll().first().filter { it.kind == CategoryKind.EXPENSE }.map { it.id }
-        val start = LocalDate.of(2024, 10, 14)
-        val sqlite = db.openHelper.writableDatabase
-        sqlite.beginTransaction()
-        try {
-            val statement = sqlite.compileStatement(
-                "INSERT INTO operations (type, amount_kopecks, category_id, merchant, comment, search_text, source, occurred_at, " +
-                    "utc_offset_seconds, local_date, created_at) VALUES ('EXPENSE', ?, ?, ?, NULL, '', 'MANUAL', 0, 10800, ?, 0)",
-            )
-            repeat(50_000) { i ->
-                statement.clearBindings()
-                statement.bindLong(1, 10_000L + i % 5_000)
-                statement.bindLong(2, ids[i % ids.size])
-                statement.bindString(3, "Магазин ${i % 300}")
-                statement.bindLong(4, start.plusDays((i % 730).toLong()).toEpochDay())
-                statement.executeInsert()
-            }
-            sqlite.setTransactionSuccessful()
-        } finally {
-            sqlite.endTransaction()
-        }
-
-        val period = DateRange(LocalDate.of(2026, 9, 25), LocalDate.of(2026, 10, 13))
-        val month = DateRange(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 13))
-        val elapsed = measureTime {
-            listOf(period, month).forEach { range ->
-                stats.spendingByCategory(range).first()
-                stats.topMerchants(range, 5).first()
-                stats.spendingByDay(range).first()
-                stats.totals(range).first()
-            }
-        }
+        fill50000Operations(db)
+        val elapsed = measureAggregates(stats)
         assertTrue("Агрегаты считались $elapsed", elapsed.inWholeMilliseconds < 1_000)
+    }
+}
+
+/** 50 000 трат за два года по всем категориям расходов (NFR-01); общий для базы в памяти и зашифрованной. */
+suspend fun fill50000Operations(db: BudgetDatabase) {
+    val ids = RoomCategoryRepository(db.categoryDao()).observeAll().first().filter { it.kind == CategoryKind.EXPENSE }.map { it.id }
+    val start = LocalDate.of(2024, 10, 14)
+    val sqlite = db.openHelper.writableDatabase
+    sqlite.beginTransaction()
+    try {
+        val statement = sqlite.compileStatement(
+            "INSERT INTO operations (type, amount_kopecks, category_id, merchant, comment, search_text, source, occurred_at, " +
+                "utc_offset_seconds, local_date, created_at) VALUES ('EXPENSE', ?, ?, ?, NULL, '', 'MANUAL', 0, 10800, ?, 0)",
+        )
+        repeat(50_000) { i ->
+            statement.clearBindings()
+            statement.bindLong(1, 10_000L + i % 5_000)
+            statement.bindLong(2, ids[i % ids.size])
+            statement.bindString(3, "Магазин ${i % 300}")
+            statement.bindLong(4, start.plusDays((i % 730).toLong()).toEpochDay())
+            statement.executeInsert()
+        }
+        sqlite.setTransactionSuccessful()
+    } finally {
+        sqlite.endTransaction()
+    }
+}
+
+/** Все агрегаты экрана статистики для периода и месяца. */
+suspend fun measureAggregates(stats: RoomStatisticsRepository): Duration {
+    val period = DateRange(LocalDate.of(2026, 9, 25), LocalDate.of(2026, 10, 13))
+    val month = DateRange(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 13))
+    return measureTime {
+        listOf(period, month).forEach { range ->
+            stats.spendingByCategory(range).first()
+            stats.topMerchants(range, 5).first()
+            stats.spendingByDay(range).first()
+            stats.totals(range).first()
+        }
     }
 }

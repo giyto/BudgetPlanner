@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import ru.hznik.budget.domain.lock.LockSettings
+import ru.hznik.budget.domain.lock.LockSettingsRepository
+import ru.hznik.budget.domain.lock.LockTimeout
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.IncomeSchedule
 import ru.hznik.budget.domain.model.Period
@@ -245,4 +248,16 @@ class FakeStatisticsRepository(private val operations: FakeOperationRepository) 
             spentKopecks = inside.sumOf { it.spending() },
         )
     }
+}
+
+class FakeLockSettingsRepository(initial: LockSettings = LockSettings()) : LockSettingsRepository {
+    val state = MutableStateFlow(initial)
+
+    override fun observe(): Flow<LockSettings> = state
+
+    override suspend fun setEnabled(enabled: Boolean) = state.update { it.copy(enabled = enabled) }
+
+    override suspend fun setTimeout(timeout: LockTimeout) = state.update { it.copy(timeout = timeout) }
+
+    override suspend fun setHideInRecents(hide: Boolean) = state.update { it.copy(hideInRecents = hide) }
 }

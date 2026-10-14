@@ -23,6 +23,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -34,7 +35,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
-import ru.hznik.budget.R
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -45,39 +45,42 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
+import ru.hznik.budget.BuildConfig
+import ru.hznik.budget.R
+import ru.hznik.budget.domain.stats.DateRange
 import ru.hznik.budget.ui.assistant.AssistantScreen
-import ru.hznik.budget.ui.home.HomeRoute
-import ru.hznik.budget.ui.onboarding.OnboardingRoute
-import ru.hznik.budget.ui.period.NewPeriodRoute
-import ru.hznik.budget.ui.period.PaymentEditorRoute
-import ru.hznik.budget.ui.period.PeriodRoute
 import ru.hznik.budget.ui.categories.CategoriesRoute
 import ru.hznik.budget.ui.categories.CategoryEditorRoute
+import ru.hznik.budget.ui.home.HomeRoute
 import ru.hznik.budget.ui.navigation.Assistant
 import ru.hznik.budget.ui.navigation.AssistantGraph
 import ru.hznik.budget.ui.navigation.Categories
 import ru.hznik.budget.ui.navigation.CategoryEditor
+import ru.hznik.budget.ui.navigation.CategoryOperations
 import ru.hznik.budget.ui.navigation.Home
 import ru.hznik.budget.ui.navigation.HomeGraph
-import ru.hznik.budget.ui.navigation.Operations
 import ru.hznik.budget.ui.navigation.NewPeriod
 import ru.hznik.budget.ui.navigation.Onboarding
 import ru.hznik.budget.ui.navigation.OperationEditor
-import ru.hznik.budget.domain.stats.DateRange
-import ru.hznik.budget.ui.navigation.CategoryOperations
+import ru.hznik.budget.ui.navigation.Operations
+import ru.hznik.budget.ui.navigation.OperationsGraph
 import ru.hznik.budget.ui.navigation.Period
 import ru.hznik.budget.ui.navigation.PeriodStats
 import ru.hznik.budget.ui.navigation.PlannedPaymentEditor
-import ru.hznik.budget.ui.navigation.OperationsGraph
 import ru.hznik.budget.ui.navigation.Settings
 import ru.hznik.budget.ui.navigation.Stats
 import ru.hznik.budget.ui.navigation.StatsGraph
 import ru.hznik.budget.ui.navigation.TopLevelDestination
+import ru.hznik.budget.ui.onboarding.OnboardingRoute
 import ru.hznik.budget.ui.operations.OperationEditorRoute
 import ru.hznik.budget.ui.operations.OperationsRoute
-import ru.hznik.budget.ui.settings.SettingsScreen
-import ru.hznik.budget.BuildConfig
+import ru.hznik.budget.ui.period.NewPeriodRoute
+import ru.hznik.budget.ui.period.PaymentEditorRoute
+import ru.hznik.budget.ui.period.PeriodRoute
 import ru.hznik.budget.ui.settings.DemoDataSection
+import ru.hznik.budget.ui.settings.ProtectionSection
+import ru.hznik.budget.ui.settings.SettingsScreen
 import ru.hznik.budget.ui.stats.CategoryOperationsRoute
 import ru.hznik.budget.ui.stats.PeriodStatsRoute
 import ru.hznik.budget.ui.stats.StatsRoute
@@ -92,6 +95,7 @@ fun BudgetApp(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     UndoDeletionSnackbar(appViewModel, snackbarHostState)
+    ScreenLockRemovedSnackbar(appViewModel, snackbarHostState)
 
     // Пока неизвестно, пройден ли онбординг, виден только фон окна: вернувшийся пользователь не увидит мигания онбординга.
     val onboardingDone by appViewModel.onboardingDone.collectAsStateWithLifecycle()
@@ -224,6 +228,7 @@ fun BudgetApp(
                     onBack = dropUnlessResumed { navController.popBackStack() },
                     onOpenCategories = dropUnlessResumed { navController.navigate(Categories) },
                     onOpenPeriod = dropUnlessResumed { navController.navigate(Period) },
+                    protection = { ProtectionSection() },
                     extra = { if (BuildConfig.DEBUG) DemoDataSection() },
                 )
             }
@@ -255,6 +260,20 @@ private fun UndoDeletionSnackbar(viewModel: AppViewModel, hostState: SnackbarHos
         if (pending == null) return@LaunchedEffect
         val result = hostState.showSnackbar(message, actionLabel = action, duration = SnackbarDuration.Indefinite)
         if (result == SnackbarResult.ActionPerformed) viewModel.undo() else viewModel.dismiss()
+    }
+}
+
+/** «Защита входа выключена…» один раз после того, как на телефоне сняли блокировку экрана. */
+@Composable
+private fun ScreenLockRemovedSnackbar(viewModel: AppViewModel, hostState: SnackbarHostState) {
+    val message = stringResource(R.string.protection_removed)
+    val notice by viewModel.screenLockRemovedNotice.collectAsStateWithLifecycle()
+    // Показ в своей корутине: сброс флага перезапускает эффект и иначе отменил бы сообщение сразу.
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(notice) {
+        if (!notice) return@LaunchedEffect
+        viewModel.consumeScreenLockNotice()
+        scope.launch { hostState.showSnackbar(message, duration = SnackbarDuration.Long) }
     }
 }
 

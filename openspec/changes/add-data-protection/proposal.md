@@ -25,7 +25,7 @@
 
 ## Impact
 
-- Новые зависимости: `net.zetetic:sqlcipher-android` 4.19, `androidx.biometric:biometric` 1.1.0 (последняя стабильная), `androidx.lifecycle:lifecycle-process`. `MainActivity` становится `FragmentActivity`: этого требует `BiometricPrompt`.
+- Новые зависимости: `net.zetetic:sqlcipher-android` 4.19, `androidx.biometric:biometric` 1.1.0 (последняя стабильная), `androidx.fragment:fragment-ktx` 1.8.9. `MainActivity` становится `FragmentActivity`: этого требует `BiometricPrompt`.
 - Пакеты `data/security` (`DatabaseKeyStore`, `DatabaseEncryption`), `domain/lock` (`AppLock` и правила таймаута), `ui/lock` (экран блокировки, раздел настроек).
 - Разрешение `USE_BIOMETRIC`.
 - Размер APK вырастет на несколько мегабайт: нативные библиотеки SQLCipher для каждой архитектуры.

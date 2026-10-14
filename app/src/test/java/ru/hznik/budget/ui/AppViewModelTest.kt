@@ -11,6 +11,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import ru.hznik.budget.domain.lock.AppLock
 import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationSource
@@ -22,8 +23,8 @@ import ru.hznik.budget.domain.usecase.UndoDeletionBuffer
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
 import ru.hznik.budget.testing.FakeIncomeScheduleRepository
-import ru.hznik.budget.testing.FakePeriodRepository
 import ru.hznik.budget.testing.FakeOperationRepository
+import ru.hznik.budget.testing.FakePeriodRepository
 import ru.hznik.budget.testing.MainDispatcherRule
 import ru.hznik.budget.testing.TODAY
 import ru.hznik.budget.testing.at
@@ -43,6 +44,7 @@ class AppViewModelTest {
             buffer,
             RestoreDeletedOperation(operations, categories, buffer),
             ObserveOnboardingDone(FakePeriodRepository(), FakeIncomeScheduleRepository()),
+            AppLock { 0L },
         )
     }
 

@@ -22,6 +22,7 @@ import ru.hznik.budget.domain.usecase.TodayTicker
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
 import ru.hznik.budget.testing.FakeIncomeScheduleRepository
+import ru.hznik.budget.testing.FakeLockSettingsRepository
 import ru.hznik.budget.testing.FakeOperationRepository
 import ru.hznik.budget.testing.FakePeriodRepository
 import ru.hznik.budget.testing.FakePlannedPaymentRepository
@@ -45,10 +46,11 @@ class StageThreeViewModelsTest {
     private val payments = FakePlannedPaymentRepository(operations)
     private val periods = FakePeriodRepository(payments)
     private val schedule = FakeIncomeScheduleRepository()
+    private val lockSettings = FakeLockSettingsRepository()
 
     private fun rub(r: Long) = r * 100
 
-    private fun onboarding() = OnboardingViewModel(categories, CompleteOnboarding(periods, schedule, TEST_CLOCK), TEST_CLOCK)
+    private fun onboarding() = OnboardingViewModel(categories, CompleteOnboarding(periods, schedule, TEST_CLOCK), lockSettings, TEST_CLOCK)
 
     @Test
     fun `onboarding goes through steps and finishes with a period`() = runTest {
@@ -76,10 +78,14 @@ class StageThreeViewModelsTest {
             assertEquals(1, expectMostRecentItem().payments.size)
             cancelAndIgnoreRemainingEvents()
         }
+        vm.next()
+        assertEquals(OnboardingStep.PROTECTION, vm.uiState.value.step)
+        assertNull("данные пишутся только на последнем шаге", periods.getCurrent())
         vm.events.test {
-            vm.next()
+            vm.next() // «Не сейчас»
             assertEquals(OnboardingEvent.Finished, awaitItem())
         }
+        assertFalse(lockSettings.state.value.enabled)
         val period = periods.getCurrent()!!
         assertEquals(rub(18_000), period.startAmountKopecks)
         assertEquals(LocalDate.of(2026, 10, 25), period.nextIncomeDate)
@@ -111,10 +117,13 @@ class StageThreeViewModelsTest {
             cancelAndIgnoreRemainingEvents()
         }
         vm.next()
+        vm.skipPayments()
+        assertEquals(OnboardingStep.PROTECTION, vm.uiState.value.step)
         vm.events.test {
-            vm.skipPayments()
+            vm.finishWithProtection()
             awaitItem()
         }
+        assertTrue("«Включить» после проверки включает защиту", lockSettings.state.value.enabled)
         assertEquals(IncomeSchedule.Irregular, schedule.state.value)
         assertTrue(payments.state.value.isEmpty())
     }

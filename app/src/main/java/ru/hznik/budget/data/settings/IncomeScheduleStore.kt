@@ -16,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import ru.hznik.budget.domain.lock.LockSettingsRepository
 import ru.hznik.budget.domain.model.IncomeSchedule
 import ru.hznik.budget.domain.repository.IncomeScheduleRepository
 import javax.inject.Inject
@@ -70,4 +71,7 @@ object SettingsModule {
 abstract class SettingsBindings {
     @Binds
     abstract fun bindIncomeScheduleRepository(impl: DataStoreIncomeScheduleRepository): IncomeScheduleRepository
+
+    @Binds
+    abstract fun bindLockSettingsRepository(impl: DataStoreLockSettingsRepository): LockSettingsRepository
 }

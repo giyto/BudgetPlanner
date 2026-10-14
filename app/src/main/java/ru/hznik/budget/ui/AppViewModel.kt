@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ru.hznik.budget.domain.lock.AppLock
 import ru.hznik.budget.domain.usecase.DeletionEvent
 import ru.hznik.budget.domain.usecase.ObserveOnboardingDone
 import ru.hznik.budget.domain.usecase.RestoreDeletedOperation
@@ -27,9 +28,15 @@ class AppViewModel @Inject constructor(
     private val buffer: UndoDeletionBuffer,
     private val restore: RestoreDeletedOperation,
     observeOnboardingDone: ObserveOnboardingDone,
+    private val appLock: AppLock,
 ) : ViewModel() {
     /** Пройден ли онбординг; `null`, пока неизвестно — тогда виден только фон окна (design.md, решение 6). */
     val onboardingDone: StateFlow<Boolean?> = observeOnboardingDone().stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** Защиту входа выключили сами: на телефоне сняли блокировку экрана (spec app-lock). */
+    val screenLockRemovedNotice: StateFlow<Boolean> = appLock.screenLockRemovedNotice
+
+    fun consumeScreenLockNotice() = appLock.consumeNotice()
 
     private val _pendingUndo = MutableStateFlow<DeletionEvent?>(null)
 
