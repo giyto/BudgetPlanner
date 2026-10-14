@@ -1,7 +1,7 @@
 # app-lock Specification
 
 ## Purpose
-TBD - created by archiving change add-data-protection. Update Purpose after archive.
+Защита входа в приложение разблокировкой телефона (биометрия или код устройства): блокировка после ухода в фон, экран блокировки и скрытие содержимого в списке недавних приложений.
 
 ## Requirements
 

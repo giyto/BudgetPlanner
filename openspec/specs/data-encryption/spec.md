@@ -1,7 +1,7 @@
 # data-encryption Specification
 
 ## Purpose
-TBD - created by archiving change add-data-protection. Update Purpose after archive.
+Шифрование локальной базы SQLCipher ключом, защищённым Android Keystore: создание и хранение ключа, перенос незашифрованной базы и экран «Начать заново» при потере ключа.
 
 ## Requirements
 
