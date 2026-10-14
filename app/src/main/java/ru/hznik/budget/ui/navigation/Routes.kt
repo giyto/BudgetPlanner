@@ -25,3 +25,13 @@ import kotlinx.serialization.Serializable
 
 /** Новая категория вида [kind] ([categoryId] = null) или изменение существующей. */
 @Serializable data class CategoryEditor(val kind: String, val categoryId: Long? = null)
+
+/** Первый запуск: шаги онбординга, без нижней панели. */
+@Serializable data object Onboarding
+
+@Serializable data object Period
+
+@Serializable data object NewPeriod
+
+/** Новый обязательный платёж ([paymentId] = null) или изменение существующего. */
+@Serializable data class PlannedPaymentEditor(val paymentId: Long? = null)

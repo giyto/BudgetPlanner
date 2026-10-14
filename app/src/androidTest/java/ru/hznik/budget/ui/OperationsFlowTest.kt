@@ -1,8 +1,6 @@
 package ru.hznik.budget.ui
 
-import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -24,17 +22,6 @@ import ru.hznik.budget.TEST_TODAY
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.ui.format.MoneyFormat
-
-/**
- * День в календаре Material: его подпись — полная дата на языке телефона
- * («Monday, October 12, 2026» или «понедельник, 12 октября 2026 г.»), поэтому ищем год и число.
- */
-private fun calendarDay(day: Int) = SemanticsMatcher("день $day октября 2026") { node ->
-    node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { text ->
-        val value = text.text
-        "2026" in value && Regex("""(^|\D)$day(\D|$)""").containsMatchIn(value.replace("2026", ""))
-    }
-}
 
 /** Сценарии spec operations и изменений app-navigation этапа add-operations-and-categories. */
 @HiltAndroidTest

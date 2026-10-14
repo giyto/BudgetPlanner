@@ -13,7 +13,8 @@ interface CategoryRepository {
     /** Есть ли у категории вида [kind] такое название без учёта регистра (кроме категории [excludeId]). */
     suspend fun nameExists(kind: CategoryKind, name: String, excludeId: Long?): Boolean
 
-    suspend fun hasOperations(id: Long): Boolean
+    /** Есть ли у категории операции или обязательные платежи: такую нельзя удалить, только скрыть. */
+    suspend fun isUsed(id: Long): Boolean
 
     suspend fun nextSortOrder(kind: CategoryKind): Int
 

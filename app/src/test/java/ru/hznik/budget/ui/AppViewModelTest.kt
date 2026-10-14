@@ -16,10 +16,13 @@ import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.domain.usecase.DeleteOperation
+import ru.hznik.budget.domain.usecase.ObserveOnboardingDone
 import ru.hznik.budget.domain.usecase.RestoreDeletedOperation
 import ru.hznik.budget.domain.usecase.UndoDeletionBuffer
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
+import ru.hznik.budget.testing.FakeIncomeScheduleRepository
+import ru.hznik.budget.testing.FakePeriodRepository
 import ru.hznik.budget.testing.FakeOperationRepository
 import ru.hznik.budget.testing.MainDispatcherRule
 import ru.hznik.budget.testing.TODAY
@@ -35,7 +38,13 @@ class AppViewModelTest {
     private val buffer = UndoDeletionBuffer()
     private val delete = DeleteOperation(operations, buffer)
     // Лениво: viewModelScope должен стартовать уже на тестовом Dispatchers.Main из правила.
-    private val viewModel by lazy { AppViewModel(buffer, RestoreDeletedOperation(operations, categories, buffer)) }
+    private val viewModel by lazy {
+        AppViewModel(
+            buffer,
+            RestoreDeletedOperation(operations, categories, buffer),
+            ObserveOnboardingDone(FakePeriodRepository(), FakeIncomeScheduleRepository()),
+        )
+    }
 
     private suspend fun addAndDelete(kopecks: Long = 18_000): Long {
         val id = operations.insert(

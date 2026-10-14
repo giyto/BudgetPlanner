@@ -31,6 +31,12 @@ class RoomOperationRepository @Inject constructor(
             categoryId = filter.categoryId,
         ).map { rows -> rows.map { it.toDomain() } }
 
+    override fun observeFrom(from: LocalDate): Flow<List<Operation>> =
+        dao.observeFrom(from.toEpochDay()).map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeRecent(limit: Int): Flow<List<OperationItem>> =
+        dao.observeRecent(limit).map { rows -> rows.map { it.toDomain() } }
+
     override fun observeCategoryUsage(since: LocalDate): Flow<Map<Long, Int>> =
         dao.observeCategoryUsage(since.toEpochDay()).map { rows -> rows.associate { it.categoryId to it.count } }
 
@@ -59,7 +65,7 @@ class RoomCategoryRepository @Inject constructor(private val dao: CategoryDao) :
     override suspend fun nameExists(kind: CategoryKind, name: String, excludeId: Long?): Boolean =
         dao.countByName(kind.name, normalizeForSearch(name), excludeId) > 0
 
-    override suspend fun hasOperations(id: Long): Boolean = dao.hasOperations(id)
+    override suspend fun isUsed(id: Long): Boolean = dao.isUsed(id)
 
     override suspend fun nextSortOrder(kind: CategoryKind): Int = dao.maxSortOrder(kind.name) + 1
 

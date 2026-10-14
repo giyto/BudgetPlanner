@@ -1,5 +1,8 @@
 package ru.hznik.budget.ui.operations
 
+import ru.hznik.budget.ui.components.AmountInput
+import ru.hznik.budget.ui.components.AmountKey
+import ru.hznik.budget.ui.components.AmountKeypad
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -160,7 +163,7 @@ fun OperationEditorScreen(
         }
 
         Spacer(Modifier.weight(1f))
-        Keypad(onKey, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
+        AmountKeypad(onKey, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
         Button(
             onClick = onSave,
             enabled = state.canSave,
@@ -335,49 +338,6 @@ private fun ChipButton(icon: Int, text: String, onClick: () -> Unit, modifier: M
             Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
             Text(text, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}
-
-@Composable
-private fun Keypad(onKey: (AmountKey) -> Unit, modifier: Modifier = Modifier) {
-    val colors = BudgetTheme.colors
-    val keypadLabel = stringResource(R.string.editor_keypad)
-    val commaLabel = stringResource(R.string.editor_key_comma)
-    val backspaceLabel = stringResource(R.string.editor_key_backspace)
-    val keys: List<AmountKey> = (1..9).map { AmountKey.Digit(it) } + listOf(AmountKey.Comma, AmountKey.Digit(0), AmountKey.Backspace)
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.semantics { contentDescription = keypadLabel },
-    ) {
-        keys.chunked(3).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { key ->
-                    val description = when (key) {
-                        AmountKey.Comma -> commaLabel
-                        AmountKey.Backspace -> backspaceLabel
-                        is AmountKey.Digit -> key.value.toString()
-                    }
-                    Surface(
-                        onClick = { onKey(key) },
-                        shape = RoundedCornerShape(16.dp),
-                        color = colors.card,
-                        contentColor = colors.ink,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(54.dp)
-                            .semantics { contentDescription = description },
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            when (key) {
-                                AmountKey.Backspace -> Icon(painterResource(R.drawable.ic_backspace), contentDescription = null)
-                                AmountKey.Comma -> Text(",", fontSize = 24.sp, fontWeight = FontWeight.Medium)
-                                is AmountKey.Digit -> Text(key.value.toString(), fontSize = 24.sp, fontWeight = FontWeight.Medium)
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }

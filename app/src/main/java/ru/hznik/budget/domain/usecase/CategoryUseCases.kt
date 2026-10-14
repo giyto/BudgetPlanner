@@ -66,11 +66,11 @@ class SetCategoryHidden @Inject constructor(private val categories: CategoryRepo
 
 enum class CategoryDeleteResult { DELETED, MUST_HIDE, NOT_FOUND }
 
-/** Удаляет только свою категорию без операций; категорию по умолчанию или с операциями можно лишь скрыть. */
+/** Удаляет только свою неиспользуемую категорию; категорию по умолчанию, с операциями или платежами можно лишь скрыть. */
 class DeleteCategory @Inject constructor(private val categories: CategoryRepository) {
     suspend operator fun invoke(id: Long): CategoryDeleteResult {
         val category = categories.get(id) ?: return CategoryDeleteResult.NOT_FOUND
-        if (category.isDefault || categories.hasOperations(id)) return CategoryDeleteResult.MUST_HIDE
+        if (category.isDefault || categories.isUsed(id)) return CategoryDeleteResult.MUST_HIDE
         categories.delete(id)
         return CategoryDeleteResult.DELETED
     }

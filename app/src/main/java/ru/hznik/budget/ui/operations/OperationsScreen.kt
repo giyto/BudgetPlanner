@@ -300,7 +300,7 @@ private fun spokenDayTotal(netSpentKopecks: Long, incomeKopecks: Long): String =
 }.joinToString(", ")
 
 @Composable
-private fun OperationRow(item: OperationItem, onOpen: (Long) -> Unit) {
+internal fun OperationRow(item: OperationItem, onOpen: (Long) -> Unit) {
     val colors = BudgetTheme.colors
     val op = item.operation
     val refundLabel = stringResource(R.string.operations_refund)

@@ -5,11 +5,14 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.hznik.budget.domain.usecase.DeletionEvent
+import ru.hznik.budget.domain.usecase.ObserveOnboardingDone
 import ru.hznik.budget.domain.usecase.RestoreDeletedOperation
 import ru.hznik.budget.domain.usecase.UndoDeletionBuffer
 import javax.inject.Inject
@@ -23,7 +26,11 @@ import javax.inject.Inject
 class AppViewModel @Inject constructor(
     private val buffer: UndoDeletionBuffer,
     private val restore: RestoreDeletedOperation,
+    observeOnboardingDone: ObserveOnboardingDone,
 ) : ViewModel() {
+    /** Пройден ли онбординг; `null`, пока неизвестно — тогда виден только фон окна (design.md, решение 6). */
+    val onboardingDone: StateFlow<Boolean?> = observeOnboardingDone().stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     private val _pendingUndo = MutableStateFlow<DeletionEvent?>(null)
 
     /** Удаление, которое ещё можно отменить; `null` — сообщение «Операция удалена» не показывается. */

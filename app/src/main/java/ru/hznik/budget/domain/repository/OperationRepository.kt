@@ -18,6 +18,12 @@ interface OperationRepository {
     /** Операции по фильтру, новые сверху. */
     fun observe(filter: OperationFilter): Flow<List<OperationItem>>
 
+    /** Операции начиная с дня [from] включительно — для расчёта периода. */
+    fun observeFrom(from: LocalDate): Flow<List<Operation>>
+
+    /** Последние [limit] операций, новые сверху. */
+    fun observeRecent(limit: Int): Flow<List<OperationItem>>
+
     /** Число операций по категориям начиная с [since] включительно. */
     fun observeCategoryUsage(since: LocalDate): Flow<Map<Long, Int>>
 

@@ -92,4 +92,89 @@
     <string name="category_color_teal">Бирюзовый</string>
     <string name="category_color_amber">Янтарный</string>
     <string name="category_color_gray">Серый</string>
+    <!-- Главная -->
+    <string name="home_can_spend">Можно потратить сегодня</string>
+    <string name="home_overspent">Перерасход сегодня</string>
+    <string name="home_of_daily_limit">из %1$s дневного лимита</string>
+    <string name="home_tomorrow_limit">Завтра дневной лимит станет %1$s</string>
+    <string name="home_tomorrow_new_period">Завтра день дохода — начнётся новый период</string>
+    <string name="home_spent_today">Сегодня потрачено %1$s</string>
+    <string name="home_days_left">%1$d %2$s до дохода</string>
+    <string name="home_period_until">Период до %1$s</string>
+    <string name="home_period_of">из %1$s</string>
+    <string name="home_spent">Потрачено</string>
+    <string name="home_reserve">Резерв</string>
+    <string name="home_left">Осталось</string>
+    <string name="home_next_payment">Ближайший платёж: %1$s, %2$s</string>
+    <string name="home_recent">Последние операции</string>
+    <string name="home_all">Все</string>
+    <string name="home_no_operations">Операций пока нет. Нажмите «+», чтобы добавить первую.</string>
+    <string name="home_income_day">Наступил день дохода</string>
+    <string name="home_income_day_text">Подтвердите сумму и дату следующего дохода</string>
+    <string name="home_start_new_period">Начать новый период</string>
+    <string name="home_daily_progress">Потрачено %1$d%% дневного лимита</string>
+    <string name="home_limit_exceeded">Дневной лимит превышен</string>
+
+    <!-- Онбординг -->
+    <string name="onboarding_step">Шаг %1$d из %2$d</string>
+    <string name="onboarding_next">Дальше</string>
+    <string name="onboarding_skip">Пропустить</string>
+    <string name="onboarding_done">Готово</string>
+    <string name="onboarding_intro_title">Сколько можно потратить сегодня</string>
+    <string name="onboarding_intro_text">BudgetPlanner делит деньги до следующего дохода на дни и каждый день показывает одну цифру: сколько можно потратить, чтобы хватило до стипендии или зарплаты.</string>
+    <string name="onboarding_intro_point_bank">Не подключается к банку и не просит пароли</string>
+    <string name="onboarding_intro_point_phone">Все данные хранятся только на телефоне</string>
+    <string name="onboarding_intro_point_input">Траты можно записывать вручную, автоимпорт из уведомлений банка появится позже</string>
+    <string name="onboarding_money_title">Сколько у вас денег на период</string>
+    <string name="onboarding_income_title">Когда следующий доход</string>
+    <string name="onboarding_income_regular">Каждый месяц</string>
+    <string name="onboarding_income_irregular">Нерегулярно</string>
+    <string name="onboarding_income_day">%1$d числа</string>
+    <string name="onboarding_income_day_pick">Выберите число</string>
+    <string name="onboarding_income_date_pick">Выберите дату</string>
+    <string name="onboarding_income_next">Следующий доход: %1$s</string>
+    <string name="onboarding_payments_title">Обязательные платежи</string>
+    <string name="onboarding_payments_text">Аренда, связь, подписки до даты дохода. Деньги на них отложатся заранее и не попадут в «можно сегодня».</string>
+    <string name="onboarding_day_dialog">Число месяца</string>
+
+    <!-- Период и платежи -->
+    <string name="period_title">Период и платежи</string>
+    <string name="period_dates">С %1$s по %2$s</string>
+    <string name="period_income_date">Дата дохода</string>
+    <string name="period_start_amount">Стартовая сумма</string>
+    <string name="period_budget">Бюджет периода</string>
+    <string name="period_change">Изменить</string>
+    <string name="period_payments">Обязательные платежи</string>
+    <string name="period_no_payments">Платежей нет. Добавьте аренду, связь или подписки, чтобы деньги на них откладывались заранее.</string>
+    <string name="period_add_payment">Добавить платёж</string>
+    <string name="period_mark_paid">Оплачено</string>
+    <string name="period_paid">Оплачен</string>
+    <string name="period_monthly">ежемесячно</string>
+    <string name="period_once">разово</string>
+    <string name="period_amount_dialog">Стартовая сумма периода</string>
+
+    <!-- Обязательный платёж -->
+    <string name="payment_new_title">Новый платёж</string>
+    <string name="payment_edit_title">Платёж</string>
+    <string name="payment_name">Название</string>
+    <string name="payment_name_hint">Например, «Интернет»</string>
+    <string name="payment_amount">Сумма, ₽</string>
+    <string name="payment_date">Дата</string>
+    <string name="payment_repeat_once">Разово</string>
+    <string name="payment_repeat_monthly">Каждый месяц</string>
+    <string name="payment_category">Категория</string>
+    <string name="payment_delete">Удалить платёж</string>
+    <string name="payment_error_name">Введите название до 40 символов</string>
+    <string name="payment_error_amount">Введите сумму больше нуля</string>
+    <string name="payment_add">Добавить</string>
+
+    <!-- Новый период -->
+    <string name="new_period_title">Новый период</string>
+    <string name="new_period_amount_title">Сколько у вас денег на начало дня</string>
+    <string name="new_period_amount_hint">Подставлен остаток прошлого периода по расчёту приложения. Если в банке другая сумма, исправьте.</string>
+    <string name="new_period_income_today">Доход %1$s, записанный сегодня, добавится к этой сумме сам — не включайте его.</string>
+    <string name="new_period_budget">Бюджет нового периода: %1$s</string>
+    <string name="new_period_start">Начать период</string>
+    <string name="settings_period">Период и платежи</string>
+    <string name="settings_period_hint">Дата дохода, стартовая сумма, обязательные платежи</string>
 </resources>

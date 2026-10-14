@@ -167,7 +167,7 @@ class DatabaseTest {
     fun categoryWithOperationsCannotBeDeleted() = runTest {
         val products = categoryNamed("Продукты")
         add(products, 1)
-        assertTrue(categories.hasOperations(products.id))
+        assertTrue(categories.isUsed(products.id))
         categories.delete(products.id)
     }
 

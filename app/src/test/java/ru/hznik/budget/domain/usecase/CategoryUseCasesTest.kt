@@ -11,9 +11,12 @@ import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
+import ru.hznik.budget.domain.model.PaymentRepeat
+import ru.hznik.budget.domain.model.PlannedPayment
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
 import ru.hznik.budget.testing.FakeOperationRepository
+import ru.hznik.budget.testing.FakePlannedPaymentRepository
 import ru.hznik.budget.testing.PRODUCTS
 import ru.hznik.budget.testing.SALARY
 import ru.hznik.budget.testing.TEST_CLOCK
@@ -26,6 +29,7 @@ import ru.hznik.budget.testing.category
 class CategoryUseCasesTest {
     private val categories = FakeCategoryRepository()
     private val operations = FakeOperationRepository(categories)
+    private val payments = FakePlannedPaymentRepository(operations)
 
     private suspend fun spend(categoryId: Long, daysAgo: Long, times: Int = 1) = repeat(times) {
         operations.insert(Operation(type = OperationType.EXPENSE, amount = Money(100), categoryId = categoryId,
@@ -100,6 +104,13 @@ class CategoryUseCasesTest {
         assertEquals(CategoryDeleteResult.MUST_HIDE, delete(ownUsed))
         assertEquals(CategoryDeleteResult.DELETED, delete(ownEmpty))
         assertEquals(null, categories.get(ownEmpty))
+    }
+
+    @Test
+    fun `category of a planned payment cannot be deleted`() = runTest {
+        val own = categories.insert(category(0, "Курсы"))
+        payments.save(PlannedPayment(name = "Английский", amount = Money(300_000), dueDate = TODAY, repeat = PaymentRepeat.MONTHLY, categoryId = own))
+        assertEquals(CategoryDeleteResult.MUST_HIDE, DeleteCategory(categories)(own))
     }
 
     @Test

@@ -1,30 +1,62 @@
 package ru.hznik.budget.ui
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.SemanticsNodeInteractionCollection
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
+import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import dagger.hilt.android.testing.HiltAndroidRule
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import ru.hznik.budget.MainActivity
 import ru.hznik.budget.TEST_TODAY
 import ru.hznik.budget.TEST_ZONE
+import ru.hznik.budget.TestStart
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.CategoryKind
 import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
+import ru.hznik.budget.domain.model.PaymentRepeat
+import ru.hznik.budget.domain.model.PlannedPayment
 import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.OperationRepository
+import ru.hznik.budget.domain.repository.PlannedPaymentRepository
+import ru.hznik.budget.ui.home.HOME_HERO_TAG
 import java.time.LocalDate
 import javax.inject.Inject
+
+/**
+ * День в календаре Material: его подпись — полная дата на языке телефона
+ * («Monday, October 12, 2026» или «понедельник, 12 октября 2026 г.»), поэтому ищем год и число.
+ */
+fun calendarDay(day: Int) = SemanticsMatcher("день $day, 2026") { node ->
+    node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { text ->
+        val value = text.text
+        "2026" in value && Regex("""(^|\D)$day(\D|$)""").containsMatchIn(value.replace("2026", ""))
+    }
+}
+
+/**
+ * Ждёт первый экран: пока не известно, пройден ли онбординг, виден только фон окна,
+ * а загрузку из базы Compose-тест сам не ждёт (на медленном API 29 кнопок ещё нет).
+ */
+fun AndroidComposeTestRule<*, *>.waitForStartScreen() = waitUntil(10_000) {
+    onAllNodes(hasTestTag(BOTTOM_BAR_TAG) or hasText("Шаг 1 из 3")).fetchSemanticsNodes().isNotEmpty()
+}
 
 /** Общее для сквозных UI-тестов: Hilt с базой в памяти, фиксированные часы и шаги по экранам. */
 abstract class FlowTestBase {
@@ -38,8 +70,16 @@ abstract class FlowTestBase {
 
     @Inject lateinit var categories: CategoryRepository
 
+    @Inject lateinit var payments: PlannedPaymentRepository
+
     @Before
-    fun inject() = hiltRule.inject()
+    fun inject() {
+        hiltRule.inject()
+        rule.waitForStartScreen()
+    }
+
+    @After
+    fun resetStart() = TestStart.reset()
 
     // --- Данные напрямую в базу ---
 
@@ -66,6 +106,12 @@ abstract class FlowTestBase {
             ),
         )
     }
+
+    fun addPayment(name: String, rubles: Long, due: LocalDate, repeat: PaymentRepeat = PaymentRepeat.ONCE): Long = runBlocking {
+        payments.save(PlannedPayment(name = name, amount = Money(rubles * 100), dueDate = due, repeat = repeat, categoryId = category("Другое").id))
+    }
+
+    fun allPayments(): List<PlannedPayment> = runBlocking { payments.observeAll().first() }
 
     fun allOperations(): List<Operation> = runBlocking { operations.observe(ru.hznik.budget.domain.repository.OperationFilter()).first().map { it.operation } }
 
@@ -96,5 +142,16 @@ abstract class FlowTestBase {
 
     fun waitForRows(count: Int, containing: String = "рубл") = rule.waitUntil(5_000) { rowCount(containing) == count }
 
-    fun waitForText(text: String) = rule.waitUntil(5_000) { rule.onAllNodes(hasText(text)).fetchSemanticsNodes().isNotEmpty() }
+    fun waitForText(text: String, substring: Boolean = false, timeoutMs: Long = 5_000) =
+        rule.waitUntil(timeoutMs) { rule.onAllNodes(hasText(text, substring = substring)).fetchSemanticsNodes().isNotEmpty() }
+
+    /** Главная карточка: всё её содержимое собрано в одно описание для TalkBack. */
+    fun hero(): SemanticsNodeInteraction = rule.onNodeWithTag(HOME_HERO_TAG)
+
+    /** Ждёт, пока главная карточка скажет [text]: расчёт приходит из базы не сразу. */
+    fun waitForHero(text: String) = rule.waitUntil(5_000) {
+        rule.onAllNodes(hasTestTag(HOME_HERO_TAG) and hasContentDescription(text, substring = true)).fetchSemanticsNodes().isNotEmpty()
+    }
+
+    fun openPeriodFromHome() = rule.onNode(hasText("Период до", substring = true) and hasClickAction()).performClick()
 }

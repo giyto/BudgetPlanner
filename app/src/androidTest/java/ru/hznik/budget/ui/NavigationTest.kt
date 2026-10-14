@@ -20,6 +20,7 @@ import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,6 +35,9 @@ class NavigationTest {
 
     @get:Rule(order = 1)
     val rule = createAndroidComposeRule<MainActivity>()
+
+    @Before
+    fun waitForStart() = rule.waitForStartScreen()
 
     private val tabs = listOf("Главная", "Операции", "Статистика", "Помощник")
     private val titles = mapOf("Главная" to "Бюджет", "Операции" to "Операции", "Статистика" to "Статистика", "Помощник" to "Помощник")

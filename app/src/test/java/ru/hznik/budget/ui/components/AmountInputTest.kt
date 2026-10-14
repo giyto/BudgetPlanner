@@ -1,4 +1,4 @@
-package ru.hznik.budget.ui.operations
+package ru.hznik.budget.ui.components
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

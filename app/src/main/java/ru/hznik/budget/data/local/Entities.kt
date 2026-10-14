@@ -70,3 +70,40 @@ data class CategoryUsage(
     @ColumnInfo(name = "category_id") val categoryId: Long,
     val count: Int,
 )
+
+/** Период бюджета. Текущий — единственный с `end_date IS NULL`; это обеспечивает PeriodRepository. */
+@Entity(tableName = "periods", indices = [Index("end_date")])
+data class PeriodEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** Даты — номер дня от эпохи, как local_date у операций. */
+    @ColumnInfo(name = "start_date") val startDate: Long,
+    @ColumnInfo(name = "next_income_date") val nextIncomeDate: Long,
+    @ColumnInfo(name = "end_date") val endDate: Long?,
+    @ColumnInfo(name = "start_amount_kopecks") val startAmountKopecks: Long,
+)
+
+@Entity(
+    tableName = "planned_payments",
+    foreignKeys = [
+        ForeignKey(entity = CategoryEntity::class, parentColumns = ["id"], childColumns = ["category_id"], onDelete = ForeignKey.RESTRICT),
+        // Удаление траты оплаты возвращает платёж в неоплаченные (spec planned-payments).
+        ForeignKey(entity = OperationEntity::class, parentColumns = ["id"], childColumns = ["paid_operation_id"], onDelete = ForeignKey.SET_NULL),
+    ],
+    indices = [Index("category_id"), Index("paid_operation_id"), Index("due_date")],
+)
+data class PlannedPaymentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    @ColumnInfo(name = "amount_kopecks") val amountKopecks: Long,
+    @ColumnInfo(name = "due_date") val dueDate: Long,
+    val repeat: String,
+    @ColumnInfo(name = "repeat_day") val repeatDay: Int,
+    @ColumnInfo(name = "category_id") val categoryId: Long,
+    @ColumnInfo(name = "paid_operation_id") val paidOperationId: Long?,
+)
+
+/** Платёж вместе с днём траты оплаты (если оплачен). */
+data class PlannedPaymentWithPaidDate(
+    @Embedded val payment: PlannedPaymentEntity,
+    @ColumnInfo(name = "paid_local_date") val paidLocalDate: Long?,
+)

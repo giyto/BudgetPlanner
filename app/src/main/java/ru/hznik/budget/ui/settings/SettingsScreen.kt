@@ -2,6 +2,7 @@ package ru.hznik.budget.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,26 +27,33 @@ import ru.hznik.budget.ui.theme.BudgetTheme
 
 /** Настройки. Разделы добавляются по мере этапов (раздел 7.9 ТЗ). */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onOpenCategories: () -> Unit, modifier: Modifier = Modifier) {
+fun SettingsScreen(onBack: () -> Unit, onOpenCategories: () -> Unit, onOpenPeriod: () -> Unit, modifier: Modifier = Modifier) {
     val colors = BudgetTheme.colors
-    Column(modifier = modifier.fillMaxSize().background(colors.background)) {
+    Column(modifier = modifier.fillMaxSize().background(colors.background), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         NavigationHeader(stringResource(R.string.settings_title), R.drawable.ic_back, stringResource(R.string.action_back), onBack)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(colors.card)
-                .clickable(onClick = onOpenCategories)
-                .heightIn(min = 64.dp)
-                .padding(horizontal = 18.dp, vertical = 12.dp),
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.settings_categories), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
-                Text(stringResource(R.string.settings_categories_hint), fontSize = 13.sp, color = colors.muted)
-            }
-            Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = colors.muted)
+        SettingsItem(stringResource(R.string.settings_period), stringResource(R.string.settings_period_hint), onOpenPeriod)
+        SettingsItem(stringResource(R.string.settings_categories), stringResource(R.string.settings_categories_hint), onOpenCategories)
+    }
+}
+
+@Composable
+private fun SettingsItem(title: String, hint: String, onClick: () -> Unit) {
+    val colors = BudgetTheme.colors
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(colors.card)
+            .clickable(onClick = onClick)
+            .heightIn(min = 64.dp)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
+            Text(hint, fontSize = 13.sp, color = colors.muted)
         }
+        Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = colors.muted)
     }
 }

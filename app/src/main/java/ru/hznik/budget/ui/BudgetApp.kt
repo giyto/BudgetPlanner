@@ -1,5 +1,8 @@
 package ru.hznik.budget.ui
 
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -43,7 +46,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import ru.hznik.budget.ui.assistant.AssistantScreen
-import ru.hznik.budget.ui.home.HomeScreen
+import ru.hznik.budget.ui.home.HomeRoute
+import ru.hznik.budget.ui.onboarding.OnboardingRoute
+import ru.hznik.budget.ui.period.NewPeriodRoute
+import ru.hznik.budget.ui.period.PaymentEditorRoute
+import ru.hznik.budget.ui.period.PeriodRoute
 import ru.hznik.budget.ui.categories.CategoriesRoute
 import ru.hznik.budget.ui.categories.CategoryEditorRoute
 import ru.hznik.budget.ui.navigation.Assistant
@@ -53,7 +60,11 @@ import ru.hznik.budget.ui.navigation.CategoryEditor
 import ru.hznik.budget.ui.navigation.Home
 import ru.hznik.budget.ui.navigation.HomeGraph
 import ru.hznik.budget.ui.navigation.Operations
+import ru.hznik.budget.ui.navigation.NewPeriod
+import ru.hznik.budget.ui.navigation.Onboarding
 import ru.hznik.budget.ui.navigation.OperationEditor
+import ru.hznik.budget.ui.navigation.Period
+import ru.hznik.budget.ui.navigation.PlannedPaymentEditor
 import ru.hznik.budget.ui.navigation.OperationsGraph
 import ru.hznik.budget.ui.navigation.Settings
 import ru.hznik.budget.ui.navigation.Stats
@@ -75,13 +86,22 @@ fun BudgetApp(
     val snackbarHostState = remember { SnackbarHostState() }
     UndoDeletionSnackbar(appViewModel, snackbarHostState)
 
+    // Пока неизвестно, пройден ли онбординг, виден только фон окна: вернувшийся пользователь не увидит мигания онбординга.
+    val onboardingDone by appViewModel.onboardingDone.collectAsStateWithLifecycle()
+    val done = onboardingDone ?: run {
+        Box(Modifier.fillMaxSize().background(BudgetTheme.colors.background))
+        return
+    }
+    // Стартовый экран выбирается один раз: дальше переходы делает сама навигация.
+    val startDestination: Any = remember { if (done) HomeGraph else Onboarding }
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     // Нижняя панель видна только внутри разделов, на «Новой операции» и «Настройках» её нет.
     val resolvedTab = TopLevelDestination.entries.firstOrNull { currentDestination.isIn(it) }
     // В первом кадре NavHost ещё не выбрал экран. Без запомненной вкладки панель появлялась бы
     // кадром позже и сдвигала содержимое, поэтому до этого момента показываем последнее известное состояние.
-    var lastKnownTab by rememberSaveable { mutableStateOf<TopLevelDestination?>(TopLevelDestination.HOME) }
+    var lastKnownTab by rememberSaveable { mutableStateOf(if (startDestination == Onboarding) null else TopLevelDestination.HOME) }
     if (currentDestination != null) {
         SideEffect { lastKnownTab = resolvedTab }
     }
@@ -101,7 +121,7 @@ fun BudgetApp(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = HomeGraph,
+            startDestination = startDestination,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
@@ -110,9 +130,17 @@ fun BudgetApp(
             // без защиты двойное нажатие открывало бы экран дважды или снимало со стека лишнее.
             navigation<HomeGraph>(startDestination = Home) {
                 composable<Home> {
-                    HomeScreen(
+                    val lifecycle = LocalLifecycleOwner.current.lifecycle
+                    HomeRoute(
                         onAddOperation = dropUnlessResumed { navController.navigate(OperationEditor()) },
                         onOpenSettings = dropUnlessResumed { navController.navigate(Settings) },
+                        onOpenPeriod = dropUnlessResumed { navController.navigate(Period) },
+                        onStartNewPeriod = dropUnlessResumed { navController.navigate(NewPeriod) },
+                        onOpenOperation = { id ->
+                            if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) navController.navigate(OperationEditor(id))
+                        },
+                        // «Все» открывает раздел так же, как его вкладка.
+                        onAllOperations = dropUnlessResumed { navController.navigateToTab(TopLevelDestination.OPERATIONS, reselected = false) },
                     )
                 }
             }
@@ -133,11 +161,34 @@ fun BudgetApp(
             navigation<AssistantGraph>(startDestination = Assistant) {
                 composable<Assistant> { AssistantScreen() }
             }
+            composable<Onboarding> {
+                val activity = LocalActivity.current
+                OnboardingRoute(
+                    onFinished = {
+                        navController.navigate(HomeGraph) { popUpTo<Onboarding> { inclusive = true } }
+                    },
+                    onExit = { activity?.finish() },
+                )
+            }
+            composable<Period> {
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                PeriodRoute(
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    onStartNewPeriod = dropUnlessResumed { navController.navigate(NewPeriod) },
+                    onAddPayment = dropUnlessResumed { navController.navigate(PlannedPaymentEditor()) },
+                    onEditPayment = { id ->
+                        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) navController.navigate(PlannedPaymentEditor(id))
+                    },
+                )
+            }
+            composable<NewPeriod> { NewPeriodRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
+            composable<PlannedPaymentEditor> { PaymentEditorRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
             composable<OperationEditor> { OperationEditorRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
             composable<Settings> {
                 SettingsScreen(
                     onBack = dropUnlessResumed { navController.popBackStack() },
                     onOpenCategories = dropUnlessResumed { navController.navigate(Categories) },
+                    onOpenPeriod = dropUnlessResumed { navController.navigate(Period) },
                 )
             }
             composable<Categories> {
