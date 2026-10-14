@@ -14,13 +14,18 @@ import ru.hznik.budget.domain.model.CategoryKind
 import ru.hznik.budget.domain.model.DefaultCategories
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationItem
+import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.IncomeScheduleRepository
 import ru.hznik.budget.domain.repository.PeriodRepository
 import ru.hznik.budget.domain.repository.PlannedPaymentRepository
 import ru.hznik.budget.domain.repository.OperationFilter
 import ru.hznik.budget.domain.repository.OperationRepository
+import ru.hznik.budget.domain.repository.StatisticsRepository
 import ru.hznik.budget.domain.search.normalizeForSearch
+import ru.hznik.budget.domain.stats.DateRange
+import ru.hznik.budget.domain.stats.MerchantSpending
+import ru.hznik.budget.domain.stats.RangeTotals
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -95,6 +100,7 @@ class FakeOperationRepository(val categories: FakeCategoryRepository) : Operatio
             ops.mapNotNull { op -> byId[op.categoryId]?.let { OperationItem(op, it) } }
                 .filter { filter.source == null || it.operation.source == filter.source }
                 .filter { filter.categoryId == null || it.operation.categoryId == filter.categoryId }
+                .filter { filter.dateRange == null || it.operation.localDate in filter.dateRange }
                 .filter { item ->
                     val q = filter.query
                     q.isEmpty ||
@@ -107,6 +113,9 @@ class FakeOperationRepository(val categories: FakeCategoryRepository) : Operatio
 
     override fun observeFrom(from: LocalDate): Flow<List<Operation>> =
         state.map { ops -> ops.filter { !it.localDate.isBefore(from) }.sortedBy { it.occurredAt.toInstant() } }
+
+    override fun observeBetween(from: LocalDate, until: LocalDate): Flow<List<Operation>> =
+        state.map { ops -> ops.filter { !it.localDate.isBefore(from) && it.localDate.isBefore(until) }.sortedBy { it.occurredAt.toInstant() } }
 
     override fun observeRecent(limit: Int): Flow<List<OperationItem>> = observe(OperationFilter()).map { it.take(limit) }
 
@@ -135,6 +144,9 @@ class FakePeriodRepository(private val payments: FakePlannedPaymentRepository? =
     override fun observeCurrent(): Flow<Period?> = state.map { list -> list.lastOrNull { it.endDate == null } }
 
     override suspend fun getCurrent(): Period? = state.value.lastOrNull { it.endDate == null }
+
+    override fun observeFinished(): Flow<List<Period>> =
+        state.map { list -> list.filter { it.endDate != null && it.endDate.isAfter(it.startDate) }.sortedByDescending { it.startDate } }
 
     override suspend fun startNew(start: LocalDate, nextIncome: LocalDate, startAmountKopecks: Long, payments: List<PlannedPayment>): Long {
         if (payments.isNotEmpty()) requireNotNull(this.payments) { "FakePeriodRepository создан без платежей" }
@@ -201,5 +213,36 @@ class FakeIncomeScheduleRepository(initial: IncomeSchedule? = null) : IncomeSche
 
     override suspend fun set(schedule: IncomeSchedule) {
         state.value = schedule
+    }
+}
+
+/** Агрегаты по операциям фейка — та же семантика, что у запросов Room: трата и перевод минус возврат, по `local_date`. */
+class FakeStatisticsRepository(private val operations: FakeOperationRepository) : StatisticsRepository {
+    private fun inRange(range: DateRange) = operations.state.map { ops -> ops.filter { it.localDate in range && it.type != OperationType.INCOME } }
+
+    private fun Operation.spending(): Long = when (type) {
+        OperationType.EXPENSE, OperationType.TRANSFER -> amount.kopecks
+        OperationType.REFUND -> -amount.kopecks
+        OperationType.INCOME -> 0
+    }
+
+    override fun spendingByCategory(range: DateRange): Flow<Map<Long, Long>> =
+        inRange(range).map { ops -> ops.groupBy { it.categoryId }.mapValues { (_, list) -> list.sumOf { it.spending() } } }
+
+    override fun topMerchants(range: DateRange, limit: Int): Flow<List<MerchantSpending>> = inRange(range).map { ops ->
+        ops.filter { !it.merchant.isNullOrEmpty() }.groupBy { it.merchant!! }
+            .map { (name, list) -> MerchantSpending(name, list.size, list.sumOf { it.spending() }) }
+            .filter { it.kopecks > 0 }.sortedByDescending { it.kopecks }.take(limit)
+    }
+
+    override fun spendingByDay(range: DateRange): Flow<Map<LocalDate, Long>> =
+        inRange(range).map { ops -> ops.groupBy { it.localDate }.mapValues { (_, list) -> list.sumOf { it.spending() } } }
+
+    override fun totals(range: DateRange): Flow<RangeTotals> = operations.state.map { ops ->
+        val inside = ops.filter { it.localDate in range }
+        RangeTotals(
+            incomeKopecks = inside.filter { it.type == OperationType.INCOME }.sumOf { it.amount.kopecks },
+            spentKopecks = inside.sumOf { it.spending() },
+        )
     }
 }

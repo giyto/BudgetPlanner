@@ -17,6 +17,7 @@ import ru.hznik.budget.data.local.DatabaseModule
 import ru.hznik.budget.data.local.OperationDao
 import ru.hznik.budget.data.local.PeriodDao
 import ru.hznik.budget.data.local.PlannedPaymentDao
+import ru.hznik.budget.data.local.StatisticsDao
 import ru.hznik.budget.data.settings.SettingsBindings
 import ru.hznik.budget.data.time.TimeModule
 import ru.hznik.budget.domain.model.IncomeSchedule
@@ -92,6 +93,9 @@ object TestDatabaseModule {
 
     @Provides
     fun providePlannedPaymentDao(db: BudgetDatabase): PlannedPaymentDao = db.plannedPaymentDao()
+
+    @Provides
+    fun provideStatisticsDao(db: BudgetDatabase): StatisticsDao = db.statisticsDao()
 }
 
 /** «Сегодня» в UI-тестах — [TestStart.now] по Москве, по умолчанию 13 октября 2026, 12:00 (вторник). */

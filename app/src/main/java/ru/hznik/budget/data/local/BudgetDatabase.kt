@@ -18,6 +18,8 @@ abstract class BudgetDatabase : RoomDatabase() {
 
     abstract fun plannedPaymentDao(): PlannedPaymentDao
 
+    abstract fun statisticsDao(): StatisticsDao
+
     /** Заполняет категории по умолчанию в той же транзакции, что и создание схемы. */
     object SeedCallback : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {

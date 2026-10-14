@@ -52,6 +52,7 @@ interface OperationDao {
         JOIN categories c ON c.id = o.category_id
         WHERE (:source IS NULL OR o.source = :source)
             AND (:categoryId IS NULL OR o.category_id = :categoryId)
+            AND (:fromEpochDay IS NULL OR o.local_date BETWEEN :fromEpochDay AND :toEpochDay)
             AND (
                 :query = ''
                 OR o.search_text LIKE '%' || :query || '%' ESCAPE '\'
@@ -61,7 +62,14 @@ interface OperationDao {
         ORDER BY o.occurred_at DESC, o.id DESC
         """,
     )
-    fun observe(query: String, rubles: Long?, source: String?, categoryId: Long?): Flow<List<OperationWithCategory>>
+    fun observe(
+        query: String,
+        rubles: Long?,
+        source: String?,
+        categoryId: Long?,
+        fromEpochDay: Long?,
+        toEpochDay: Long?,
+    ): Flow<List<OperationWithCategory>>
 
     @Query("SELECT category_id, COUNT(*) AS count FROM operations WHERE local_date >= :sinceEpochDay GROUP BY category_id")
     fun observeCategoryUsage(sinceEpochDay: Long): Flow<List<CategoryUsage>>
@@ -69,6 +77,9 @@ interface OperationDao {
     /** Операции начиная с дня [fromEpochDay] — для расчёта периода. */
     @Query("SELECT * FROM operations WHERE local_date >= :fromEpochDay ORDER BY occurred_at")
     fun observeFrom(fromEpochDay: Long): Flow<List<OperationEntity>>
+
+    @Query("SELECT * FROM operations WHERE local_date >= :fromEpochDay AND local_date < :toEpochDay ORDER BY occurred_at")
+    fun observeBetween(fromEpochDay: Long, toEpochDay: Long): Flow<List<OperationEntity>>
 
     @Query("SELECT * FROM operations WHERE local_date >= :fromEpochDay AND local_date < :toEpochDay")
     suspend fun getBetween(fromEpochDay: Long, toEpochDay: Long): List<OperationEntity>
@@ -110,6 +121,13 @@ interface PeriodDao {
 
     @Query("SELECT * FROM periods ORDER BY start_date")
     suspend fun getAll(): List<PeriodEntity>
+
+    /** Завершённые периоды, новые сверху; периоды нулевой длины (новый начат в тот же день) не показываются. */
+    @Query("SELECT * FROM periods WHERE end_date IS NOT NULL AND end_date > start_date ORDER BY start_date DESC")
+    fun observeFinished(): Flow<List<PeriodEntity>>
+
+    @Query("DELETE FROM periods WHERE id = :id")
+    suspend fun delete(id: Long)
 
     /** Закрывает текущий период: он заканчивается в день начала следующего. */
     @Query("UPDATE periods SET end_date = :endEpochDay WHERE end_date IS NULL")

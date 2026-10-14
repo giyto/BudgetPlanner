@@ -27,12 +27,19 @@ import ru.hznik.budget.ui.theme.BudgetTheme
 
 /** Настройки. Разделы добавляются по мере этапов (раздел 7.9 ТЗ). */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onOpenCategories: () -> Unit, onOpenPeriod: () -> Unit, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onOpenCategories: () -> Unit,
+    onOpenPeriod: () -> Unit,
+    modifier: Modifier = Modifier,
+    extra: @Composable () -> Unit = {},
+) {
     val colors = BudgetTheme.colors
     Column(modifier = modifier.fillMaxSize().background(colors.background), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         NavigationHeader(stringResource(R.string.settings_title), R.drawable.ic_back, stringResource(R.string.action_back), onBack)
         SettingsItem(stringResource(R.string.settings_period), stringResource(R.string.settings_period_hint), onOpenPeriod)
         SettingsItem(stringResource(R.string.settings_categories), stringResource(R.string.settings_categories_hint), onOpenCategories)
+        extra()
     }
 }
 

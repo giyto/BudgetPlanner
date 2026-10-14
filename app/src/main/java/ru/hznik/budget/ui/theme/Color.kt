@@ -176,3 +176,15 @@ fun BudgetColors.categoryColors(key: String): CategoryColors = when (key) {
     "amber" -> categoryAmber
     else -> categoryOther
 }
+
+/** Цвет доли категории в диаграммах по ключу цвета категории; неизвестный ключ — серый. */
+fun BudgetColors.chartColor(key: String): Color = when (key) {
+    "green" -> chartProducts
+    "orange" -> chartCafe
+    "blue" -> chartTransport
+    "purple" -> chartHealth
+    "pink" -> categoryPink.content
+    "teal" -> categoryTeal.content
+    "amber" -> categoryAmber.content
+    else -> chartOther
+}

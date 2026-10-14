@@ -14,10 +14,12 @@ import ru.hznik.budget.data.repository.RoomCategoryRepository
 import ru.hznik.budget.data.repository.RoomOperationRepository
 import ru.hznik.budget.data.repository.RoomPeriodRepository
 import ru.hznik.budget.data.repository.RoomPlannedPaymentRepository
+import ru.hznik.budget.data.repository.RoomStatisticsRepository
 import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.repository.PeriodRepository
 import ru.hznik.budget.domain.repository.PlannedPaymentRepository
+import ru.hznik.budget.domain.repository.StatisticsRepository
 import javax.inject.Singleton
 
 @Module
@@ -49,6 +51,9 @@ object DatabaseModule {
 
     @Provides
     fun providePlannedPaymentDao(db: BudgetDatabase): PlannedPaymentDao = db.plannedPaymentDao()
+
+    @Provides
+    fun provideStatisticsDao(db: BudgetDatabase): StatisticsDao = db.statisticsDao()
 }
 
 @Module
@@ -65,4 +70,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindPlannedPaymentRepository(impl: RoomPlannedPaymentRepository): PlannedPaymentRepository
+
+    @Binds
+    abstract fun bindStatisticsRepository(impl: RoomStatisticsRepository): StatisticsRepository
 }

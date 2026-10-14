@@ -68,6 +68,7 @@ import ru.hznik.budget.ui.components.ScreenTitle
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.theme.BudgetTheme
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 const val OPERATIONS_LIST_TAG = "operations_list"
@@ -124,7 +125,7 @@ fun OperationsScreen(
                 item(key = "empty") { EmptyState(state.hasFilters, onReset) }
             }
             items(state.groups, key = { it.date.toEpochDay() }) { group ->
-                DayCard(group, state, onOpenOperation)
+                DayCard(group, state.today, onOpenOperation)
             }
         }
         FloatingActionButton(
@@ -254,12 +255,12 @@ private fun BudgetFilterChip(
 }
 
 @Composable
-private fun DayCard(group: DayGroup, state: OperationsUiState, onOpen: (Long) -> Unit) {
+internal fun DayCard(group: DayGroup, today: LocalDate, onOpen: (Long) -> Unit) {
     val colors = BudgetTheme.colors
     Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
             Text(
-                dayTitle(group.date, state.today),
+                dayTitle(group.date, today),
                 style = MaterialTheme.typography.titleSmall,
                 color = colors.sub,
                 modifier = Modifier

@@ -12,6 +12,9 @@ interface PeriodRepository {
 
     suspend fun getCurrent(): Period?
 
+    /** Завершённые периоды, новые сверху. */
+    fun observeFinished(): Flow<List<Period>>
+
     /** Начинает период с [start]: текущий закрывается этой же датой, всё в одной транзакции. */
     suspend fun startNew(start: LocalDate, nextIncome: LocalDate, startAmountKopecks: Long, payments: List<PlannedPayment> = emptyList()): Long
 

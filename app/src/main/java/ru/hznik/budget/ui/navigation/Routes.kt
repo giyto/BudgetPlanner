@@ -35,3 +35,9 @@ import kotlinx.serialization.Serializable
 
 /** Новый обязательный платёж ([paymentId] = null) или изменение существующего. */
 @Serializable data class PlannedPaymentEditor(val paymentId: Long? = null)
+
+/** Статистика завершённого периода поверх разделов. */
+@Serializable data class PeriodStats(val periodId: Long)
+
+/** Операции категории за дни статистики (даты — номера дней от эпохи, включительно), поверх разделов. */
+@Serializable data class CategoryOperations(val categoryId: Long, val fromEpochDay: Long, val toEpochDay: Long)

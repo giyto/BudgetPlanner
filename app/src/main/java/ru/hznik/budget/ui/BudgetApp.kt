@@ -63,7 +63,10 @@ import ru.hznik.budget.ui.navigation.Operations
 import ru.hznik.budget.ui.navigation.NewPeriod
 import ru.hznik.budget.ui.navigation.Onboarding
 import ru.hznik.budget.ui.navigation.OperationEditor
+import ru.hznik.budget.domain.stats.DateRange
+import ru.hznik.budget.ui.navigation.CategoryOperations
 import ru.hznik.budget.ui.navigation.Period
+import ru.hznik.budget.ui.navigation.PeriodStats
 import ru.hznik.budget.ui.navigation.PlannedPaymentEditor
 import ru.hznik.budget.ui.navigation.OperationsGraph
 import ru.hznik.budget.ui.navigation.Settings
@@ -73,7 +76,11 @@ import ru.hznik.budget.ui.navigation.TopLevelDestination
 import ru.hznik.budget.ui.operations.OperationEditorRoute
 import ru.hznik.budget.ui.operations.OperationsRoute
 import ru.hznik.budget.ui.settings.SettingsScreen
-import ru.hznik.budget.ui.stats.StatsScreen
+import ru.hznik.budget.BuildConfig
+import ru.hznik.budget.ui.settings.DemoDataSection
+import ru.hznik.budget.ui.stats.CategoryOperationsRoute
+import ru.hznik.budget.ui.stats.PeriodStatsRoute
+import ru.hznik.budget.ui.stats.StatsRoute
 import ru.hznik.budget.ui.theme.BudgetTheme
 
 const val BOTTOM_BAR_TAG = "bottom_bar"
@@ -156,7 +163,17 @@ fun BudgetApp(
                 }
             }
             navigation<StatsGraph>(startDestination = Stats) {
-                composable<Stats> { StatsScreen() }
+                composable<Stats> {
+                    val lifecycle = LocalLifecycleOwner.current.lifecycle
+                    StatsRoute(
+                        onOpenPeriod = { id ->
+                            if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) navController.navigate(PeriodStats(id))
+                        },
+                        onOpenCategory = { id, range ->
+                            if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) navController.navigate(range.toCategoryOperations(id))
+                        },
+                    )
+                }
             }
             navigation<AssistantGraph>(startDestination = Assistant) {
                 composable<Assistant> { AssistantScreen() }
@@ -181,6 +198,24 @@ fun BudgetApp(
                     },
                 )
             }
+            composable<PeriodStats> {
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                PeriodStatsRoute(
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    onOpenCategory = { id, range ->
+                        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) navController.navigate(range.toCategoryOperations(id))
+                    },
+                )
+            }
+            composable<CategoryOperations> {
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                CategoryOperationsRoute(
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    onOpenOperation = { id ->
+                        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) navController.navigate(OperationEditor(id))
+                    },
+                )
+            }
             composable<NewPeriod> { NewPeriodRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
             composable<PlannedPaymentEditor> { PaymentEditorRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
             composable<OperationEditor> { OperationEditorRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
@@ -189,6 +224,7 @@ fun BudgetApp(
                     onBack = dropUnlessResumed { navController.popBackStack() },
                     onOpenCategories = dropUnlessResumed { navController.navigate(Categories) },
                     onOpenPeriod = dropUnlessResumed { navController.navigate(Period) },
+                    extra = { if (BuildConfig.DEBUG) DemoDataSection() },
                 )
             }
             composable<Categories> {
@@ -267,3 +303,6 @@ private fun NavHostController.navigateToTab(tab: TopLevelDestination, reselected
         restoreState = true
     }
 }
+
+private fun DateRange.toCategoryOperations(categoryId: Long) =
+    CategoryOperations(categoryId, start.toEpochDay(), endInclusive.toEpochDay())

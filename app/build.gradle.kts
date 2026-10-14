@@ -36,6 +36,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // BuildConfig.DEBUG прячет раздел «Для разработки» (демо-данные) из релизной сборки.
+        buildConfig = true
     }
 }
 
@@ -65,6 +67,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.vico.compose.m3)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

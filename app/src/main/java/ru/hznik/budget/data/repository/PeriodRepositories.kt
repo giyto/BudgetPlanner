@@ -31,6 +31,8 @@ class RoomPeriodRepository @Inject constructor(
 
     override suspend fun getCurrent(): Period? = dao.getCurrent()?.toDomain()
 
+    override fun observeFinished(): Flow<List<Period>> = dao.observeFinished().map { rows -> rows.map { it.toDomain() } }
+
     override suspend fun startNew(start: LocalDate, nextIncome: LocalDate, startAmountKopecks: Long, payments: List<PlannedPayment>): Long =
         db.withTransaction {
             // Текущий период заканчивается в день начала нового, поэтому текущий всегда один.

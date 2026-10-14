@@ -29,10 +29,15 @@ class RoomOperationRepository @Inject constructor(
             rubles = filter.query.rubles,
             source = filter.source?.name,
             categoryId = filter.categoryId,
+            fromEpochDay = filter.dateRange?.start?.toEpochDay(),
+            toEpochDay = filter.dateRange?.endInclusive?.toEpochDay(),
         ).map { rows -> rows.map { it.toDomain() } }
 
     override fun observeFrom(from: LocalDate): Flow<List<Operation>> =
         dao.observeFrom(from.toEpochDay()).map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeBetween(from: LocalDate, until: LocalDate): Flow<List<Operation>> =
+        dao.observeBetween(from.toEpochDay(), until.toEpochDay()).map { rows -> rows.map { it.toDomain() } }
 
     override fun observeRecent(limit: Int): Flow<List<OperationItem>> =
         dao.observeRecent(limit).map { rows -> rows.map { it.toDomain() } }
