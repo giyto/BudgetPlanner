@@ -53,6 +53,27 @@ h1{margin:18px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans
 </head>
 <body>
 
+<!-- Онбординг: доступ к уведомлениям (обычный случай) -->
+<div class="screen" id="Onboarding">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="skip">Пропустить</span></div>
+  <div class="prog"><div><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--card2)"></span></div><span class="sub2" style="font-size:13px">Шаг 4 из 5</span></div>
+  <div class="badge"><span><i class="ti ti-bell"></i></span></div>
+  <h1>Траты будут добавляться сами</h1>
+  <p class="p">BudgetPlanner читает уведомления вашего банка и сам записывает покупки. Вводить суммы вручную почти не придётся.</p>
+  <div class="list">
+    <div class="li"><span class="tile"><i class="ti ti-check"></i></span>Читаем только уведомления банковских приложений</div>
+    <div class="li"><span class="tile"><i class="ti ti-check"></i></span>Сохраняем сумму, магазин и дату, а не текст уведомления</div>
+    <div class="li"><span class="tile"><i class="ti ti-check"></i></span>Не видим пароли, коды подтверждения и данные карты</div>
+    <div class="li"><span class="tile"><i class="ti ti-check"></i></span>Ничего не отправляем в интернет</div>
+  </div>
+  <div class="hint" style="margin:12px 24px 0"><i class="ti ti-lock"></i><span>Доступ можно отключить в любой момент в настройках телефона.</span></div>
+  <div class="bottom">
+    <div class="btn" style="background:var(--pri);color:#fff">Разрешить доступ к уведомлениям</div>
+    <div class="hint"><i class="ti ti-info-circle"></i><span>Откроется переключатель BudgetPlanner: включите его и вернитесь назад.</span></div>
+    <div class="btn2">Вводить вручную</div>
+  </div>
+</div>
+
 <!-- Онбординг: установлено файлом, Android 13+ -->
 <div class="screen" id="OnboardingRestricted">
   <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="skip">Пропустить</span></div>
@@ -87,24 +108,6 @@ h1{margin:18px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans
     <div class="hint"><i class="ti ti-info-circle"></i><span>Включите для BudgetPlanner автозапуск, а в батарее выберите «Нет ограничений», затем вернитесь назад.</span></div>
     <div class="btn2">Вводить вручную</div>
   </div>
-</div>
-
-<!-- Настройки → Автоимпорт -->
-<div class="screen" id="SettingsAutoImport">
-  <div class="top" style="justify-content:flex-start;gap:4px"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Настройки</span></div>
-  <div class="group">Автоимпорт</div>
-  <div class="card" style="padding:6px 18px 12px">
-    <div class="row" style="min-height:64px"><span style="width:10px;height:10px;border-radius:5px;background:var(--warn);flex:none"></span><div><div class="t1">Нет доступа к уведомлениям</div><div class="t2">Без доступа операции нужно вводить вручную</div></div></div>
-    <div class="btn" style="background:var(--pri);color:#fff;min-height:52px;font-size:16px">Разрешить доступ к уведомлениям</div>
-    <div class="t2" style="margin-top:8px;line-height:1.4">Откроется переключатель BudgetPlanner: включите его и вернитесь назад.</div>
-    <div style="height:1px;background:var(--line);margin:12px 0 8px"></div>
-    <div class="t2">Поддерживаемые банки</div>
-    <div class="row" style="justify-content:space-between;min-height:44px;font-size:15px"><span>Сбер</span><span style="color:var(--pos);font-size:13px">установлен</span></div>
-    <div class="row" style="justify-content:space-between;min-height:44px;font-size:15px"><span>Т-Банк</span><span style="color:var(--muted);font-size:13px">не установлен</span></div>
-    <div class="row" style="justify-content:space-between;min-height:44px;font-size:15px"><span>Альфа-Банк</span><span style="color:var(--pos);font-size:13px">установлен</span></div>
-  </div>
-  <div class="group">Защита входа</div>
-  <div class="card dim" style="height:64px;box-sizing:border-box"></div>
 </div>
 
 <!-- Главная: предложение нового периода и «Автоимпорт остановлен» -->

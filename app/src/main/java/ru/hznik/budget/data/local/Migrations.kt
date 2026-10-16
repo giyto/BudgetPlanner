@@ -87,4 +87,17 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+/** 5 → 6: правила категорий «магазин → категория» (этап add-auto-categorization). SQL совпадает с app/schemas/.../6.json. */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `category_rules` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `merchant_key` TEXT NOT NULL, " +
+                "`category_kind` TEXT NOT NULL, `category_id` INTEGER NOT NULL, `merchant_display` TEXT NOT NULL, `updated_at` INTEGER NOT NULL, " +
+                "FOREIGN KEY(`category_id`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_category_rules_merchant_key_category_kind` ON `category_rules` (`merchant_key`, `category_kind`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_category_rules_category_id` ON `category_rules` (`category_id`)")
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)

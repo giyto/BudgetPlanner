@@ -154,21 +154,6 @@ h1{margin:18px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans
   <div class="bottom"><div class="btn" style="background:var(--pri);color:#fff">Сохранить</div></div>
 </div>
 
-<!-- Настройки: автоматическая сверка -->
-<div class="screen" id="SettingsReconcile">
-  <div class="top" style="justify-content:flex-start;gap:4px"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Настройки</span></div>
-  <div class="group">Автоимпорт</div>
-  <div class="card dim" style="height:64px;box-sizing:border-box"></div>
-  <div class="group">Сверка с банком</div>
-  <div class="card" style="padding:6px 18px 14px">
-    <div class="row" style="min-height:72px"><div style="flex:1"><div class="t1">Автоматическая сверка</div><div class="t2" style="line-height:1.4;margin-top:2px">Сравнивать остаток из уведомлений банка с расчётом и показывать расхождение</div></div><span class="switch"></span></div>
-    <div style="height:1px;background:var(--line);margin:6px 0 10px"></div>
-    <div class="t2" style="line-height:1.45">Корректировки создаются только после вашего подтверждения. Если банк не пишет остаток, сверяйтесь вручную на экране периода.</div>
-  </div>
-  <div class="group">Защита входа</div>
-  <div class="card dim" style="height:64px;box-sizing:border-box"></div>
-</div>
-
 <script>
 // ?screen=ReconcileManual&theme=dark — какой экран и тема; без параметров — первый экран в светлой теме.
 const q = new URLSearchParams(location.search);

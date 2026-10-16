@@ -139,7 +139,10 @@ interface OperationDao {
     )
     fun observeDrafts(): Flow<List<OperationWithCategory>>
 
-    @Query("UPDATE operations SET category_id = :categoryId, type = :type, is_draft = 0 WHERE id = :id AND is_draft = 1")
+    @Query(
+        "UPDATE operations SET category_id = :categoryId, type = :type, is_draft = 0 " +
+            "WHERE id = :id AND is_draft = 1 AND (type != 'OWN_TRANSFER' OR :type = 'OWN_TRANSFER')",
+    )
     suspend fun confirmDraft(id: Long, categoryId: Long, type: String)
 
     @Transaction
@@ -169,7 +172,7 @@ interface OperationDao {
         SELECT * FROM operations
         WHERE bank_id IS NOT NULL AND bank_id != :otherThanBank AND amount_kopecks = :amountKopecks
             AND occurred_at BETWEEN :fromMillis AND :toMillis
-            AND ((type = :type AND is_draft = 1) OR (type = 'OWN_TRANSFER' AND original_type = :type AND counter_bank_id IS NULL))
+            AND ((type = :type AND is_draft = 1) OR (original_type = :type AND counter_bank_id IS NULL))
         ORDER BY ABS(occurred_at - (:fromMillis + :toMillis) / 2) LIMIT 1
         """,
     )

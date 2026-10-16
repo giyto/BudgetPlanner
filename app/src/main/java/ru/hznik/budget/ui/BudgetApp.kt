@@ -60,6 +60,7 @@ import ru.hznik.budget.ui.navigation.AssistantGraph
 import ru.hznik.budget.ui.navigation.Categories
 import ru.hznik.budget.ui.navigation.CategoryEditor
 import ru.hznik.budget.ui.navigation.CategoryOperations
+import ru.hznik.budget.ui.navigation.CategoryRules
 import ru.hznik.budget.ui.navigation.Drafts
 import ru.hznik.budget.ui.navigation.Home
 import ru.hznik.budget.ui.navigation.HomeGraph
@@ -86,6 +87,8 @@ import ru.hznik.budget.ui.period.PeriodRoute
 import ru.hznik.budget.ui.reconcile.PeriodReconcileSection
 import ru.hznik.budget.ui.reconcile.ReconcileRoute
 import ru.hznik.budget.ui.reconcile.ReconcileSettingsSection
+import ru.hznik.budget.ui.rules.CategoryRulesRoute
+import ru.hznik.budget.ui.rules.RulesSettingsItem
 import ru.hznik.budget.ui.settings.AutoImportSection
 import ru.hznik.budget.ui.settings.DemoDataSection
 import ru.hznik.budget.ui.settings.NotificationSamplesRoute
@@ -265,6 +268,7 @@ fun BudgetApp(
                     onOpenPeriod = dropUnlessResumed { navController.navigate(Period) },
                     autoImport = { AutoImportSection() },
                     reconcile = { ReconcileSettingsSection() },
+                    rules = { RulesSettingsItem(onOpen = dropUnlessResumed { navController.navigate(CategoryRules) }) },
                     protection = { ProtectionSection() },
                     extra = { if (BuildConfig.DEBUG) DemoDataSection(onOpenSamples = dropUnlessResumed { navController.navigate(NotificationSamples) }) },
                 )
@@ -284,6 +288,7 @@ fun BudgetApp(
                     onEmpty = { if (navController.currentBackStackEntry?.id == entry.id) navController.popBackStack() },
                 )
             }
+            composable<CategoryRules> { CategoryRulesRoute(onBack = dropUnlessResumed { navController.popBackStack() }) }
             composable<NotificationSamples> { NotificationSamplesRoute(onBack = dropUnlessResumed { navController.popBackStack() }) }
             composable<CategoryEditor> { CategoryEditorRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
         }

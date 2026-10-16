@@ -43,6 +43,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object Categories
 
+/** Правила «магазин → категория». */
+@Serializable data object CategoryRules
+
 /** Новая категория вида [kind] ([categoryId] = null) или изменение существующей. */
 @Serializable data class CategoryEditor(val kind: String, val categoryId: Long? = null)
 

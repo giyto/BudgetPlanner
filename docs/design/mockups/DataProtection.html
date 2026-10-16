@@ -70,33 +70,6 @@ h1{margin:20px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans
   <div class="bottom"><div class="btn" style="background:var(--pri);color:#fff"><i class="ti ti-fingerprint" style="font-size:24px"></i>Разблокировать</div></div>
 </div>
 
-<div class="screen" id="SettingsProtection">
-  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Настройки</span></div>
-  <div class="group">Защита входа</div>
-  <div class="card">
-    <div class="row"><div style="flex:1"><div class="rt">Вход по отпечатку или PIN</div><div class="rh">Разблокировка телефона</div></div><span class="sw" style="background:var(--pri)"><i style="right:4px;background:#fff"></i></span></div>
-    <div class="row" style="display:block;padding:14px 0 16px"><div class="rt">Блокировать</div>
-      <div class="seg"><span>Сразу</span><span class="sel">Через 1 мин</span><span>Через 5 мин</span></div></div>
-    <div class="row"><div style="flex:1"><div class="rt">Скрывать в недавних</div><div class="rh">Содержимое не видно в списке приложений, скриншоты запрещены</div></div><span class="sw" style="background:var(--chip)"><i style="left:4px;background:var(--knobOff)"></i></span></div>
-  </div>
-  <div class="group">Бюджет</div>
-  <div class="card">
-    <div class="row"><span class="rt" style="flex:1">Период и доход</span><i class="ti ti-chevron-right" style="color:var(--muted);font-size:20px"></i></div>
-    <div class="row"><span class="rt" style="flex:1">Категории</span><i class="ti ti-chevron-right" style="color:var(--muted);font-size:20px"></i></div>
-  </div>
-</div>
-
-<div class="screen" id="KeyLost">
-  <div class="badge" style="margin-top:96px"><span style="background:var(--warnS);color:var(--warn)"><i class="ti ti-lock-exclamation"></i></span></div>
-  <h1>Не удалось открыть данные</h1>
-  <p class="p">Ключ шифрования на этом телефоне пропал, поэтому сохранённые операции прочитать нельзя. Так бывает после сбоя хранилища ключей или обновления прошивки.</p>
-  <div class="list">
-    <div class="li"><span class="tile" style="background:var(--card2);color:var(--muted)"><i class="ti ti-database"></i></span>Данные останутся на телефоне, пока вы их не удалите</div>
-    <div class="li"><span class="tile" style="background:var(--card2);color:var(--muted)"><i class="ti ti-refresh"></i></span>После удаления приложение начнётся с онбординга</div>
-  </div>
-  <div class="bottom"><div class="btn" style="background:var(--warn);color:var(--onWarn)">Удалить данные и начать заново</div></div>
-</div>
-
 <script>
 // ?screen=LockScreen&theme=dark — какой экран и тема показываются; без параметров — шаг онбординга в светлой теме.
 const q = new URLSearchParams(location.search);

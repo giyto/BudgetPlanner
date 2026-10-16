@@ -258,10 +258,25 @@ fun PaymentForm(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoryPickerSheet(categories: List<Category>, selectedId: Long?, onDismiss: () -> Unit, onSelect: (Long) -> Unit) {
+fun CategoryPickerSheet(
+    categories: List<Category>,
+    selectedId: Long?,
+    onDismiss: () -> Unit,
+    title: String? = null,
+    subtitle: String? = null,
+    onSelect: (Long) -> Unit,
+) {
     val colors = BudgetTheme.colors
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = colors.background) {
         LazyColumn(modifier = Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
+            if (title != null) {
+                item(key = "title") {
+                    Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 10.dp)) {
+                        Text(title, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
+                        if (subtitle != null) Text(subtitle, fontSize = 13.sp, color = colors.muted, modifier = Modifier.padding(top = 4.dp))
+                    }
+                }
+            }
             items(categories, key = { it.id }) { category ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

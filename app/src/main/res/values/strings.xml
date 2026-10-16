@@ -381,4 +381,24 @@
     <string name="settings_reconcile_auto">Автоматическая сверка</string>
     <string name="settings_reconcile_auto_sub">Сравнивать остаток из уведомлений банка с расчётом и показывать расхождение</string>
     <string name="settings_reconcile_note">Корректировки создаются только после вашего подтверждения. Если банк не пишет остаток, сверяйтесь вручную на экране периода.</string>
+
+    <!-- Автокатегории (add-auto-categorization) -->
+    <string name="drafts_known_store">Знакомый магазин</string>
+    <string name="drafts_remember">Запомнить для «%1$s»</string>
+    <string name="settings_rules">Правила для магазинов</string>
+    <string name="settings_rules_hint">%1$d %2$s · категории для знакомых магазинов</string>
+    <string name="settings_rules_hint_empty">Категории для знакомых магазинов</string>
+    <string name="rules_title">Правила для магазинов</string>
+    <string name="rules_count">%1$d %2$s</string>
+    <string name="rules_expenses">Траты</string>
+    <string name="rules_incomes">Доходы</string>
+    <string name="rules_empty">Правил пока нет. Правило появляется, когда вы подтверждаете черновик с галочкой «Запомнить» — тогда следующие покупки в этом магазине сохраняются сразу.</string>
+    <string name="rules_note">Правило появляется, когда вы подтверждаете черновик с галочкой «Запомнить». Изменение правила не меняет уже сохранённые операции.</string>
+    <string name="rules_delete">Удалить правило «%1$s»</string>
+    <string name="rules_deleted">Правило удалено</string>
+    <string name="rules_undo">Отменить</string>
+    <string name="rules_sheet_title">Категория для «%1$s»</string>
+    <string name="rules_sheet_expense">Новые покупки в этом магазине будут сохраняться сюда</string>
+    <string name="rules_sheet_income">Новые поступления будут сохраняться сюда</string>
+    <string name="rules_change">Изменить категорию</string>
 </resources>

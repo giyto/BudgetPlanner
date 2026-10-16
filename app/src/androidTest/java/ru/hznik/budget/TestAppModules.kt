@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import ru.hznik.budget.data.local.BudgetDatabase
 import ru.hznik.budget.data.local.CategoryDao
+import ru.hznik.budget.data.local.CategoryRuleDao
 import ru.hznik.budget.data.local.DatabaseModule
 import ru.hznik.budget.data.local.NotificationDao
 import ru.hznik.budget.data.local.OperationDao
@@ -203,6 +204,9 @@ object TestDatabaseModule {
 
     @Provides
     fun provideReconciliationDao(db: BudgetDatabase): ReconciliationDao = db.reconciliationDao()
+
+    @Provides
+    fun provideCategoryRuleDao(db: BudgetDatabase): CategoryRuleDao = db.categoryRuleDao()
 }
 
 /** «Сегодня» в UI-тестах — [TestStart.now] по Москве, по умолчанию 13 октября 2026, 12:00 (вторник). */

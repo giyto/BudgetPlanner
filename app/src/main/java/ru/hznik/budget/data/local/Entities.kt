@@ -187,3 +187,30 @@ data class LatestBalanceRow(
     @ColumnInfo(name = "balance_kopecks") val balanceKopecks: Long,
     @ColumnInfo(name = "observed_at") val observedAt: Long,
 )
+
+/**
+ * Правило категории «магазин → категория» (FR-06, design.md add-auto-categorization, решение 2). Одно правило на пару
+ * (ключ магазина, вид категории); удаление своей категории удаляет и её правила.
+ */
+@Entity(
+    tableName = "category_rules",
+    foreignKeys = [
+        ForeignKey(entity = CategoryEntity::class, parentColumns = ["id"], childColumns = ["category_id"], onDelete = ForeignKey.CASCADE),
+    ],
+    indices = [Index(value = ["merchant_key", "category_kind"], unique = true), Index("category_id")],
+)
+data class CategoryRuleEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "merchant_key") val merchantKey: String,
+    @ColumnInfo(name = "category_kind") val categoryKind: String,
+    @ColumnInfo(name = "category_id") val categoryId: Long,
+    /** Название, как его показывать в списке правил: из последнего подтверждения. */
+    @ColumnInfo(name = "merchant_display") val merchantDisplay: String,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,
+)
+
+/** Правило вместе с категорией — для списка правил. */
+data class CategoryRuleWithCategory(
+    @Embedded val rule: CategoryRuleEntity,
+    @Embedded(prefix = "c_") val category: CategoryEntity,
+)

@@ -1,6 +1,9 @@
 package ru.hznik.budget.domain.usecase
 
 import kotlinx.coroutines.flow.first
+import ru.hznik.budget.domain.categorize.AutoCategorize
+import ru.hznik.budget.domain.categorize.CategoryRule
+import ru.hznik.budget.domain.categorize.MerchantKey
 import ru.hznik.budget.domain.model.DefaultCategories
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationItem
@@ -13,6 +16,7 @@ import ru.hznik.budget.domain.notifications.parser.NotificationKind
 import ru.hznik.budget.domain.notifications.parser.ParsedNotification
 import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.domain.repository.CategoryRepository
+import ru.hznik.budget.domain.repository.CategoryRuleRepository
 import ru.hznik.budget.domain.repository.DraftConfirmation
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.repository.PeriodRepository
@@ -36,6 +40,7 @@ class ImportNotification @Inject constructor(
     private val periods: PeriodRepository,
     private val autoImport: AutoImportSettings,
     private val reconcileBalance: ReconcileBalance,
+    private val autoCategorize: AutoCategorize,
     private val clock: Clock,
 ) {
     suspend operator fun invoke(notification: BankNotification, parsed: ParsedNotification): ImportResult {
@@ -82,7 +87,8 @@ class ImportNotification @Inject constructor(
                 operations.update(
                     counterpart.copy(
                         type = OperationType.OWN_TRANSFER,
-                        originalType = if (alreadyOwn) counterpart.originalType else counterpart.type,
+                        // У перевода, сохранённого по правилу, исходный тип уже записан: правило могло сделать его тратой.
+                        originalType = counterpart.originalType ?: counterpart.type,
                         categoryId = transfers.id,
                         // Перевод себе, уже подтверждённый по имени, остаётся подтверждённым.
                         isDraft = !alreadyOwn,
@@ -103,16 +109,19 @@ class ImportNotification @Inject constructor(
                 return ImportResult.IMPORTED
             }
         }
-        val category = all.firstOrNull { it.defaultKey == categoryKey } ?: error("Нет категории по умолчанию $categoryKey")
+        val provisional = all.firstOrNull { it.defaultKey == categoryKey } ?: error("Нет категории по умолчанию $categoryKey")
+        // Правило пользователя или подсказка словаря — после переводов себе (add-auto-categorization, решение 3).
+        val categorized = autoCategorize(type, parsed.merchant, provisional, all)
         operations.insert(
             Operation(
-                type = type,
+                type = categorized.type,
                 amount = parsed.amount,
-                categoryId = category.id,
+                categoryId = categorized.categoryId,
                 merchant = parsed.merchant,
                 source = OperationSource.NOTIFICATION,
                 occurredAt = parsed.occurredAt.atZone(clock.zone).toOffsetDateTime(),
-                isDraft = true,
+                isDraft = categorized.isDraft,
+                originalType = categorized.originalType,
                 bankId = parsed.bankId,
                 cardLast4 = parsed.cardLast4,
                 notificationKey = notification.key,
@@ -168,28 +177,60 @@ class ObserveDrafts @Inject constructor(private val operations: OperationReposit
     operator fun invoke() = operations.observeDrafts()
 }
 
-/** Сохраняет категории, выбранные пользователем; тип становится переводом, если выбрана категория «Переводы». */
+/**
+ * Сохраняет категории, выбранные пользователем; тип становится переводом, если выбрана категория «Переводы».
+ * Для черновиков из [remember] запоминается правило «магазин → категория», и другие черновики того же магазина того же
+ * вида подтверждаются с той же категорией (spec drafts, design.md add-auto-categorization, решение 6).
+ */
 class ConfirmDrafts @Inject constructor(
     private val operations: OperationRepository,
     private val categories: CategoryRepository,
+    private val rules: CategoryRuleRepository,
 ) {
-    suspend operator fun invoke(choices: Map<OperationItem, Long>) {
+    suspend operator fun invoke(choices: Map<OperationItem, Long>, remember: Set<Long> = emptySet()) {
         if (choices.isEmpty()) return
-        val confirmations = choices.mapNotNull { (item, categoryId) ->
-            val category = categories.get(categoryId) ?: return@mapNotNull null
+        val confirmations = mutableListOf<DraftConfirmation>()
+        val newRules = mutableListOf<CategoryRule>()
+        for ((item, categoryId) in choices) {
+            val category = categories.get(categoryId) ?: continue
             // У перевода себе категория всегда «Переводы»: старый выбор, сделанный до склейки, не переносится.
             if (item.operation.type == OperationType.OWN_TRANSFER) {
-                return@mapNotNull DraftConfirmation(item.operation.id, item.operation.categoryId, OperationType.OWN_TRANSFER)
+                confirmations += DraftConfirmation(item.operation.id, item.operation.categoryId, OperationType.OWN_TRANSFER)
+                continue
             }
-            val type = when (item.operation.type) {
-                OperationType.EXPENSE, OperationType.TRANSFER -> if (category.isTransfers) OperationType.TRANSFER else OperationType.EXPENSE
-                OperationType.INCOME, OperationType.REFUND, OperationType.OWN_TRANSFER -> item.operation.type
+            val type = AutoCategorize.typeFor(item.operation.type, category)
+            if (category.kind != type.categoryKind) continue
+            confirmations += DraftConfirmation(item.operation.id, categoryId, type)
+            val key = MerchantKey.of(item.operation.merchant)
+            if (item.operation.id in remember && key != null) {
+                newRules += CategoryRule(merchantKey = key, kind = category.kind, categoryId = category.id, merchantDisplay = item.operation.merchant!!.trim())
             }
-            if (category.kind != type.categoryKind) return@mapNotNull null
-            DraftConfirmation(item.operation.id, categoryId, type)
         }
-        operations.confirmDrafts(confirmations)
+        if (newRules.isEmpty()) {
+            operations.confirmDrafts(confirmations)
+            return
+        }
+        // Другие черновики того же магазина и вида — по запомненному правилу.
+        val chosenIds = confirmations.map { it.operationId }.toSet()
+        val byRule = newRules.associateBy { it.merchantKey to it.kind }
+        operations.observeDrafts().first().forEach { draft ->
+            val op = draft.operation
+            if (op.id in chosenIds || op.type !in AUTO_CONFIRMED_TYPES) return@forEach
+            val rule = MerchantKey.of(op.merchant)?.let { byRule[it to op.type.categoryKind] } ?: return@forEach
+            val category = categories.get(rule.categoryId) ?: return@forEach
+            confirmations += DraftConfirmation(op.id, category.id, AutoCategorize.typeFor(op.type, category))
+        }
+        rules.confirmAndRemember(confirmations, newRules)
     }
+
+    private companion object {
+        /** Переводы и зачисления ждут вторую сторону перевода себе, поэтому по новому правилу не подтверждаются. */
+        val AUTO_CONFIRMED_TYPES = setOf(OperationType.EXPENSE, OperationType.REFUND)
+    }
+
+    /** Название пригодно для правила: после нормализации в нём остались буквы (spec auto-categorization). */
+    fun canRemember(item: OperationItem): Boolean =
+        item.operation.type != OperationType.OWN_TRANSFER && MerchantKey.of(item.operation.merchant) != null
 }
 
 /** «Это перевод себе» у черновика, где видна одна сторона; можно запомнить отправителя или получателя как себя. */

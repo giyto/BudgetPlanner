@@ -127,7 +127,7 @@ fun PeriodReconcileSection(onReconcile: () -> Unit, viewModel: ReconcileSectionV
     }
 }
 
-/** Раздел настроек «Сверка с банком» по макету SettingsReconcile. */
+/** Раздел настроек «Сверка с банком» по макету Settings. */
 @Composable
 fun ReconcileSettingsSection(viewModel: ReconcileSectionViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()

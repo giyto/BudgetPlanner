@@ -19,6 +19,7 @@ import ru.hznik.budget.notifications.FakeNotificationRepository
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
 import ru.hznik.budget.testing.FakeAutoReconcileSettings
+import ru.hznik.budget.testing.FakeCategoryRuleRepository
 import ru.hznik.budget.testing.FakeOperationRepository
 import ru.hznik.budget.testing.FakeReconciliationRepository
 import ru.hznik.budget.testing.FakePeriodRepository
@@ -32,6 +33,7 @@ import ru.hznik.budget.testing.category
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import ru.hznik.budget.domain.categorize.AutoCategorize
 import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.domain.reconcile.ReconState
 import org.junit.Assert.assertNull
@@ -47,10 +49,12 @@ class ImportNotificationTest {
     private val autoImport = FakeAutoImportSettings()
     private val recon = FakeReconciliationRepository(operations)
     private val reconSettings = FakeAutoReconcileSettings()
+    private val rules = FakeCategoryRuleRepository(operations, categories)
     private val import = ImportNotification(
-        operations, categories, notifications, periods, autoImport, ReconcileBalance(recon, reconSettings, ExpectedBalance(recon), ReconciliationLock()), TEST_CLOCK,
+        operations, categories, notifications, periods, autoImport, ReconcileBalance(recon, reconSettings, ExpectedBalance(recon), ReconciliationLock()),
+        AutoCategorize(rules), TEST_CLOCK,
     )
-    private val confirm = ConfirmDrafts(operations, categories)
+    private val confirm = ConfirmDrafts(operations, categories, rules)
     private val markOwn = MarkOwnTransfer(operations, categories, autoImport)
     private val split = SplitOwnTransfer(operations, categories)
     private val now: Instant = TEST_CLOCK.instant()
@@ -71,7 +75,8 @@ class ImportNotificationTest {
 
     @Test
     fun `purchase becomes a draft in Other that already counts`() = runTest {
-        assertEquals(ImportResult.IMPORTED, import(notification(), parsed(balance = 12_300)))
+        // Магазин не из словаря: у «Пятёрочки» была бы подсказка «Продукты» (add-auto-categorization).
+        assertEquals(ImportResult.IMPORTED, import(notification(), parsed(balance = 12_300, merchant = "ИП Смирнова А. В.")))
         val op = all().single()
         assertEquals(OperationType.EXPENSE, op.type)
         assertEquals(otherExpense.id, op.categoryId)

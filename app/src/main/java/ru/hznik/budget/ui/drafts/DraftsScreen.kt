@@ -21,10 +21,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -69,6 +72,7 @@ import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.time.today
 import ru.hznik.budget.domain.usecase.ConfirmDrafts
+import ru.hznik.budget.domain.usecase.DraftHint
 import ru.hznik.budget.domain.usecase.MarkOwnTransfer
 import ru.hznik.budget.domain.usecase.ObserveDrafts
 import ru.hznik.budget.domain.usecase.SplitOwnTransfer
@@ -85,6 +89,9 @@ import javax.inject.Inject
 
 const val DRAFTS_LIST_TAG = "drafts_list"
 
+/** Тег галочки «Запомнить» у черновика — для UI-тестов. */
+fun rememberTag(operationId: Long) = "drafts_remember_$operationId"
+
 data class DraftsUiState(
     val loaded: Boolean = false,
     val drafts: List<OperationItem> = emptyList(),
@@ -94,6 +101,12 @@ data class DraftsUiState(
     /** Категории, которые выбрал сам пользователь: id операции → id категории. */
     val chosen: Map<Long, Long> = emptyMap(),
     val today: LocalDate = LocalDate.MIN,
+    /** Черновики с отмеченной галочкой «Запомнить для «…»». */
+    val remember: Set<Long> = emptySet(),
+    /** Черновики, у которых название пригодно для правила (spec drafts). */
+    val rememberable: Set<Long> = emptySet(),
+    /** Черновики с подсказкой словаря — подпись «Знакомый магазин». */
+    val knownStores: Set<Long> = emptySet(),
 ) {
     fun categoriesFor(item: OperationItem): List<Category> =
         if (item.operation.type == OperationType.INCOME) incomeCategories else expenseCategories
@@ -112,13 +125,18 @@ class DraftsViewModel @Inject constructor(
     private val clock: Clock,
 ) : ViewModel() {
     private val chosen = MutableStateFlow<Map<Long, Long>>(emptyMap())
+    private val remember = MutableStateFlow<Set<Long>>(emptySet())
+
+    /** Черновики, где категорию выбрала галочка «Запомнить», а не пользователь. */
+    private val autoChosen = mutableSetOf<Long>()
 
     val uiState: StateFlow<DraftsUiState> = combine(
         observeDrafts(),
         categories.observeAll(),
         operations.observeCategoryUsage(clock.today().minusDays(USAGE_DAYS)),
         chosen,
-    ) { drafts, all, usage, picks ->
+        remember,
+    ) { drafts, all, usage, picks, marked ->
         val visible = all.filter { !it.hidden }.sortedWith(compareByDescending<Category> { usage[it.id] ?: 0 }.thenBy { it.sortOrder })
         DraftsUiState(
             loaded = true,
@@ -131,10 +149,35 @@ class DraftsViewModel @Inject constructor(
                 op.type != OperationType.OWN_TRANSFER || categoryId == op.categoryId
             },
             today = clock.today(),
+            remember = marked.filter { id -> drafts.any { it.operation.id == id } }.toSet(),
+            rememberable = drafts.filter(confirmDrafts::canRemember).map { it.operation.id }.toSet(),
+            knownStores = drafts.filter { DraftHint.isKnownStore(it.operation, all) }.map { it.operation.id }.toSet(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DraftsUiState())
 
-    fun choose(operationId: Long, categoryId: Long) = chosen.update { it + (operationId to categoryId) }
+    fun choose(operationId: Long, categoryId: Long) {
+        autoChosen -= operationId
+        chosen.update { it + (operationId to categoryId) }
+    }
+
+    /**
+     * Галочка «Запомнить для «…»». Отметка — тоже выбор показанной категории: без неё сохранять было бы нечего
+     * (spec drafts, «Подтверждение подсказки»).
+     */
+    fun toggleRemember(item: OperationItem) {
+        val id = item.operation.id
+        if (id in remember.value) {
+            remember.update { it - id }
+            // Выбор, сделанный самой галочкой, тоже снимается: иначе черновик сохранился бы без выбора пользователя.
+            if (autoChosen.remove(id)) chosen.update { it - id }
+            return
+        }
+        remember.update { it + id }
+        if (id !in uiState.value.chosen) {
+            chosen.update { it + (id to uiState.value.selectedFor(item)) }
+            autoChosen += id
+        }
+    }
 
     /** «Это перевод себе»: операция сразу уходит из бюджета; [remember] — запомнить имя как своё. */
     fun markOwn(operationId: Long, remember: Boolean) = viewModelScope.launch { markOwnTransfer(operationId, remember) }
@@ -150,9 +193,12 @@ class DraftsViewModel @Inject constructor(
         val state = uiState.value
         val picks = state.drafts.mapNotNull { item -> state.chosen[item.operation.id]?.let { item to it } }.toMap()
         if (picks.isEmpty()) return
+        val ids = picks.keys.map { it.operation.id }.toSet()
         viewModelScope.launch {
-            confirmDrafts(picks)
-            chosen.update { it - picks.keys.map { item -> item.operation.id }.toSet() }
+            confirmDrafts(picks, remember = state.remember intersect ids)
+            chosen.update { it - ids }
+            remember.update { it - ids }
+            autoChosen -= ids
         }
     }
 
@@ -178,6 +224,7 @@ fun DraftsRoute(onBack: () -> Unit, onEmpty: () -> Unit, viewModel: DraftsViewMo
         onBack = onBack,
         onChoose = viewModel::choose,
         onSave = viewModel::save,
+        onToggleRemember = viewModel::toggleRemember,
         onMarkOwn = { item -> if (item.operation.merchant != null) askNameId = item.operation.id else viewModel.markOwn(item.operation.id, remember = false) },
         onSplit = viewModel::split,
     )
@@ -211,6 +258,7 @@ fun DraftsScreen(
     onSave: () -> Unit,
     onMarkOwn: (OperationItem) -> Unit = {},
     onSplit: (Long) -> Unit = {},
+    onToggleRemember: (OperationItem) -> Unit = {},
 ) {
     val colors = BudgetTheme.colors
     val count = state.drafts.size
@@ -237,11 +285,16 @@ fun DraftsScreen(
                         onSplit = { onSplit(item.operation.id) },
                     )
                 } else {
+                    val id = item.operation.id
                     DraftCard(
                         item, state.today, state.categoriesFor(item), state.selectedFor(item),
-                        userChose = item.operation.id in state.chosen,
+                        userChose = id in state.chosen,
                         onMarkOwn = { onMarkOwn(item) },
-                    ) { onChoose(item.operation.id, it) }
+                        knownStore = id in state.knownStores,
+                        rememberable = id in state.rememberable,
+                        remember = id in state.remember,
+                        onToggleRemember = { onToggleRemember(item) },
+                    ) { onChoose(id, it) }
                 }
             }
         }
@@ -274,6 +327,10 @@ private fun DraftCard(
     selectedId: Long,
     userChose: Boolean,
     onMarkOwn: () -> Unit,
+    knownStore: Boolean = false,
+    rememberable: Boolean = false,
+    remember: Boolean = false,
+    onToggleRemember: () -> Unit = {},
     onChoose: (Long) -> Unit,
 ) {
     val colors = BudgetTheme.colors
@@ -324,6 +381,16 @@ private fun DraftCard(
                 modifier = Modifier.padding(top = 10.dp).background(colors.hintSoft, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
             )
         }
+        // Категория из словаря популярных магазинов (макет DraftsKnownStore).
+        if (knownStore && !userChose) {
+            Text(
+                stringResource(R.string.drafts_known_store),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = colors.positive,
+                modifier = Modifier.padding(top = 10.dp).background(colors.positiveSoft, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+        }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
             items(categories, key = { it.id }) { category ->
                 val selected = category.id == selectedId
@@ -342,6 +409,26 @@ private fun DraftCard(
                         Text(category.name, fontSize = 15.sp, fontWeight = FontWeight.Medium, maxLines = 1)
                     }
                 }
+            }
+        }
+        // «Запомнить для «…»»: правило «магазин → категория», по умолчанию выключено (spec drafts).
+        if (rememberable) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .toggleable(value = remember, role = Role.Checkbox, onValueChange = { onToggleRemember() })
+                    .testTag(rememberTag(op.id)),
+            ) {
+                Checkbox(
+                    checked = remember,
+                    onCheckedChange = null,
+                    colors = CheckboxDefaults.colors(checkedColor = colors.primary, uncheckedColor = colors.chipBorder, checkmarkColor = colors.onPrimary),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(R.string.drafts_remember, op.merchant.orEmpty().trim()), fontSize = 15.sp, color = colors.ink)
             }
         }
         // Переводы людям и от людей могут быть переводами себе в другой банк (макет «Перевод себе»).

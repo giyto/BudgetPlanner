@@ -39,6 +39,7 @@ fun SettingsScreen(
     autoImport: @Composable () -> Unit = {},
     reconcile: @Composable () -> Unit = {},
     protection: @Composable () -> Unit = {},
+    rules: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
 ) {
     val colors = BudgetTheme.colors
@@ -59,13 +60,14 @@ fun SettingsScreen(
             )
             SettingsItem(stringResource(R.string.settings_period), stringResource(R.string.settings_period_hint), onOpenPeriod)
             SettingsItem(stringResource(R.string.settings_categories), stringResource(R.string.settings_categories_hint), onOpenCategories)
+            rules()
             extra()
         }
     }
 }
 
 @Composable
-private fun SettingsItem(title: String, hint: String, onClick: () -> Unit) {
+internal fun SettingsItem(title: String, hint: String, onClick: () -> Unit) {
     val colors = BudgetTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,

@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import ru.hznik.budget.data.repository.isSameImport
+import ru.hznik.budget.domain.categorize.CategoryRule
+import ru.hznik.budget.domain.categorize.CategoryRuleItem
 import ru.hznik.budget.domain.lock.LockSettings
 import ru.hznik.budget.domain.lock.LockSettingsRepository
 import ru.hznik.budget.domain.lock.LockTimeout
@@ -26,6 +28,7 @@ import ru.hznik.budget.domain.reconcile.BankBalance
 import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.domain.reconcile.ReconState
 import ru.hznik.budget.domain.repository.CategoryRepository
+import ru.hznik.budget.domain.repository.CategoryRuleRepository
 import ru.hznik.budget.domain.repository.DraftConfirmation
 import ru.hznik.budget.domain.repository.IncomeScheduleRepository
 import ru.hznik.budget.domain.repository.OperationFilter
@@ -176,7 +179,7 @@ class FakeOperationRepository(val categories: FakeCategoryRepository) : Operatio
         state.value.firstOrNull {
             it.bankId != null && it.bankId != otherThanBank && it.amount == amount &&
                 !it.occurredAt.toInstant().isBefore(from) && !it.occurredAt.toInstant().isAfter(to) &&
-                ((it.type == type && it.isDraft) || (it.type == OperationType.OWN_TRANSFER && it.originalType == type && it.counterBankId == null))
+                ((it.type == type && it.isDraft) || (it.originalType == type && it.counterBankId == null))
         }
 }
 
@@ -379,4 +382,40 @@ private fun Operation.matchesAccount(f: ru.hznik.budget.domain.repository.Accoun
     val counterAt = counterOccurredAt
     return (same(bankId, cardLast4) && !occurredAt.toInstant().isBefore(f.from)) ||
         (counterBankId != null && counterAt != null && same(counterBankId, counterCardLast4) && !counterAt.isBefore(f.from))
+}
+
+/** Правила категорий в памяти; подтверждение черновиков — через [operations]. */
+class FakeCategoryRuleRepository(private val operations: FakeOperationRepository, private val categories: FakeCategoryRepository) : CategoryRuleRepository {
+    val rules = MutableStateFlow<List<CategoryRule>>(emptyList())
+    private var nextId = 1L
+
+    override suspend fun find(merchantKey: String, kind: CategoryKind): CategoryRule? =
+        rules.value.firstOrNull { it.merchantKey == merchantKey && it.kind == kind }
+
+    override fun observeAll(): Flow<List<CategoryRuleItem>> = combine(rules, categories.state) { list, cats ->
+        list.mapNotNull { rule -> cats.firstOrNull { it.id == rule.categoryId }?.let { CategoryRuleItem(rule, it) } }
+            .sortedWith(compareByDescending<CategoryRuleItem> { it.rule.kind.name }.thenBy { it.rule.merchantKey })
+    }
+
+    override suspend fun updateCategory(ruleId: Long, categoryId: Long) {
+        rules.update { list -> list.map { if (it.id == ruleId) it.copy(categoryId = categoryId) else it } }
+    }
+
+    override suspend fun delete(ruleId: Long) {
+        rules.update { list -> list.filterNot { it.id == ruleId } }
+    }
+
+    override suspend fun restore(rule: CategoryRule) {
+        rules.update { it + rule }
+    }
+
+    override suspend fun confirmAndRemember(confirmations: List<DraftConfirmation>, rules: List<CategoryRule>) {
+        operations.confirmDrafts(confirmations)
+        rules.forEach { rule ->
+            val existing = find(rule.merchantKey, rule.kind)
+            this.rules.update { list ->
+                if (existing == null) list + rule.copy(id = nextId++) else list.map { if (it.id == existing.id) rule.copy(id = existing.id) else it }
+            }
+        }
+    }
 }
