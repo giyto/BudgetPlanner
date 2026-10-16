@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Сверка с банком</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;overflow:hidden}
+.light{--bg:#EFF1F5;--card:#FFFFFF;--card2:#E4E7ED;--ink:#191C1F;--muted:#575E68;--sub:#3A4048;--line:#E2E5EA;--chip:#CDD2DA;--pri:#4B52E0;--priT:#4B52E0;--priS:#E4E5FC;--pos:#0B7650;--posS:#DDF5EA;--warn:#B23A0A;--warnS:#FDE7DA;--hero:#191C1F;--heroB:#191C1F;--track:#2E3338;--segOn:#FFFFFF;--nav:#FFFFFF}
+.dark{--bg:#0F1114;--card:#1A1D21;--card2:#24282D;--ink:#F2F4F7;--muted:#A3AAB5;--sub:#C9CED6;--line:#2C3036;--chip:#3A3F46;--pri:#5B62F0;--priT:#A4A8FF;--priS:#262A4D;--pos:#4ADE9A;--posS:#16332A;--warn:#FF9A62;--warnS:#3A2418;--hero:#23272C;--heroB:#353A41;--track:#3A4048;--segOn:#33383F;--nav:#16191C}
+.screen{width:390px;height:844px;box-sizing:border-box;display:none;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Onest',system-ui,sans-serif;overflow:hidden}
+.screen.on{display:flex}
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0 8px;height:44px;flex-shrink:0}
+.back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.skip{color:var(--priT);font-size:15px;font-weight:600}
+.title{font-family:'Unbounded',sans-serif;font-weight:600;font-size:20px}
+.sub2{font-size:14px;color:var(--muted)}
+.prog{padding:8px 20px 0;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.prog div{display:flex;gap:6px}.prog span{flex:1;height:4px;border-radius:2px}
+.badge{align-self:center;position:relative;width:120px;height:120px;border-radius:60px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:18px}
+.badge>span{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:34px;background:var(--priS);color:var(--priT)}
+.ok{position:absolute;right:0;bottom:0;width:36px;height:36px;box-sizing:border-box;border-radius:18px;border:3px solid var(--bg);background:var(--posS);color:var(--pos);display:flex;align-items:center;justify-content:center;font-size:18px}
+h1{margin:18px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans-serif;font-size:23px;font-weight:600;line-height:1.2}
+.p{margin:10px 0 0;padding:0 28px;text-align:center;font-size:15px;line-height:1.45;color:var(--sub)}
+.list{margin:16px 16px 0;padding:4px 16px;background:var(--card);border-radius:22px;flex-shrink:0}
+.li{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 0;box-sizing:border-box;font-size:14px;line-height:1.35}
+.li+.li{border-top:1px solid var(--line)}
+.tile{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px;background:var(--posS);color:var(--pos)}
+.bottom{margin-top:auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;border-radius:18px;font-size:17px;font-weight:600;text-align:center;padding:0 12px}
+.btn2{display:flex;align-items:center;justify-content:center;min-height:52px;box-sizing:border-box;border-radius:18px;border:1px solid var(--chip);font-size:16px;font-weight:600}
+.hint{font-size:13px;line-height:1.4;color:var(--muted);display:flex;gap:8px;padding:0 4px}
+.warncard{margin:16px 16px 0;padding:16px;border-radius:22px;background:var(--warnS)}
+.card{margin:0 16px;background:var(--card);border-radius:22px;padding:16px}
+.group{font-size:14px;color:var(--muted);margin:18px 22px 8px}
+.row{display:flex;align-items:center;gap:12px}
+.ic{width:40px;height:40px;border-radius:12px;background:var(--card2);color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;font-size:20px}
+.t1{font-size:16px;font-weight:600}.t2{font-size:13px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:16px;border:1px solid var(--chip);font-size:15px;font-weight:500;white-space:nowrap;box-sizing:border-box}
+.sel{background:var(--pri);color:#fff;border-color:var(--pri)}
+.tag{display:inline-block;font-size:12px;font-weight:500;padding:3px 8px;border-radius:8px;margin-top:10px}
+.sum{font-size:16px;font-weight:600;white-space:nowrap}
+.plaque{margin:0 16px;border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:72px;box-sizing:border-box}
+.navbar{margin-top:auto;display:flex;justify-content:space-around;padding:10px 0 18px;background:var(--nav);border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.navbar div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.navbar i{font-size:24px}
+.navbar .on{color:var(--ink);font-weight:600}
+.navbar .on i{background:var(--priS);color:var(--priT);border-radius:16px;padding:4px 18px}
+.dim{opacity:.55}
+</style>
+<style>
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px}
+.keys span{height:54px;border-radius:16px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500}
+.radio{width:22px;height:22px;border-radius:11px;border:2px solid var(--chip);box-sizing:border-box;flex:none}
+.radio.on{border:7px solid var(--pri)}
+.switch{width:52px;height:32px;border-radius:16px;background:var(--pri);position:relative;flex:none}
+.switch::after{content:'';position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:12px;background:#fff}
+.fab{position:absolute;right:20px;bottom:96px;width:60px;height:60px;border-radius:20px;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+</style>
+</head>
+<body>
+
+<!-- Главная: расхождение по нескольким картам, выше плашки черновиков -->
+<div class="screen" id="MainMismatchCards">
+  <div style="padding:18px 20px 4px;display:flex;justify-content:space-between;align-items:center"><div><div class="t2">Вторник, 13 октября</div><div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:24px">Бюджет</div></div><span style="width:48px;height:48px;border-radius:24px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:22px"><i class="ti ti-settings"></i></span></div>
+  <div style="margin:12px 16px 0;background:var(--hero);border:1px solid var(--heroB);color:#fff;border-radius:26px;padding:18px 20px">
+    <div style="font-size:14px;color:#B9BEC7">Можно потратить сегодня</div>
+    <div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:44px;margin-top:4px">331 ₽</div>
+    <div style="font-size:14px;color:#B9BEC7;margin-top:2px">из 781 ₽ дневного лимита</div>
+    <div style="height:8px;border-radius:4px;background:var(--track);margin-top:12px"><div style="width:42%;height:8px;border-radius:4px;background:#5EE0A8"></div></div>
+  </div>
+  <div class="card dim" style="margin-top:12px;height:96px;box-sizing:border-box"></div>
+  <div class="plaque" style="background:var(--warnS);margin-top:12px">
+    <span style="width:44px;height:44px;border-radius:14px;background:var(--card);color:var(--warn);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none"><i class="ti ti-alert-triangle"></i></span>
+    <div style="flex:1"><div style="font-size:16px;font-weight:600">Расхождение с банком по 2 картам</div><div class="t2">Альфа *1234 и Сбер *5678</div></div>
+    <i class="ti ti-chevron-right" style="font-size:22px"></i>
+  </div>
+  <div class="plaque" style="background:var(--card);margin-top:10px">
+    <span style="width:44px;height:44px;border-radius:14px;background:var(--priS);color:var(--priT);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none"><i class="ti ti-inbox"></i></span>
+    <div style="flex:1"><div style="font-size:16px;font-weight:600">2 операции ждут категорию</div><div class="t2">Из уведомлений банка</div></div>
+    <i class="ti ti-chevron-right" style="font-size:22px;color:var(--muted)"></i>
+  </div>
+  <div class="navbar"><div class="on"><i class="ti ti-home"></i>Главная</div><div><i class="ti ti-list"></i>Операции</div><div><i class="ti ti-chart-pie"></i>Статистика</div><div><i class="ti ti-sparkles"></i>Помощник</div></div>
+</div>
+
+<!-- Экран периода: кнопка «Сверить с банком» и время последней сверки -->
+<div class="screen" id="PeriodReconcile">
+  <div class="top" style="justify-content:flex-start;gap:4px"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Период</span></div>
+  <div class="card" style="margin-top:14px">
+    <div class="t2">Текущий период</div>
+    <div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:20px;margin-top:4px">1 – 25 октября</div>
+    <div class="row" style="justify-content:space-between;min-height:44px;margin-top:6px;font-size:15px"><span>Доход</span><span style="font-weight:600">18 000 ₽ · 25 октября</span></div>
+    <div class="row" style="justify-content:space-between;min-height:44px;font-size:15px;border-top:1px solid var(--line)"><span>Обязательные платежи</span><span style="font-weight:600">1 200 ₽</span></div>
+  </div>
+  <div class="group">Сверка с банком</div>
+  <div class="card">
+    <div class="row"><span class="ic" style="background:var(--posS);color:var(--pos)"><i class="ti ti-scale"></i></span><div style="flex:1"><div class="t1">Последняя сверка</div><div class="t2">Сегодня, 14:26 · Альфа *1234 сходится</div></div></div>
+    <div class="btn2" style="margin-top:14px"><i class="ti ti-building-bank" style="margin-right:8px;font-size:20px"></i>Сверить с банком</div>
+    <div class="t2" style="margin-top:10px;line-height:1.4">Введите остаток из приложения банка — BudgetPlanner сравнит его со своим расчётом.</div>
+  </div>
+  <div class="bottom"><div class="btn" style="background:var(--pri);color:#fff">Начать новый период</div></div>
+</div>
+
+<!-- Ручная сверка: выбор счёта и ввод остатка -->
+<div class="screen" id="ReconcileManual">
+  <div class="top" style="justify-content:flex-start;gap:4px;height:auto;padding-top:14px"><span class="back"><i class="ti ti-chevron-left"></i></span><div><div class="title">Сверка с банком</div><div class="sub2">Сколько сейчас на счёте?</div></div></div>
+  <div class="card" style="margin-top:14px;padding:4px 16px">
+    <div class="row" style="min-height:56px;border-bottom:1px solid var(--line)"><span class="radio on"></span><div style="flex:1"><div style="font-size:15px;font-weight:600">Альфа *1234</div><div class="t2">по расчёту 4 710 ₽</div></div></div>
+    <div class="row" style="min-height:56px;border-bottom:1px solid var(--line)"><span class="radio"></span><div style="flex:1"><div style="font-size:15px;font-weight:600">Сбер *5678</div><div class="t2">по расчёту 12 300 ₽</div></div></div>
+    <div class="row" style="min-height:56px"><span class="radio"></span><div style="flex:1"><div style="font-size:15px;font-weight:600">Счёт без автоимпорта</div><div class="t2">операции, введённые вручную</div></div></div>
+  </div>
+  <div style="text-align:center;margin-top:18px"><div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:44px">4 410 ₽</div>
+  <span style="display:inline-block;margin-top:8px;background:var(--warnS);color:var(--warn);border-radius:12px;padding:6px 12px;font-size:14px;font-weight:500">на 300 ₽ меньше расчёта</span></div>
+  <div style="flex:1"></div>
+  <div class="keys"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>,</span><span>0</span><span><i class="ti ti-backspace"></i></span></div>
+  <div class="bottom"><div class="btn" style="background:var(--pri);color:#fff">Сверить</div></div>
+</div>
+
+<!-- Операции: фильтр «карта с даты» из «Найти пропущенную операцию», корректировка в списке -->
+<div class="screen" id="OperationsCardFilter" style="position:relative">
+  <div style="padding:18px 20px 4px"><div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:24px">Операции</div></div>
+  <div style="margin:10px 16px 0;height:48px;border-radius:16px;background:var(--card);display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--muted);font-size:15px"><i class="ti ti-search" style="font-size:20px"></i>Магазин, категория или сумма</div>
+  <div style="display:flex;gap:8px;margin:12px 16px 0;overflow:hidden"><span class="chip sel" style="gap:8px"><i class="ti ti-credit-card"></i>Альфа *1234 с 10 октября<i class="ti ti-x"></i></span><span class="chip">Все</span></div>
+  <div class="group">Сегодня, 13 октября</div>
+  <div class="card" style="padding:4px 16px">
+    <div class="row" style="min-height:64px;border-bottom:1px solid var(--line)"><span class="ic"><i class="ti ti-shopping-cart"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:500">Пятёрочка</div><div class="t2">Продукты · 12:40</div></div><span class="sum" style="font-size:15px">−450 ₽</span></div>
+    <div class="row" style="min-height:64px"><span class="ic" style="background:var(--posS);color:var(--pos)"><i class="ti ti-arrows-exchange"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:500">Перевод себе</div><div class="t2">Сбер *5678 → Альфа *1234 · 09:10</div></div><span class="sum" style="color:var(--muted);font-size:15px">3 000 ₽</span></div>
+  </div>
+  <div class="group">11 октября</div>
+  <div class="card" style="padding:4px 16px">
+    <div class="row" style="min-height:64px"><span class="ic" style="background:var(--warnS);color:var(--warn)"><i class="ti ti-scale"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:500">Корректировка</div><div class="t2">Другое · Альфа *1234 · 18:05</div></div><span class="sum" style="font-size:15px">−120 ₽</span></div>
+  </div>
+  <div style="margin:12px 22px 0;font-size:13px;line-height:1.45;color:var(--muted)">Не нашли трату? Добавьте её кнопкой «+» — она запишется на Альфу *1234 и войдёт в сверку.</div>
+  <span class="fab"><i class="ti ti-plus"></i></span>
+  <div class="navbar"><div><i class="ti ti-home"></i>Главная</div><div class="on"><i class="ti ti-list"></i>Операции</div><div><i class="ti ti-chart-pie"></i>Статистика</div><div><i class="ti ti-sparkles"></i>Помощник</div></div>
+</div>
+
+<!-- Новая трата по карте из отфильтрованного списка -->
+<div class="screen" id="AddForCard">
+  <div style="display:flex;align-items:center;padding:16px 16px 0;gap:12px"><span class="back"><i class="ti ti-x"></i></span>
+    <div style="margin:0 auto;background:var(--card2);border-radius:20px;padding:4px;display:flex;font-size:15px;font-weight:600"><span style="background:var(--segOn);border-radius:16px;padding:10px 18px">Трата</span><span style="padding:10px 18px;color:var(--sub)">Доход</span></div><span style="width:44px"></span></div>
+  <div style="text-align:center;margin-top:22px"><div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:52px">450 ₽</div>
+  <span style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:var(--priS);color:var(--priT);border-radius:12px;padding:6px 12px;font-size:14px;font-weight:500"><i class="ti ti-credit-card"></i>Альфа *1234</span></div>
+  <div class="group" style="margin-top:18px">Категория · сначала частые</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px">
+    <span class="chip" style="justify-content:center">Кафе</span><span class="chip sel" style="justify-content:center">Продукты</span><span class="chip" style="justify-content:center">Транспорт</span>
+    <span class="chip" style="justify-content:center">Покупки</span><span class="chip" style="justify-content:center">Здоровье</span><span class="chip" style="justify-content:center">Другое</span>
+  </div>
+  <div style="display:flex;gap:8px;padding:10px 16px 0"><span class="chip" style="flex:1;justify-content:center;gap:8px"><i class="ti ti-calendar"></i>12 октября</span><span class="chip" style="flex:1;justify-content:center;gap:8px"><i class="ti ti-pencil"></i>Комментарий</span></div>
+  <div style="flex:1"></div>
+  <div class="keys"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>,</span><span>0</span><span><i class="ti ti-backspace"></i></span></div>
+  <div class="bottom"><div class="btn" style="background:var(--pri);color:#fff">Сохранить</div></div>
+</div>
+
+<!-- Настройки: автоматическая сверка -->
+<div class="screen" id="SettingsReconcile">
+  <div class="top" style="justify-content:flex-start;gap:4px"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Настройки</span></div>
+  <div class="group">Автоимпорт</div>
+  <div class="card dim" style="height:64px;box-sizing:border-box"></div>
+  <div class="group">Сверка с банком</div>
+  <div class="card" style="padding:6px 18px 14px">
+    <div class="row" style="min-height:72px"><div style="flex:1"><div class="t1">Автоматическая сверка</div><div class="t2" style="line-height:1.4;margin-top:2px">Сравнивать остаток из уведомлений банка с расчётом и показывать расхождение</div></div><span class="switch"></span></div>
+    <div style="height:1px;background:var(--line);margin:6px 0 10px"></div>
+    <div class="t2" style="line-height:1.45">Корректировки создаются только после вашего подтверждения. Если банк не пишет остаток, сверяйтесь вручную на экране периода.</div>
+  </div>
+  <div class="group">Защита входа</div>
+  <div class="card dim" style="height:64px;box-sizing:border-box"></div>
+</div>
+
+<script>
+// ?screen=ReconcileManual&theme=dark — какой экран и тема; без параметров — первый экран в светлой теме.
+const q = new URLSearchParams(location.search);
+document.body.className = q.get('theme') === 'dark' ? 'dark' : 'light';
+document.getElementById(q.get('screen') || 'MainMismatchCards').classList.add('on');
+</script>
+</body>
+</html>
