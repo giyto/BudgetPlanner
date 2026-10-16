@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Автокатегории</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;overflow:hidden}
+.light{--bg:#EFF1F5;--card:#FFFFFF;--card2:#E4E7ED;--ink:#191C1F;--muted:#575E68;--sub:#3A4048;--line:#E2E5EA;--chip:#CDD2DA;--pri:#4B52E0;--priT:#4B52E0;--priS:#E4E5FC;--pos:#0B7650;--posS:#DDF5EA;--warn:#B23A0A;--warnS:#FDE7DA;--hero:#191C1F;--heroB:#191C1F;--track:#2E3338;--segOn:#FFFFFF;--nav:#FFFFFF}
+.dark{--bg:#0F1114;--card:#1A1D21;--card2:#24282D;--ink:#F2F4F7;--muted:#A3AAB5;--sub:#C9CED6;--line:#2C3036;--chip:#3A3F46;--pri:#5B62F0;--priT:#A4A8FF;--priS:#262A4D;--pos:#4ADE9A;--posS:#16332A;--warn:#FF9A62;--warnS:#3A2418;--hero:#23272C;--heroB:#353A41;--track:#3A4048;--segOn:#33383F;--nav:#16191C}
+.screen{width:390px;height:844px;box-sizing:border-box;display:none;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Onest',system-ui,sans-serif;overflow:hidden}
+.screen.on{display:flex}
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0 8px;height:44px;flex-shrink:0}
+.back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.skip{color:var(--priT);font-size:15px;font-weight:600}
+.title{font-family:'Unbounded',sans-serif;font-weight:600;font-size:20px}
+.sub2{font-size:14px;color:var(--muted)}
+.prog{padding:8px 20px 0;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.prog div{display:flex;gap:6px}.prog span{flex:1;height:4px;border-radius:2px}
+.badge{align-self:center;position:relative;width:120px;height:120px;border-radius:60px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:18px}
+.badge>span{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:34px;background:var(--priS);color:var(--priT)}
+.ok{position:absolute;right:0;bottom:0;width:36px;height:36px;box-sizing:border-box;border-radius:18px;border:3px solid var(--bg);background:var(--posS);color:var(--pos);display:flex;align-items:center;justify-content:center;font-size:18px}
+h1{margin:18px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans-serif;font-size:23px;font-weight:600;line-height:1.2}
+.p{margin:10px 0 0;padding:0 28px;text-align:center;font-size:15px;line-height:1.45;color:var(--sub)}
+.list{margin:16px 16px 0;padding:4px 16px;background:var(--card);border-radius:22px;flex-shrink:0}
+.li{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 0;box-sizing:border-box;font-size:14px;line-height:1.35}
+.li+.li{border-top:1px solid var(--line)}
+.tile{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px;background:var(--posS);color:var(--pos)}
+.bottom{margin-top:auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;border-radius:18px;font-size:17px;font-weight:600;text-align:center;padding:0 12px}
+.btn2{display:flex;align-items:center;justify-content:center;min-height:52px;box-sizing:border-box;border-radius:18px;border:1px solid var(--chip);font-size:16px;font-weight:600}
+.hint{font-size:13px;line-height:1.4;color:var(--muted);display:flex;gap:8px;padding:0 4px}
+.warncard{margin:16px 16px 0;padding:16px;border-radius:22px;background:var(--warnS)}
+.card{margin:0 16px;background:var(--card);border-radius:22px;padding:16px}
+.group{font-size:14px;color:var(--muted);margin:18px 22px 8px}
+.row{display:flex;align-items:center;gap:12px}
+.ic{width:40px;height:40px;border-radius:12px;background:var(--card2);color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;font-size:20px}
+.t1{font-size:16px;font-weight:600}.t2{font-size:13px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:16px;border:1px solid var(--chip);font-size:15px;font-weight:500;white-space:nowrap;box-sizing:border-box}
+.sel{background:var(--pri);color:#fff;border-color:var(--pri)}
+.tag{display:inline-block;font-size:12px;font-weight:500;padding:3px 8px;border-radius:8px;margin-top:10px}
+.sum{font-size:16px;font-weight:600;white-space:nowrap}
+.plaque{margin:0 16px;border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:72px;box-sizing:border-box}
+.navbar{margin-top:auto;display:flex;justify-content:space-around;padding:10px 0 18px;background:var(--nav);border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.navbar div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.navbar i{font-size:24px}
+.navbar .on{color:var(--ink);font-weight:600}
+.navbar .on i{background:var(--priS);color:var(--priT);border-radius:16px;padding:4px 18px}
+.dim{opacity:.55}
+</style>
+<style>
+.check{width:24px;height:24px;border-radius:6px;border:2px solid var(--chip);box-sizing:border-box;flex:none}
+.check.on{background:var(--pri);border-color:var(--pri);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.ctile{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none;font-size:20px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:28px 28px 0 0;padding:10px 16px 24px;box-shadow:0 -8px 32px rgba(0,0,0,.18)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.38)}
+</style>
+</head>
+<body>
+
+<!-- Черновики: подсказка из словаря и галочка «Запомнить» -->
+<div class="screen" id="DraftsKnownStore">
+  <div class="top" style="justify-content:flex-start;gap:4px;height:auto;padding-top:14px"><span class="back"><i class="ti ti-chevron-left"></i></span><div><div class="title">Черновики</div><div class="sub2">2 операции из уведомлений банка</div></div></div>
+  <div class="card" style="margin-top:14px">
+    <div class="row"><span class="ic"><i class="ti ti-shopping-cart"></i></span><div style="flex:1"><div class="t1">PYATEROCHKA</div><div class="t2">Сегодня, 12:40 · покупка</div></div><span class="sum">−450 ₽</span></div>
+    <span class="tag" style="background:var(--posS);color:var(--pos)">Знакомый магазин</span>
+    <div style="display:flex;gap:8px;margin-top:12px;overflow:hidden"><span class="chip sel">Продукты</span><span class="chip">Кафе</span><span class="chip">Транспорт</span><span class="chip">Другое</span></div>
+    <div class="row" style="margin-top:12px;min-height:44px"><span class="check on"><i class="ti ti-check"></i></span><span style="font-size:15px">Запомнить для «PYATEROCHKA»</span></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="row"><span class="ic"><i class="ti ti-shopping-bag"></i></span><div style="flex:1"><div class="t1">ИП Смирнова А. В.</div><div class="t2">Сегодня, 10:20 · покупка</div></div><span class="sum">−350 ₽</span></div>
+    <div style="display:flex;gap:8px;margin-top:12px;overflow:hidden"><span class="chip">Продукты</span><span class="chip">Кафе</span><span class="chip">Транспорт</span><span class="chip">Другое</span></div>
+    <div class="row" style="margin-top:12px;min-height:44px"><span class="check"></span><span style="font-size:15px">Запомнить для «ИП Смирнова А. В.»</span></div>
+  </div>
+  <div style="margin:12px 22px 0;font-size:13px;line-height:1.45;color:var(--muted)">С галочкой следующая покупка в этом магазине сохранится сразу, без черновика. Правила можно изменить в настройках.</div>
+  <div class="bottom"><div class="btn" style="background:var(--pri);color:#fff">Сохранить 1 операцию</div></div>
+</div>
+
+<!-- Настройки → Правила для магазинов -->
+<div class="screen" id="SettingsRules">
+  <div class="top" style="justify-content:flex-start;gap:4px;height:auto;padding-top:14px"><span class="back"><i class="ti ti-chevron-left"></i></span><div><div class="title">Правила для магазинов</div><div class="sub2">4 правила</div></div></div>
+  <div class="group">Траты</div>
+  <div class="card" style="padding:4px 16px">
+    <div class="row" style="min-height:64px;border-bottom:1px solid var(--line)"><span class="ctile" style="background:#DDF5EA;color:#0B7650"><i class="ti ti-shopping-cart"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:600">PYATEROCHKA</div><div class="t2">Продукты</div></div><span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px"><i class="ti ti-trash"></i></span></div>
+    <div class="row" style="min-height:64px;border-bottom:1px solid var(--line)"><span class="ctile" style="background:#FDE7DA;color:#B23A0A"><i class="ti ti-cup"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:600">Кофейня «Зерно»</div><div class="t2">Кафе и рестораны</div></div><span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px"><i class="ti ti-trash"></i></span></div>
+    <div class="row" style="min-height:64px"><span class="ctile" style="background:var(--card2);color:var(--muted)"><i class="ti ti-arrows-exchange"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:600">Олег К.</div><div class="t2">Переводы</div></div><span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px"><i class="ti ti-trash"></i></span></div>
+  </div>
+  <div class="group">Доходы</div>
+  <div class="card" style="padding:4px 16px">
+    <div class="row" style="min-height:64px"><span class="ctile" style="background:#FCE4F1;color:#B0306E"><i class="ti ti-gift"></i></span><div style="flex:1"><div style="font-size:15px;font-weight:600">Мама М.</div><div class="t2">Подарок</div></div><span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px"><i class="ti ti-trash"></i></span></div>
+  </div>
+  <div style="margin:14px 22px 0;font-size:13px;line-height:1.45;color:var(--muted)">Правило появляется, когда вы подтверждаете черновик с галочкой «Запомнить». Изменение правила не меняет уже сохранённые операции.</div>
+  <div style="margin:auto 16px 24px;background:var(--ink);color:var(--bg);border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;font-size:14px"><span>Правило удалено</span><span style="font-weight:600;color:var(--priS)">Отменить</span></div>
+</div>
+
+<!-- Выбор категории для правила -->
+<div class="screen" id="RuleCategorySheet" style="position:relative">
+  <div class="top" style="justify-content:flex-start;gap:4px;height:auto;padding-top:14px"><span class="back"><i class="ti ti-chevron-left"></i></span><div><div class="title">Правила для магазинов</div><div class="sub2">4 правила</div></div></div>
+  <div class="group">Траты</div>
+  <div class="card" style="height:200px;box-sizing:border-box"></div>
+  <div class="scrim"></div>
+  <div class="sheet">
+    <div style="width:36px;height:4px;border-radius:2px;background:var(--chip);margin:0 auto 14px"></div>
+    <div style="font-size:18px;font-weight:600;padding:0 6px">Категория для «PYATEROCHKA»</div>
+    <div class="t2" style="padding:4px 6px 10px">Новые покупки в этом магазине будут сохраняться сюда</div>
+    <div class="row" style="min-height:56px;padding:0 6px;border-bottom:1px solid var(--line)"><span class="ctile" style="background:#DDF5EA;color:#0B7650"><i class="ti ti-shopping-cart"></i></span><span style="flex:1;font-size:16px">Продукты</span><i class="ti ti-check" style="color:var(--priT);font-size:22px"></i></div>
+    <div class="row" style="min-height:56px;padding:0 6px;border-bottom:1px solid var(--line)"><span class="ctile" style="background:#FDE7DA;color:#B23A0A"><i class="ti ti-cup"></i></span><span style="flex:1;font-size:16px">Кафе и рестораны</span></div>
+    <div class="row" style="min-height:56px;padding:0 6px;border-bottom:1px solid var(--line)"><span class="ctile" style="background:#DCE8FC;color:#2C5BC9"><i class="ti ti-bus"></i></span><span style="flex:1;font-size:16px">Транспорт</span></div>
+    <div class="row" style="min-height:56px;padding:0 6px;border-bottom:1px solid var(--line)"><span class="ctile" style="background:#DDF3F1;color:#147A73"><i class="ti ti-device-mobile"></i></span><span style="flex:1;font-size:16px">Связь и интернет</span></div>
+    <div class="row" style="min-height:56px;padding:0 6px"><span class="ctile" style="background:var(--card2);color:var(--muted)"><i class="ti ti-dots"></i></span><span style="flex:1;font-size:16px">Другое</span></div>
+  </div>
+</div>
+
+<script>
+// ?screen=SettingsRules&theme=dark — какой экран и тема; без параметров — первый экран в светлой теме.
+const q = new URLSearchParams(location.search);
+document.body.className = q.get('theme') === 'dark' ? 'dark' : 'light';
+document.getElementById(q.get('screen') || 'DraftsKnownStore').classList.add('on');
+</script>
+</body>
+</html>
