@@ -194,7 +194,7 @@ class ProtectionSettingsFlowTest : FlowTestBase() {
     fun enableNeedsCheckAndShowsTimeout() {
         openSettings()
         TestAuth.result = AuthResult.Cancelled
-        switch("Вход по отпечатку или PIN").performClick()
+        switch("Вход по отпечатку или PIN").performScrollTo().performClick()
         rule.waitForIdle()
         switch("Вход по отпечатку или PIN").assertIsOff()
         assertFalse(state.enabled)
@@ -204,13 +204,14 @@ class ProtectionSettingsFlowTest : FlowTestBase() {
         rule.waitUntil(5_000) { state.enabled }
         switch("Вход по отпечатку или PIN").assertIsOn()
         waitForText("Блокировать")
-        rule.onNodeWithText("Через 1 мин").assertIsDisplayed()
+        rule.onNodeWithText("Через 1 мин").performScrollTo().assertIsDisplayed()
 
+        rule.onNodeWithText("Сразу").performScrollTo()
         tap("Сразу")
         rule.waitUntil(5_000) { state.timeout == LockTimeout.IMMEDIATELY }
 
         // Выключение тоже через проверку.
-        switch("Вход по отпечатку или PIN").performClick()
+        switch("Вход по отпечатку или PIN").performScrollTo().performClick()
         rule.waitUntil(5_000) { !state.enabled }
         assertEquals(3, TestAuth.calls)
     }

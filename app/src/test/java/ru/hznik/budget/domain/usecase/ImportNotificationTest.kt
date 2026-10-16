@@ -18,7 +18,9 @@ import ru.hznik.budget.notifications.FakeAutoImportSettings
 import ru.hznik.budget.notifications.FakeNotificationRepository
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
+import ru.hznik.budget.testing.FakeAutoReconcileSettings
 import ru.hznik.budget.testing.FakeOperationRepository
+import ru.hznik.budget.testing.FakeReconciliationRepository
 import ru.hznik.budget.testing.FakePeriodRepository
 import ru.hznik.budget.testing.PRODUCTS
 import ru.hznik.budget.testing.SALARY
@@ -30,6 +32,9 @@ import ru.hznik.budget.testing.category
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import ru.hznik.budget.domain.reconcile.ReconAccount
+import ru.hznik.budget.domain.reconcile.ReconState
+import org.junit.Assert.assertNull
 
 /** Приём операций из уведомлений (spec notification-import, drafts, home-screen «Предложение нового периода»). */
 class ImportNotificationTest {
@@ -40,7 +45,11 @@ class ImportNotificationTest {
     private val notifications = FakeNotificationRepository()
     private val periods = FakePeriodRepository()
     private val autoImport = FakeAutoImportSettings()
-    private val import = ImportNotification(operations, categories, notifications, periods, autoImport, TEST_CLOCK)
+    private val recon = FakeReconciliationRepository(operations)
+    private val reconSettings = FakeAutoReconcileSettings()
+    private val import = ImportNotification(
+        operations, categories, notifications, periods, autoImport, ReconcileBalance(recon, reconSettings, ExpectedBalance(recon), ReconciliationLock()), TEST_CLOCK,
+    )
     private val confirm = ConfirmDrafts(operations, categories)
     private val markOwn = MarkOwnTransfer(operations, categories, autoImport)
     private val split = SplitOwnTransfer(operations, categories)
@@ -256,5 +265,69 @@ class ImportNotificationTest {
         assertEquals("перевод с обычной категорией становится тратой", OperationType.EXPENSE, byMerchant["Олег К."]!!.type)
         assertTrue(byMerchant["ИП Смирнова"]!!.isDraft)
         assertNull(all().firstOrNull { it.localDate != TODAY })
+    }
+
+    // --- Сверка с банком (spec balance-reconciliation) ---
+
+    private val card = ReconAccount("sber", "1234")
+
+    @Test
+    fun `first balance of a card becomes the anchor`() = runTest {
+        import(notification(), parsed(balance = 8_000))
+        val state = recon.get(card)!!
+        assertEquals(8_000_00L, state.anchorKopecks)
+        assertEquals(now, state.anchorAt)
+        assertNull(state.pending)
+    }
+
+    @Test
+    fun `purchase with matching balance moves the anchor`() = runTest {
+        recon.save(ReconState(card, 12_750_00, now.minusSeconds(3600)))
+        import(notification(), parsed(rubles = 450, balance = 12_300))
+        val state = recon.get(card)!!
+        assertNull(state.pending)
+        assertEquals(12_300_00L, state.anchorKopecks)
+        assertEquals(now, state.lastReconciledAt)
+    }
+
+    @Test
+    fun `balance not matching the calculation is a mismatch and the next one is compared from the same anchor`() = runTest {
+        recon.save(ReconState(card, 13_200_00, now.minusSeconds(3600)))
+        import(notification(), parsed(rubles = 450, balance = 12_300))
+        assertEquals(-450_00L, recon.get(card)!!.pending!!.diffKopecks)
+        import(notification("key-2"), parsed(rubles = 100, merchant = "Кофейня", balance = 12_200, at = now.plusSeconds(60)))
+        val state = recon.get(card)!!
+        assertEquals(13_200_00L, state.anchorKopecks)
+        assertEquals(12_200_00L, state.pending!!.bankKopecks)
+        assertEquals(-450_00L, state.pending!!.diffKopecks)
+    }
+
+    @Test
+    fun `duplicate and balance-less notifications are not reconciled`() = runTest {
+        recon.save(ReconState(card, 13_200_00, now.minusSeconds(3600)))
+        import(notification(), parsed(rubles = 450))
+        assertNull(recon.get(card)!!.pending)
+        import(notification(), parsed(rubles = 450, balance = 1_000))
+        assertNull(recon.get(card)!!.pending)
+        assertEquals(13_200_00L, recon.get(card)!!.anchorKopecks)
+    }
+
+    @Test
+    fun `with auto reconciliation off the balance is only stored`() = runTest {
+        reconSettings.state.value = false
+        recon.save(ReconState(card, 13_200_00, now.minusSeconds(3600)))
+        import(notification(), parsed(rubles = 450, balance = 1_000))
+        assertNull(recon.get(card)!!.pending)
+        assertEquals(13_200_00L, recon.get(card)!!.anchorKopecks)
+        assertEquals(1, notifications.balances.size)
+    }
+
+    @Test
+    fun `transfer between own accounts inside the bank rebases without comparing`() = runTest {
+        recon.save(ReconState(card, 13_200_00, now.minusSeconds(3600)))
+        assertEquals(ImportResult.IGNORED, import(notification(), parsed(kind = NotificationKind.OWN_TRANSFER, rubles = 3_000, merchant = null, balance = 10_200)))
+        val state = recon.get(card)!!
+        assertNull(state.pending)
+        assertEquals(10_200_00L, state.anchorKopecks)
     }
 }

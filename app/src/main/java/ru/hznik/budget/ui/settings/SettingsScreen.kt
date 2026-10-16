@@ -37,6 +37,7 @@ fun SettingsScreen(
     onOpenPeriod: () -> Unit,
     modifier: Modifier = Modifier,
     autoImport: @Composable () -> Unit = {},
+    reconcile: @Composable () -> Unit = {},
     protection: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
 ) {
@@ -48,6 +49,7 @@ fun SettingsScreen(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
         ) {
             autoImport()
+            reconcile()
             protection()
             Text(
                 stringResource(R.string.settings_group_budget),

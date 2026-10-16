@@ -24,3 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "BudgetPlanner"
 include(":app")
+// Инструмент разработки для эмулятора, в приложение не входит (tools/fakebank/README.md).
+include(":tools:fakebank")

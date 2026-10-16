@@ -17,9 +17,14 @@ import ru.hznik.budget.domain.model.IncomeSchedule
 import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationItem
+import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.domain.model.Period
 import ru.hznik.budget.domain.model.PlannedPayment
+import ru.hznik.budget.domain.reconcile.AutoReconcileSettings
+import ru.hznik.budget.domain.reconcile.BankBalance
+import ru.hznik.budget.domain.reconcile.ReconAccount
+import ru.hznik.budget.domain.reconcile.ReconState
 import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.DraftConfirmation
 import ru.hznik.budget.domain.repository.IncomeScheduleRepository
@@ -27,6 +32,7 @@ import ru.hznik.budget.domain.repository.OperationFilter
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.repository.PeriodRepository
 import ru.hznik.budget.domain.repository.PlannedPaymentRepository
+import ru.hznik.budget.domain.repository.ReconciliationRepository
 import ru.hznik.budget.domain.repository.StatisticsRepository
 import ru.hznik.budget.domain.search.normalizeForSearch
 import ru.hznik.budget.domain.stats.DateRange
@@ -108,6 +114,7 @@ class FakeOperationRepository(val categories: FakeCategoryRepository) : Operatio
                 .filter { filter.source == null || it.operation.source == filter.source }
                 .filter { filter.categoryId == null || it.operation.categoryId == filter.categoryId }
                 .filter { filter.dateRange == null || it.operation.localDate in filter.dateRange }
+                .filter { item -> filter.account?.let { item.operation.matchesAccount(it) } ?: true }
                 .filter { item ->
                     val q = filter.query
                     q.isEmpty ||
@@ -293,4 +300,83 @@ class FakeLockSettingsRepository(initial: LockSettings = LockSettings()) : LockS
     override suspend fun setTimeout(timeout: LockTimeout) = state.update { it.copy(timeout = timeout) }
 
     override suspend fun setHideInRecents(hide: Boolean) = state.update { it.copy(hideInRecents = hide) }
+}
+
+/** Сверка в памяти; ожидаемый остаток считается по операциям [operations] по тем же правилам, что и SQL. */
+class FakeReconciliationRepository(private val operations: FakeOperationRepository) : ReconciliationRepository {
+    val states = MutableStateFlow<Map<ReconAccount, ReconState>>(emptyMap())
+    val balances = mutableListOf<BankBalance>()
+
+    /** Сбой при записи корректировки — для проверки транзакционности. */
+    var failAdjustment = false
+
+    override fun observeStates(): Flow<List<ReconState>> = states.map { it.values.toList() }
+
+    override suspend fun get(account: ReconAccount): ReconState? = states.value[account]
+
+    override suspend fun save(state: ReconState) {
+        states.value = states.value + (state.account to state)
+    }
+
+    override suspend fun netChange(account: ReconAccount, includeNoDigits: Boolean, from: Instant, to: Instant): Long {
+        fun matches(bank: String?, card: String?) = bank == account.bankId && (card == account.cardLast4 || (includeNoDigits && card == null))
+        fun inWindow(at: Instant) = at.isAfter(from) && !at.isAfter(to)
+        var sum = 0L
+        for (op in operations.state.value) {
+            if (op.source != OperationSource.ADJUSTMENT && matches(op.bankId, op.cardLast4) && inWindow(op.occurredAt.toInstant())) {
+                val sign = when (op.type) {
+                    OperationType.INCOME, OperationType.REFUND -> 1
+                    OperationType.EXPENSE, OperationType.TRANSFER -> -1
+                    OperationType.OWN_TRANSFER -> if (op.originalType == OperationType.INCOME) 1 else -1
+                }
+                sum += sign * op.amount.kopecks
+            }
+            val counterAt = op.counterOccurredAt
+            if (op.type == OperationType.OWN_TRANSFER && op.counterBankId != null && counterAt != null &&
+                matches(op.counterBankId, op.counterCardLast4) && inWindow(counterAt)
+            ) {
+                sum += (if (op.originalType == OperationType.INCOME) -1 else 1) * op.amount.kopecks
+            }
+        }
+        return sum
+    }
+
+    override suspend fun knownAccounts(): List<ReconAccount> {
+        val ops = operations.state.value
+        return (
+            ops.filter { it.bankId != null && it.source != OperationSource.ADJUSTMENT }.map { ReconAccount(it.bankId, it.cardLast4) } +
+                ops.filter { it.counterBankId != null }.map { ReconAccount(it.counterBankId, it.counterCardLast4) } +
+                balances.map { it.account } + states.value.keys.filter { !it.isManual }
+            ).distinct()
+    }
+
+    override suspend fun latestBalances(): List<BankBalance> =
+        balances.groupBy { it.account }.values.map { list -> list.maxBy { it.at } }
+
+    override suspend fun saveWithAdjustment(adjustment: Operation, state: ReconState): Boolean {
+        if (states.value[state.account]?.pending == null) return false
+        val id = operations.insert(adjustment)
+        if (failAdjustment) {
+            operations.delete(id)
+            error("Сбой записи")
+        }
+        save(state)
+        return true
+    }
+}
+
+class FakeAutoReconcileSettings(initial: Boolean = true) : AutoReconcileSettings {
+    val state = MutableStateFlow(initial)
+    override val enabled: Flow<Boolean> = state
+
+    override suspend fun setEnabled(enabled: Boolean) {
+        state.value = enabled
+    }
+}
+
+private fun Operation.matchesAccount(f: ru.hznik.budget.domain.repository.AccountFilter): Boolean {
+    fun same(bank: String?, card: String?) = bank == f.account.bankId && (card == f.account.cardLast4 || (f.includeNoDigits && card == null))
+    val counterAt = counterOccurredAt
+    return (same(bankId, cardLast4) && !occurredAt.toInstant().isBefore(f.from)) ||
+        (counterBankId != null && counterAt != null && same(counterBankId, counterCardLast4) && !counterAt.isBefore(f.from))
 }

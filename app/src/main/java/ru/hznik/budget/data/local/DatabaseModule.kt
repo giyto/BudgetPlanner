@@ -14,6 +14,7 @@ import ru.hznik.budget.data.repository.RoomCategoryRepository
 import ru.hznik.budget.data.repository.RoomOperationRepository
 import ru.hznik.budget.data.repository.RoomPeriodRepository
 import ru.hznik.budget.data.repository.RoomPlannedPaymentRepository
+import ru.hznik.budget.data.repository.RoomReconciliationRepository
 import ru.hznik.budget.data.repository.RoomStatisticsRepository
 import ru.hznik.budget.data.security.DatabaseEncryption
 import ru.hznik.budget.data.security.DatabaseKeyStore
@@ -22,6 +23,7 @@ import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.repository.PeriodRepository
 import ru.hznik.budget.domain.repository.PlannedPaymentRepository
+import ru.hznik.budget.domain.repository.ReconciliationRepository
 import ru.hznik.budget.domain.repository.StatisticsRepository
 import ru.hznik.budget.domain.security.DatabaseAccess
 import java.io.File
@@ -73,6 +75,9 @@ object DatabaseModule {
 
     @Provides
     fun provideNotificationDao(db: BudgetDatabase): NotificationDao = db.notificationDao()
+
+    @Provides
+    fun provideReconciliationDao(db: BudgetDatabase): ReconciliationDao = db.reconciliationDao()
 }
 
 @Module
@@ -92,4 +97,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindStatisticsRepository(impl: RoomStatisticsRepository): StatisticsRepository
+
+    @Binds
+    abstract fun bindReconciliationRepository(impl: RoomReconciliationRepository): ReconciliationRepository
 }

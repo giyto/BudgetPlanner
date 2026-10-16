@@ -41,7 +41,8 @@ interface CategoryDao {
 interface OperationDao {
     /**
      * Операции по фильтру, новые сверху. [query] — нормализованная строка с экранированными % и _
-     * (пустая — без поиска), [rubles] — целая часть суммы для поиска по числу.
+     * (пустая — без поиска), [rubles] — целая часть суммы для поиска по числу. Фильтр по счёту — те же правила
+     * сопоставления, что в `ReconciliationDao.netChange`.
      */
     @Query(
         """
@@ -54,6 +55,14 @@ interface OperationDao {
         WHERE (:source IS NULL OR o.source = :source)
             AND (:categoryId IS NULL OR o.category_id = :categoryId)
             AND (:fromEpochDay IS NULL OR o.local_date BETWEEN :fromEpochDay AND :toEpochDay)
+            AND (
+                NOT :accountActive
+                OR (o.bank_id IS :accountBank AND (o.card_last4 IS :accountCard OR (:includeNoDigits AND o.card_last4 IS NULL))
+                    AND o.occurred_at >= :accountFromMillis)
+                OR (o.counter_bank_id IS NOT NULL AND o.counter_bank_id IS :accountBank
+                    AND (o.counter_card_last4 IS :accountCard OR (:includeNoDigits AND o.counter_card_last4 IS NULL))
+                    AND o.counter_occurred_at >= :accountFromMillis)
+            )
             AND (
                 :query = ''
                 OR o.search_text LIKE '%' || :query || '%' ESCAPE '\'
@@ -70,6 +79,11 @@ interface OperationDao {
         categoryId: Long?,
         fromEpochDay: Long?,
         toEpochDay: Long?,
+        accountActive: Boolean = false,
+        accountBank: String? = null,
+        accountCard: String? = null,
+        includeNoDigits: Boolean = false,
+        accountFromMillis: Long = 0,
     ): Flow<List<OperationWithCategory>>
 
     @Query("SELECT category_id, COUNT(*) AS count FROM operations WHERE local_date >= :sinceEpochDay GROUP BY category_id")

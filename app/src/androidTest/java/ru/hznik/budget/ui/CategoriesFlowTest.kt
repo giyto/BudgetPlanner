@@ -28,7 +28,8 @@ class CategoriesFlowTest : FlowTestBase() {
 
     private fun openCategories() {
         rule.onNode(hasContentDescription("Настройки") and hasClickAction()).performClick()
-        rule.onNode(hasText("Категории") and hasClickAction()).performClick()
+        // В настройках выше есть автоимпорт, сверка и защита входа: на невысоком экране пункт ниже края.
+        rule.onNode(hasText("Категории") and hasClickAction()).performScrollTo().performClick()
     }
 
     private fun createExpenseCategory(name: String) {

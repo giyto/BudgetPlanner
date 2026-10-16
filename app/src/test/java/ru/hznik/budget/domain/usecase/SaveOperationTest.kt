@@ -11,6 +11,7 @@ import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
 import ru.hznik.budget.testing.FakeOperationRepository
+import ru.hznik.budget.testing.FakeReconciliationRepository
 import ru.hznik.budget.testing.SALARY
 import ru.hznik.budget.testing.TEST_CLOCK
 import ru.hznik.budget.testing.TODAY
@@ -20,7 +21,7 @@ import ru.hznik.budget.testing.at
 class SaveOperationTest {
     private val categories = FakeCategoryRepository()
     private val operations = FakeOperationRepository(categories)
-    private val save = SaveOperation(operations, categories, TEST_CLOCK)
+    private val save = SaveOperation(operations, categories, PlaceOperationForAccount(FakeReconciliationRepository(operations)), TEST_CLOCK)
 
     private fun draft(
         inputType: InputType = InputType.EXPENSE,

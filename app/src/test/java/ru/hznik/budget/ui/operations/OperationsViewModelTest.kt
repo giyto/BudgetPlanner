@@ -16,10 +16,12 @@ import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
+import ru.hznik.budget.domain.usecase.AccountOperationsFilter
 import ru.hznik.budget.domain.usecase.ObserveOperations
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
 import ru.hznik.budget.testing.FakeOperationRepository
+import ru.hznik.budget.testing.FakeReconciliationRepository
 import ru.hznik.budget.testing.MainDispatcherRule
 import ru.hznik.budget.testing.PRODUCTS
 import ru.hznik.budget.testing.TEST_CLOCK
@@ -35,7 +37,7 @@ class OperationsViewModelTest {
     private val operations = FakeOperationRepository(categories)
     private val savedState = SavedStateHandle()
 
-    private fun viewModel() = OperationsViewModel(savedState, ObserveOperations(operations), categories, TEST_CLOCK)
+    private fun viewModel() = OperationsViewModel(savedState, ObserveOperations(operations), categories, AccountOperationsFilter(FakeReconciliationRepository(operations)), TEST_CLOCK)
 
     private suspend fun add(category: Long, rubles: Long, source: OperationSource = OperationSource.MANUAL, comment: String? = null) =
         operations.insert(Operation(type = OperationType.EXPENSE, amount = Money(rubles * 100), categoryId = category,

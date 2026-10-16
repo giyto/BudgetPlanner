@@ -4,6 +4,7 @@ import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
+import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.time.today
@@ -34,6 +35,8 @@ data class OperationDraft(
     val categoryId: Long?,
     val comment: String,
     val occurredAt: OffsetDateTime,
+    /** Счёт сверки, к которому относится новая операция (добавлена из списка с фильтром по счёту). */
+    val account: ReconAccount? = null,
 )
 
 sealed interface SaveResult {
@@ -47,6 +50,7 @@ enum class SaveError { MISSING_AMOUNT, MISSING_CATEGORY, CATEGORY_KIND_MISMATCH,
 class SaveOperation @Inject constructor(
     private val operations: OperationRepository,
     private val categories: CategoryRepository,
+    private val placeForAccount: PlaceOperationForAccount,
     private val clock: Clock,
 ) {
     suspend operator fun invoke(draft: OperationDraft): SaveResult {
@@ -63,13 +67,16 @@ class SaveOperation @Inject constructor(
         val keepOwnTransfer = draft.id != null && type == OperationType.TRANSFER && operations.get(draft.id)?.type == OperationType.OWN_TRANSFER
 
         if (draft.id == null) {
+            val account = draft.account
             val operation = Operation(
                 type = type,
                 amount = amount,
                 categoryId = categoryId,
                 comment = comment,
                 source = OperationSource.MANUAL,
-                occurredAt = draft.occurredAt,
+                occurredAt = if (account != null) placeForAccount(account, draft.occurredAt) else draft.occurredAt,
+                bankId = account?.bankId,
+                cardLast4 = account?.cardLast4,
             )
             return SaveResult.Saved(operations.insert(operation))
         }

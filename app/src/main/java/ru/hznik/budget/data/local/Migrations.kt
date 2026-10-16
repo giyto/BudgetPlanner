@@ -73,4 +73,18 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+/** 4 → 5: состояние сверки с банком по счетам (этап add-balance-reconciliation). SQL совпадает с app/schemas/.../5.json. */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `reconciliation_accounts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `bank_id` TEXT NOT NULL, " +
+                "`card_last4` TEXT NOT NULL, `anchor_kopecks` INTEGER NOT NULL, `anchor_at` INTEGER NOT NULL, `pending_bank_kopecks` INTEGER, " +
+                "`pending_expected_kopecks` INTEGER, `pending_at` INTEGER, `last_reconciled_at` INTEGER)",
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_reconciliation_accounts_bank_id_card_last4` ON `reconciliation_accounts` (`bank_id`, `card_last4`)",
+        )
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)

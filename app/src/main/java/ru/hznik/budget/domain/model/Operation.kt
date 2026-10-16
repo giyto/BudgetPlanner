@@ -24,7 +24,13 @@ enum class OperationType {
     val categoryKind: CategoryKind get() = if (this == INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE
 }
 
-enum class OperationSource { MANUAL, NOTIFICATION }
+enum class OperationSource {
+    MANUAL,
+    NOTIFICATION,
+
+    /** Корректировка по сверке с банком (FR-13): трата или доход на сумму расхождения, только с подтверждения. */
+    ADJUSTMENT,
+}
 
 /**
  * Операция. [occurredAt] хранит момент вместе со смещением часового пояса, в котором она произошла,

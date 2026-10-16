@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.Money
+import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.time.today
@@ -49,6 +50,8 @@ data class EditorUiState(
     val date: LocalDate,
     val today: LocalDate,
     val comment: String,
+    /** Счёт сверки новой операции, добавленной при поиске пропущенной; `null` — обычный ввод. */
+    val account: ReconAccount? = null,
 ) {
     val amountKopecks: Long get() = AmountInput.toKopecks(amountInput)
     val canSave: Boolean get() = loaded && amountKopecks > 0 && selectedCategoryId != null
@@ -71,6 +74,11 @@ class OperationEditorViewModel @Inject constructor(
 ) : ViewModel() {
     // Аргумент типобезопасного маршрута OperationEditor лежит в SavedStateHandle под именем свойства.
     private val operationId: Long? = savedStateHandle.get<Long>(ARG_OPERATION_ID)
+    private val account: ReconAccount? = if (savedStateHandle.get<Boolean>(ARG_FOR_ACCOUNT) == true) {
+        ReconAccount(savedStateHandle.get<String>(ARG_BANK), savedStateHandle.get<String>(ARG_CARD))
+    } else {
+        null
+    }
 
     private data class Form(
         val loaded: Boolean,
@@ -156,6 +164,7 @@ class OperationEditorViewModel @Inject constructor(
                     categoryId = f.categoryId,
                     comment = f.comment,
                     occurredAt = occurredAt,
+                    account = account,
                 ),
             )
             if (result is SaveResult.Saved) _events.send(EditorEvent.Close)
@@ -184,10 +193,14 @@ class OperationEditorViewModel @Inject constructor(
         date = date,
         today = clock.today(),
         comment = comment,
+        account = account,
     )
 
     companion object {
         const val ARG_OPERATION_ID = "operationId"
+        const val ARG_FOR_ACCOUNT = "forAccount"
+        const val ARG_BANK = "bankId"
+        const val ARG_CARD = "cardLast4"
         const val TOP_COUNT = 6
     }
 }

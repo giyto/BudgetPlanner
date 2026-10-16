@@ -54,6 +54,7 @@ import ru.hznik.budget.ui.categories.CategoriesRoute
 import ru.hznik.budget.ui.categories.CategoryEditorRoute
 import ru.hznik.budget.ui.drafts.DraftsRoute
 import ru.hznik.budget.ui.home.HomeRoute
+import ru.hznik.budget.ui.navigation.AccountOperations
 import ru.hznik.budget.ui.navigation.Assistant
 import ru.hznik.budget.ui.navigation.AssistantGraph
 import ru.hznik.budget.ui.navigation.Categories
@@ -71,6 +72,7 @@ import ru.hznik.budget.ui.navigation.OperationsGraph
 import ru.hznik.budget.ui.navigation.Period
 import ru.hznik.budget.ui.navigation.PeriodStats
 import ru.hznik.budget.ui.navigation.PlannedPaymentEditor
+import ru.hznik.budget.ui.navigation.Reconcile
 import ru.hznik.budget.ui.navigation.Settings
 import ru.hznik.budget.ui.navigation.Stats
 import ru.hznik.budget.ui.navigation.StatsGraph
@@ -81,6 +83,9 @@ import ru.hznik.budget.ui.operations.OperationsRoute
 import ru.hznik.budget.ui.period.NewPeriodRoute
 import ru.hznik.budget.ui.period.PaymentEditorRoute
 import ru.hznik.budget.ui.period.PeriodRoute
+import ru.hznik.budget.ui.reconcile.PeriodReconcileSection
+import ru.hznik.budget.ui.reconcile.ReconcileRoute
+import ru.hznik.budget.ui.reconcile.ReconcileSettingsSection
 import ru.hznik.budget.ui.settings.AutoImportSection
 import ru.hznik.budget.ui.settings.DemoDataSection
 import ru.hznik.budget.ui.settings.NotificationSamplesRoute
@@ -158,6 +163,7 @@ fun BudgetApp(
                         // «Все» открывает раздел так же, как его вкладка.
                         onAllOperations = dropUnlessResumed { navController.navigateToTab(TopLevelDestination.OPERATIONS, reselected = false) },
                         onOpenDrafts = dropUnlessResumed { navController.navigate(Drafts) },
+                        onOpenReconcile = dropUnlessResumed { navController.navigate(Reconcile()) },
                     )
                 }
             }
@@ -206,6 +212,29 @@ fun BudgetApp(
                     onEditPayment = { id ->
                         if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) navController.navigate(PlannedPaymentEditor(id))
                     },
+                    reconcile = { PeriodReconcileSection(onReconcile = dropUnlessResumed { navController.navigate(Reconcile(manual = true)) }) },
+                )
+            }
+            composable<Reconcile> { entry ->
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                ReconcileRoute(
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    onFinished = { if (navController.currentBackStackEntry?.id == entry.id) navController.popBackStack() },
+                    onFindMissing = { account, from ->
+                        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                            navController.navigate(AccountOperations(account.bankId, account.cardLast4, from.toEpochMilli()))
+                        }
+                    },
+                )
+            }
+            composable<AccountOperations> {
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                val resumed = { lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) }
+                OperationsRoute(
+                    onAddOperation = { if (resumed()) navController.navigate(OperationEditor()) },
+                    onOpenOperation = { id -> if (resumed()) navController.navigate(OperationEditor(id)) },
+                    onAddForAccount = { account -> if (resumed()) navController.navigate(OperationEditor(forAccount = true, bankId = account.bankId, cardLast4 = account.cardLast4)) },
+                    onBack = dropUnlessResumed { navController.popBackStack() },
                 )
             }
             composable<PeriodStats> {
@@ -235,6 +264,7 @@ fun BudgetApp(
                     onOpenCategories = dropUnlessResumed { navController.navigate(Categories) },
                     onOpenPeriod = dropUnlessResumed { navController.navigate(Period) },
                     autoImport = { AutoImportSection() },
+                    reconcile = { ReconcileSettingsSection() },
                     protection = { ProtectionSection() },
                     extra = { if (BuildConfig.DEBUG) DemoDataSection(onOpenSamples = dropUnlessResumed { navController.navigate(NotificationSamples) }) },
                 )

@@ -22,6 +22,9 @@ object MoneyFormat {
         return "$number$CURRENCY_SEPARATOR₽"
     }
 
+    /** Остаток счёта: минус, если он отрицательный (кредитная карта). */
+    fun balance(kopecks: Long): String = if (kopecks < 0) MINUS + amount(kopecks) else amount(kopecks)
+
     /** Сумма операции со знаком по её типу. */
     fun operation(money: Money, type: OperationType): String =
         when {

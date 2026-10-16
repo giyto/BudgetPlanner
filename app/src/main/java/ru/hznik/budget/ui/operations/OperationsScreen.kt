@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -62,14 +63,20 @@ import ru.hznik.budget.domain.model.CategoryKind
 import ru.hznik.budget.domain.model.OperationItem
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
+import ru.hznik.budget.domain.reconcile.ReconAccount
+import ru.hznik.budget.domain.repository.AccountFilter
 import ru.hznik.budget.domain.usecase.DayGroup
 import ru.hznik.budget.ui.components.CategoryTile
+import ru.hznik.budget.ui.components.NavigationHeader
 import ru.hznik.budget.ui.components.ScreenTitle
+import ru.hznik.budget.ui.components.formatDayMonth
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
+import ru.hznik.budget.ui.format.accountLabel
 import ru.hznik.budget.ui.format.ownTransferRoute
 import ru.hznik.budget.ui.theme.BudgetTheme
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 const val OPERATIONS_LIST_TAG = "operations_list"
@@ -79,6 +86,8 @@ fun OperationsRoute(
     onAddOperation: () -> Unit,
     onOpenOperation: (Long) -> Unit,
     viewModel: OperationsViewModel = hiltViewModel(),
+    onAddForAccount: (ReconAccount) -> Unit = {},
+    onBack: (() -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     OperationsScreen(
@@ -87,8 +96,11 @@ fun OperationsRoute(
         onSourceSelected = viewModel::onSourceSelected,
         onCategorySelected = viewModel::onCategorySelected,
         onReset = viewModel::resetFilters,
-        onAddOperation = onAddOperation,
+        // При фильтре по счёту новая операция относится к этому счёту (spec operations «Фильтр по счёту»).
+        onAddOperation = { state.accountFilter?.let { onAddForAccount(it.account) } ?: onAddOperation() },
         onOpenOperation = onOpenOperation,
+        onClearAccount = viewModel::clearAccountFilter,
+        onBack = onBack,
     )
 }
 
@@ -103,6 +115,8 @@ fun OperationsScreen(
     onAddOperation: () -> Unit,
     onOpenOperation: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    onClearAccount: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
 ) {
     val colors = BudgetTheme.colors
     var showCategoryFilter by rememberSaveable { mutableStateOf(false) }
@@ -117,9 +131,20 @@ fun OperationsScreen(
         ) {
             item(key = "header") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ScreenTitle(stringResource(R.string.operations_title))
+                    if (onBack != null) {
+                        NavigationHeader(stringResource(R.string.operations_title), R.drawable.ic_back, stringResource(R.string.action_back), onBack)
+                    } else {
+                        ScreenTitle(stringResource(R.string.operations_title))
+                    }
                     SearchField(state.query, onQueryChanged)
+                    state.accountFilter?.let { AccountFilterChip(it, state.zone, onClearAccount) }
                     Filters(state, onSourceSelected, onCategorySelected, onOpenCategories = { showCategoryFilter = true })
+                    state.accountFilter?.let {
+                        Text(
+                            stringResource(R.string.operations_filter_account_hint, accountLabel(it.account)),
+                            fontSize = 13.sp, color = colors.muted, modifier = Modifier.padding(horizontal = 22.dp),
+                        )
+                    }
                 }
             }
             if (state.loaded && state.groups.isEmpty()) {
@@ -147,6 +172,36 @@ fun OperationsScreen(
         CategoryFilterSheet(state.filterCategories, state.selectedCategory?.id, onDismiss = { showCategoryFilter = false }) {
             onCategorySelected(it)
             showCategoryFilter = false
+        }
+    }
+}
+
+/** Чип «Альфа *1234 с 10 октября ✕» по макету OperationsCardFilter; нажатие снимает фильтр. */
+@Composable
+private fun AccountFilterChip(filter: AccountFilter, zone: ZoneId, onClear: () -> Unit) {
+    val colors = BudgetTheme.colors
+    val from = filter.from.atZone(zone).toLocalDate()
+    val label = stringResource(R.string.operations_filter_account, accountLabel(filter.account), formatDayMonth(from))
+    val clearLabel = stringResource(R.string.operations_filter_account_clear)
+    Surface(
+        onClick = onClear,
+        shape = RoundedCornerShape(16.dp),
+        color = colors.primary,
+        contentColor = colors.onPrimary,
+        modifier = Modifier.padding(horizontal = 16.dp).heightIn(min = 44.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp).clearAndSetSemantics {
+                contentDescription = "Фильтр: $label"
+                onClick(label = clearLabel) { onClear(); true }
+            },
+        ) {
+            Icon(painterResource(R.drawable.ic_card), contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.width(8.dp))
+            Icon(painterResource(R.drawable.ic_close), contentDescription = null, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -312,11 +367,14 @@ internal fun OperationRow(item: OperationItem, onOpen: (Long) -> Unit) {
     val own = op.type == OperationType.OWN_TRANSFER
     val ownTitle = stringResource(R.string.own_transfer_title)
     val ownRoute = if (own) ownTransferRoute(op, stringResource(R.string.own_account)) else null
+    // У корректировки и ручной операции, добавленной к сверке, виден счёт: «Корректировка · Другое · Альфа *1234».
+    val account = if (!own && op.bankId != null && op.source != OperationSource.NOTIFICATION) accountLabel(ReconAccount(op.bankId, op.cardLast4)) else null
     val meta = listOfNotNull(
         refundLabel.takeIf { op.type == OperationType.REFUND },
         draftLabel.takeIf { op.isDraft },
         ownRoute,
         item.category.name.takeIf { item.title != item.category.name && !op.isDraft && !own },
+        account,
         TIME.format(op.occurredAt),
     ).joinToString(" · ")
     val title = if (own) ownTitle else item.title

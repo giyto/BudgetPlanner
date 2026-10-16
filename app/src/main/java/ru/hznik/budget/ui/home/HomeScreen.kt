@@ -58,6 +58,8 @@ import ru.hznik.budget.ui.components.formatDayMonth
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.operations.OperationRow
+import ru.hznik.budget.ui.reconcile.MismatchBanner
+import ru.hznik.budget.ui.reconcile.MismatchBannerViewModel
 import ru.hznik.budget.ui.theme.BudgetTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -74,13 +76,16 @@ fun HomeRoute(
     onOpenOperation: (Long) -> Unit,
     onAllOperations: () -> Unit,
     onOpenDrafts: () -> Unit,
+    onOpenReconcile: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
     autoImport: AutoImportViewModel = hiltViewModel(),
     importBanners: ImportBannersViewModel = hiltViewModel(),
+    mismatchBanner: MismatchBannerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val importState by autoImport.state.collectAsStateWithLifecycle()
     val bannersState by importBanners.state.collectAsStateWithLifecycle()
+    val mismatches by mismatchBanner.mismatches.collectAsStateWithLifecycle()
     val openStep = rememberStepOpener(autoImport)
     RefreshOnResume(autoImport)
     HomeScreen(
@@ -93,6 +98,8 @@ fun HomeRoute(
             }
         },
         banners = {
+            // Расхождение с банком выше черновиков (spec home-screen «Плашка расхождения с банком»).
+            MismatchBanner(mismatches, onOpenReconcile)
             DraftsBanner(bannersState.drafts, onOpenDrafts)
             AutoImportStoppedBanner(importState, onFix = openStep)
         },

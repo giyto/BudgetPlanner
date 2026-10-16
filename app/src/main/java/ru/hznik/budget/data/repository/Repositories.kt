@@ -35,6 +35,11 @@ class RoomOperationRepository @Inject constructor(
             categoryId = filter.categoryId,
             fromEpochDay = filter.dateRange?.start?.toEpochDay(),
             toEpochDay = filter.dateRange?.endInclusive?.toEpochDay(),
+            accountActive = filter.account != null,
+            accountBank = filter.account?.account?.bankId,
+            accountCard = filter.account?.account?.cardLast4,
+            includeNoDigits = filter.account?.includeNoDigits ?: false,
+            accountFromMillis = filter.account?.from?.toEpochMilli() ?: 0,
         ).map { rows -> rows.map { it.toDomain() } }
 
     override fun observeFrom(from: LocalDate): Flow<List<Operation>> =

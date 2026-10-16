@@ -6,6 +6,8 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.SemanticsNodeInteractionCollection
 import androidx.compose.ui.test.hasClickAction
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -62,6 +64,20 @@ fun AndroidComposeTestRule<*, *>.waitForStartScreen() = waitUntil(10_000) {
     onAllNodes(
         hasTestTag(BOTTOM_BAR_TAG) or hasText("Шаг 1 из 5") or hasTestTag(LOCK_SCREEN_TAG) or hasTestTag(KEY_LOST_TAG) or hasTestTag(DATABASE_ERROR_TAG),
     ).fetchSemanticsNodes().isNotEmpty()
+}
+
+/** Все нажимаемые элементы на экране не меньше 44 dp (раздел «Дизайн» CLAUDE.md, NFR-04). */
+fun AndroidComposeTestRule<*, *>.assertTouchTargets() {
+    val minPx = with(density) { 44.dp.toPx() }
+    val nodes = onAllNodes(hasClickAction()).fetchSemanticsNodes()
+    assertTrue("Нет нажимаемых элементов", nodes.isNotEmpty())
+    nodes.forEach { node ->
+        val bounds = node.touchBoundsInRoot
+        // Ниже края прокручиваемого экрана видимая область элемента обрезана до нуля: тогда берём его размер.
+        val width = maxOf(bounds.width, node.size.width.toFloat())
+        val height = maxOf(bounds.height, node.size.height.toFloat())
+        assertTrue("Элемент ${node.config} меньше 44 dp: $width×$height px", width >= minPx && height >= minPx)
+    }
 }
 
 /** Общее для сквозных UI-тестов: Hilt с базой в памяти, фиксированные часы и шаги по экранам. */

@@ -124,7 +124,7 @@ data class PlannedPaymentWithPaidDate(
     @ColumnInfo(name = "paid_local_date") val paidLocalDate: Long?,
 )
 
-/** Остаток из уведомления банка; копится для сверки на этапе 7 (FR-13). */
+/** Остаток из уведомления банка для сверки (FR-13). */
 @Entity(tableName = "bank_balances", indices = [Index(value = ["bank_id", "card_last4", "observed_at"])])
 data class BankBalanceEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -153,4 +153,37 @@ data class NotificationSampleEntity(
     @ColumnInfo(name = "bank_id") val bankId: String,
     @ColumnInfo(name = "posted_at") val postedAt: Long,
     val text: String,
+)
+
+/**
+ * Состояние сверки счёта с банком (FR-13). Счёт — банк и последние 4 цифры карты; пустые строки вместо `null`,
+ * чтобы уникальный индекс работал: `''` в `bank_id` — «Счёт без автоимпорта» (design.md add-balance-reconciliation, 1–2).
+ */
+@Entity(tableName = "reconciliation_accounts", indices = [Index(value = ["bank_id", "card_last4"], unique = true)])
+data class ReconciliationAccountEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "bank_id") val bankId: String,
+    @ColumnInfo(name = "card_last4") val cardLast4: String,
+    @ColumnInfo(name = "anchor_kopecks") val anchorKopecks: Long,
+    /** Момент точки отсчёта, мс UTC. */
+    @ColumnInfo(name = "anchor_at") val anchorAt: Long,
+    /** Расхождение, ждущее решения: остаток банка, ожидаемый остаток и момент остатка. */
+    @ColumnInfo(name = "pending_bank_kopecks") val pendingBankKopecks: Long? = null,
+    @ColumnInfo(name = "pending_expected_kopecks") val pendingExpectedKopecks: Long? = null,
+    @ColumnInfo(name = "pending_at") val pendingAt: Long? = null,
+    @ColumnInfo(name = "last_reconciled_at") val lastReconciledAt: Long? = null,
+)
+
+/** Счёт банка, встреченный в операциях или остатках. */
+data class AccountRow(
+    @ColumnInfo(name = "bank_id") val bankId: String,
+    @ColumnInfo(name = "card_last4") val cardLast4: String?,
+)
+
+/** Последний остаток по счёту. */
+data class LatestBalanceRow(
+    @ColumnInfo(name = "bank_id") val bankId: String,
+    @ColumnInfo(name = "card_last4") val cardLast4: String?,
+    @ColumnInfo(name = "balance_kopecks") val balanceKopecks: Long,
+    @ColumnInfo(name = "observed_at") val observedAt: Long,
 )

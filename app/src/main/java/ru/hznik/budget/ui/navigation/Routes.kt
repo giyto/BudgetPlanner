@@ -22,8 +22,22 @@ import kotlinx.serialization.Serializable
 
 // Экраны поверх разделов, без нижней панели.
 
-/** Ввод новой операции ([operationId] = null) или редактирование существующей. */
-@Serializable data class OperationEditor(val operationId: Long? = null)
+/**
+ * Ввод новой операции ([operationId] = null) или редактирование существующей. [forAccount] — новая операция счёта
+ * сверки [bankId]/[cardLast4] (оба `null` — «Счёт без автоимпорта»), добавленная при поиске пропущенной операции.
+ */
+@Serializable data class OperationEditor(
+    val operationId: Long? = null,
+    val forAccount: Boolean = false,
+    val bankId: String? = null,
+    val cardLast4: String? = null,
+)
+
+/** Сверка с банком: счёт расхождения или сразу ручной ввод остатка ([manual]). */
+@Serializable data class Reconcile(val bankId: String? = null, val cardLast4: String? = null, val manual: Boolean = false)
+
+/** Операции счёта сверки начиная с момента [fromMillis] — поиск пропущенной операции. */
+@Serializable data class AccountOperations(val bankId: String? = null, val cardLast4: String? = null, val fromMillis: Long)
 
 @Serializable data object Settings
 

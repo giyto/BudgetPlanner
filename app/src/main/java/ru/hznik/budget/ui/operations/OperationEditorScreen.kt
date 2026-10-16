@@ -75,6 +75,8 @@ import ru.hznik.budget.ui.theme.BudgetTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import ru.hznik.budget.domain.reconcile.ReconAccount
+import ru.hznik.budget.ui.format.accountLabel
 
 @Composable
 fun OperationEditorRoute(onClose: () -> Unit, viewModel: OperationEditorViewModel = hiltViewModel()) {
@@ -128,6 +130,7 @@ fun OperationEditorScreen(
     ) {
         EditorHeader(state.isEdit, state.inputType, onClose, onTypeSelected, onDelete)
         AmountDisplay(state.amountInput, state.inputType)
+        state.account?.let { AccountTag(it) }
 
         Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Высота строки постоянна: без кнопки «Ещё» (у доходов всего 5 категорий) сетка не должна прыгать.
@@ -277,6 +280,22 @@ private fun AmountDisplay(input: String, type: InputType) {
             .padding(horizontal = 16.dp, vertical = 18.dp)
             .semantics { contentDescription = spoken },
     )
+}
+
+/** «Альфа *1234» под суммой: операция запишется на счёт сверки (макет AddForCard). */
+@Composable
+private fun AccountTag(account: ReconAccount) {
+    val colors = BudgetTheme.colors
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.background(colors.primarySoft, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Icon(painterResource(R.drawable.ic_card), contentDescription = null, tint = colors.primaryText, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(accountLabel(account), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.primaryText)
+        }
+    }
 }
 
 @Composable

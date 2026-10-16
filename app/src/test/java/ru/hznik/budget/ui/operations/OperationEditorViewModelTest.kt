@@ -17,11 +17,13 @@ import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.domain.usecase.DeleteOperation
 import ru.hznik.budget.domain.usecase.InputType
 import ru.hznik.budget.domain.usecase.ObserveInputCategories
+import ru.hznik.budget.domain.usecase.PlaceOperationForAccount
 import ru.hznik.budget.domain.usecase.SaveOperation
 import ru.hznik.budget.domain.usecase.UndoDeletionBuffer
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
 import ru.hznik.budget.testing.FakeOperationRepository
+import ru.hznik.budget.testing.FakeReconciliationRepository
 import ru.hznik.budget.testing.MOSCOW
 import ru.hznik.budget.testing.MainDispatcherRule
 import ru.hznik.budget.testing.SALARY
@@ -50,7 +52,7 @@ class OperationEditorViewModelTest {
         observeInputCategories = ObserveInputCategories(categories, operations, TEST_CLOCK),
         categories = categories,
         operations = operations,
-        saveOperation = SaveOperation(operations, categories, TEST_CLOCK),
+        saveOperation = SaveOperation(operations, categories, PlaceOperationForAccount(FakeReconciliationRepository(operations)), TEST_CLOCK),
         deleteOperation = DeleteOperation(operations, buffer),
         clock = TEST_CLOCK,
     )
@@ -167,7 +169,7 @@ class OperationEditorViewModelTest {
             observeInputCategories = ObserveInputCategories(categories, operations, openedYesterday),
             categories = categories,
             operations = operations,
-            saveOperation = SaveOperation(operations, categories, TEST_CLOCK),
+            saveOperation = SaveOperation(operations, categories, PlaceOperationForAccount(FakeReconciliationRepository(operations)), TEST_CLOCK),
             deleteOperation = DeleteOperation(operations, buffer),
             clock = clock,
         )

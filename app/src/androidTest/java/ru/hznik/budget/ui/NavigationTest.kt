@@ -12,14 +12,12 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -148,27 +146,11 @@ class NavigationTest {
 
     @Test
     fun clickableElementsAreAtLeast44dp() {
-        assertTouchTargets()
+        rule.assertTouchTargets()
         rule.onNodeWithContentDescription("Добавить операцию").performClick()
-        assertTouchTargets()
+        rule.assertTouchTargets()
         Espresso.pressBack()
         rule.onNodeWithContentDescription("Настройки").performClick()
-        assertTouchTargets()
-    }
-
-    private fun assertTouchTargets() {
-        val minPx = with(rule.density) { 44.dp.toPx() }
-        val nodes = rule.onAllNodes(hasClickAction()).fetchSemanticsNodes()
-        assertTrue("Нет нажимаемых элементов", nodes.isNotEmpty())
-        nodes.forEach { node ->
-            val bounds = node.touchBoundsInRoot
-            // Ниже края прокручиваемого экрана видимая область элемента обрезана до нуля: тогда берём его размер.
-            val width = maxOf(bounds.width, node.size.width.toFloat())
-            val height = maxOf(bounds.height, node.size.height.toFloat())
-            assertTrue(
-                "Элемент ${node.config} меньше 44 dp: $width×$height px",
-                width >= minPx && height >= minPx,
-            )
-        }
+        rule.assertTouchTargets()
     }
 }

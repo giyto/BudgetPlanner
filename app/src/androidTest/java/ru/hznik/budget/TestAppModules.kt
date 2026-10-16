@@ -25,6 +25,7 @@ import ru.hznik.budget.data.local.NotificationDao
 import ru.hznik.budget.data.local.OperationDao
 import ru.hznik.budget.data.local.PeriodDao
 import ru.hznik.budget.data.local.PlannedPaymentDao
+import ru.hznik.budget.data.local.ReconciliationDao
 import ru.hznik.budget.data.local.StatisticsDao
 import ru.hznik.budget.data.settings.SettingsBindings
 import ru.hznik.budget.data.settings.SettingsModule
@@ -199,6 +200,9 @@ object TestDatabaseModule {
 
     @Provides
     fun provideNotificationDao(db: BudgetDatabase): NotificationDao = db.notificationDao()
+
+    @Provides
+    fun provideReconciliationDao(db: BudgetDatabase): ReconciliationDao = db.reconciliationDao()
 }
 
 /** «Сегодня» в UI-тестах — [TestStart.now] по Москве, по умолчанию 13 октября 2026, 12:00 (вторник). */

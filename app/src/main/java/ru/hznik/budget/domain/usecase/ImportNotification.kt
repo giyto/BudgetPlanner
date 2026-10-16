@@ -11,6 +11,7 @@ import ru.hznik.budget.domain.notifications.BankNotification
 import ru.hznik.budget.domain.notifications.NotificationRepository
 import ru.hznik.budget.domain.notifications.parser.NotificationKind
 import ru.hznik.budget.domain.notifications.parser.ParsedNotification
+import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.DraftConfirmation
 import ru.hznik.budget.domain.repository.OperationRepository
@@ -26,7 +27,7 @@ enum class ImportResult { IMPORTED, DUPLICATE, IGNORED }
 
 /**
  * Операция из разобранного уведомления банка (design.md add-notification-import, решения 4–7): черновик с
- * предварительной категорией, остаток для сверки, защита от дублей и признак «похоже на стипендию».
+ * предварительной категорией, остаток для сверки (add-balance-reconciliation), защита от дублей и признак «похоже на стипендию».
  */
 class ImportNotification @Inject constructor(
     private val operations: OperationRepository,
@@ -34,6 +35,7 @@ class ImportNotification @Inject constructor(
     private val notifications: NotificationRepository,
     private val periods: PeriodRepository,
     private val autoImport: AutoImportSettings,
+    private val reconcileBalance: ReconcileBalance,
     private val clock: Clock,
 ) {
     suspend operator fun invoke(notification: BankNotification, parsed: ParsedNotification): ImportResult {
@@ -45,7 +47,11 @@ class ImportNotification @Inject constructor(
         // а удалённая пользователем операция не вернётся.
         notifications.markSeen(notification.key, parsed.bankId, now)
         if (result != ImportResult.DUPLICATE) {
-            parsed.balance?.let { notifications.addBalance(parsed.bankId, parsed.cardLast4, it, parsed.occurredAt) }
+            parsed.balance?.let { balance ->
+                notifications.addBalance(parsed.bankId, parsed.cardLast4, balance, parsed.occurredAt)
+                // Перевод между своими счетами внутри банка не записывается операцией: остаток — новая точка отсчёта без сравнения.
+                reconcileBalance(ReconAccount(parsed.bankId, parsed.cardLast4), balance.kopecks, parsed.occurredAt, rebase = result == ImportResult.IGNORED)
+            }
         }
         return result
     }

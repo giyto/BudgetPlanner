@@ -6,6 +6,7 @@ import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationItem
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
+import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.domain.search.SearchQuery
 import ru.hznik.budget.domain.stats.DateRange
 import java.time.Instant
@@ -18,7 +19,12 @@ data class OperationFilter(
     val categoryId: Long? = null,
     /** Только операции этих дней — для перехода из статистики к операциям категории. */
     val dateRange: DateRange? = null,
+    /** Только операции счёта сверки начиная с момента — для поиска пропущенной операции (spec operations «Фильтр по счёту»). */
+    val account: AccountFilter? = null,
 )
+
+/** Операции счёта, включая обе стороны перевода себе, не раньше [from]. [includeNoDigits] — как в сверке. */
+data class AccountFilter(val account: ReconAccount, val from: Instant, val includeNoDigits: Boolean)
 
 interface OperationRepository {
     /** Операции по фильтру, новые сверху. */

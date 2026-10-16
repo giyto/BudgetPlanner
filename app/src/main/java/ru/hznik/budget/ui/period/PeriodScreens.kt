@@ -99,6 +99,7 @@ fun PeriodRoute(
     onAddPayment: () -> Unit,
     onEditPayment: (Long) -> Unit,
     viewModel: PeriodViewModel = hiltViewModel(),
+    reconcile: @Composable () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = BudgetTheme.colors
@@ -130,6 +131,7 @@ fun PeriodRoute(
             OutlinedButton(onClick = onStartNewPeriod, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                 Text(stringResource(R.string.home_start_new_period), color = colors.primaryText, fontWeight = FontWeight.SemiBold)
             }
+            reconcile()
             Text(
                 stringResource(R.string.period_payments),
                 style = MaterialTheme.typography.titleMedium,
