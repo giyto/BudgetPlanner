@@ -4,6 +4,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
@@ -90,6 +91,7 @@ import ru.hznik.budget.ui.reconcile.ReconcileRoute
 import ru.hznik.budget.ui.reconcile.ReconcileSettingsSection
 import ru.hznik.budget.ui.rules.CategoryRulesRoute
 import ru.hznik.budget.ui.rules.RulesSettingsItem
+import ru.hznik.budget.ui.settings.AssistantSettingsSection
 import ru.hznik.budget.ui.settings.AutoImportSection
 import ru.hznik.budget.ui.settings.DemoDataSection
 import ru.hznik.budget.ui.settings.NotificationSamplesRoute
@@ -200,7 +202,8 @@ fun BudgetApp(
                 }
             }
             navigation<AssistantGraph>(startDestination = Assistant) {
-                composable<Assistant> { AssistantScreen() }
+                // Отступ нижней панели уже учтён: imePadding в чате не добавляет его второй раз над клавиатурой.
+                composable<Assistant> { AssistantScreen(modifier = Modifier.consumeWindowInsets(innerPadding)) }
             }
             composable<Onboarding> {
                 val activity = LocalActivity.current
@@ -273,6 +276,7 @@ fun BudgetApp(
                     onOpenPeriod = dropUnlessResumed { navController.navigate(Period) },
                     autoImport = { AutoImportSection() },
                     reconcile = { ReconcileSettingsSection() },
+                    assistant = { AssistantSettingsSection() },
                     notifications = { NotificationsSection() },
                     rules = { RulesSettingsItem(onOpen = dropUnlessResumed { navController.navigate(CategoryRules) }) },
                     protection = { ProtectionSection() },

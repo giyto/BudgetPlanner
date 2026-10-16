@@ -12,6 +12,7 @@ import dagger.hilt.components.SingletonComponent
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import ru.hznik.budget.data.repository.RoomCategoryRepository
 import ru.hznik.budget.data.repository.RoomCategoryRuleRepository
+import ru.hznik.budget.data.repository.RoomChatRepository
 import ru.hznik.budget.data.repository.RoomOperationRepository
 import ru.hznik.budget.data.repository.RoomPeriodRepository
 import ru.hznik.budget.data.repository.RoomPlannedPaymentRepository
@@ -20,6 +21,7 @@ import ru.hznik.budget.data.repository.RoomStatisticsRepository
 import ru.hznik.budget.data.security.DatabaseEncryption
 import ru.hznik.budget.data.security.DatabaseKeyStore
 import ru.hznik.budget.data.security.EncryptedDatabaseAccess
+import ru.hznik.budget.domain.ai.ChatRepository
 import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.CategoryRuleRepository
 import ru.hznik.budget.domain.repository.OperationRepository
@@ -83,6 +85,9 @@ object DatabaseModule {
 
     @Provides
     fun provideCategoryRuleDao(db: BudgetDatabase): CategoryRuleDao = db.categoryRuleDao()
+
+    @Provides
+    fun provideChatDao(db: BudgetDatabase): ChatDao = db.chatDao()
 }
 
 @Module
@@ -108,4 +113,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindCategoryRuleRepository(impl: RoomCategoryRuleRepository): CategoryRuleRepository
+
+    @Binds
+    abstract fun bindChatRepository(impl: RoomChatRepository): ChatRepository
 }

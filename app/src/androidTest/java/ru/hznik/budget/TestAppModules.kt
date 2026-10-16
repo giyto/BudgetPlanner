@@ -18,9 +18,11 @@ import dagger.hilt.testing.TestInstallIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import ru.hznik.budget.ai.AiModule
 import ru.hznik.budget.data.local.BudgetDatabase
 import ru.hznik.budget.data.local.CategoryDao
 import ru.hznik.budget.data.local.CategoryRuleDao
+import ru.hznik.budget.data.local.ChatDao
 import ru.hznik.budget.data.local.DatabaseModule
 import ru.hznik.budget.data.local.NotificationDao
 import ru.hznik.budget.data.local.OperationDao
@@ -31,6 +33,11 @@ import ru.hznik.budget.data.local.StatisticsDao
 import ru.hznik.budget.data.settings.SettingsBindings
 import ru.hznik.budget.data.settings.SettingsModule
 import ru.hznik.budget.data.time.TimeModule
+import ru.hznik.budget.domain.ai.LlmMessage
+import ru.hznik.budget.domain.ai.LlmProvider
+import ru.hznik.budget.domain.ai.LlmResult
+import ru.hznik.budget.domain.ai.TokenUsage
+import ru.hznik.budget.domain.ai.ToolSpec
 import ru.hznik.budget.domain.lock.ElapsedClock
 import ru.hznik.budget.domain.lock.LockSettings
 import ru.hznik.budget.domain.lock.LockSettingsRepository
@@ -90,6 +97,9 @@ object TestStart {
      */
     var notificationPermissionNeeded = false
 
+    /** В сборке есть ключ GigaChat; `false` — «Помощник недоступен в этой сборке». */
+    var aiConfigured = true
+
     fun reset() {
         onboarded = true
         periodStart = LocalDate.of(2026, 10, 1)
@@ -101,6 +111,8 @@ object TestStart {
         keyLost = false
         databaseError = false
         notificationPermissionNeeded = false
+        aiConfigured = true
+        TestLlmProvider.reset()
         TestElapsedClock.now = 0
     }
 }
@@ -219,6 +231,9 @@ object TestDatabaseModule {
 
     @Provides
     fun provideCategoryRuleDao(db: BudgetDatabase): CategoryRuleDao = db.categoryRuleDao()
+
+    @Provides
+    fun provideChatDao(db: BudgetDatabase): ChatDao = db.chatDao()
 }
 
 /** «Сегодня» в UI-тестах — [TestStart.now] по Москве, по умолчанию 13 октября 2026, 12:00 (вторник). */
@@ -347,4 +362,32 @@ class TestNotificationPermission @Inject constructor() : NotificationPermission 
     override suspend fun markRequested() {
         requested = true
     }
+}
+
+/**
+ * Модель ИИ в UI-тестах: ответы по очереди из [answers], без сети. Пустая очередь — ответ «ok».
+ * [calls] — что приложение отправило модели: при выключенном помощнике должно быть пусто.
+ */
+object TestLlmProvider : LlmProvider {
+    val answers = java.util.concurrent.ConcurrentLinkedQueue<LlmResult>()
+    val calls = java.util.concurrent.CopyOnWriteArrayList<List<LlmMessage>>()
+
+    override val isConfigured: Boolean get() = TestStart.aiConfigured
+
+    override suspend fun complete(messages: List<LlmMessage>, tools: List<ToolSpec>): LlmResult {
+        calls += messages
+        return answers.poll() ?: LlmResult.Text("ok", TokenUsage(10))
+    }
+
+    fun reset() {
+        answers.clear()
+        calls.clear()
+    }
+}
+
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [AiModule::class])
+object TestAiModule {
+    @Provides
+    fun provideLlmProvider(): LlmProvider = TestLlmProvider
 }

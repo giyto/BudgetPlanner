@@ -8,9 +8,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         CategoryEntity::class, OperationEntity::class, PeriodEntity::class, PlannedPaymentEntity::class,
         BankBalanceEntity::class, NotificationKeyEntity::class, NotificationSampleEntity::class,
-        ReconciliationAccountEntity::class, CategoryRuleEntity::class,
+        ReconciliationAccountEntity::class, CategoryRuleEntity::class, ChatMessageEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class BudgetDatabase : RoomDatabase() {
@@ -29,6 +29,8 @@ abstract class BudgetDatabase : RoomDatabase() {
     abstract fun reconciliationDao(): ReconciliationDao
 
     abstract fun categoryRuleDao(): CategoryRuleDao
+
+    abstract fun chatDao(): ChatDao
 
     /** Заполняет категории по умолчанию в той же транзакции, что и создание схемы. */
     object SeedCallback : Callback() {

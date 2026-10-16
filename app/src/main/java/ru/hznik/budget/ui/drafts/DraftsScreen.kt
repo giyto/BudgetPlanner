@@ -28,7 +28,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,6 +58,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -64,6 +67,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.hznik.budget.R
+import ru.hznik.budget.ai.CategorySuggestions
+import ru.hznik.budget.ai.DraftForHint
+import ru.hznik.budget.ai.SuggestCategories
+import ru.hznik.budget.domain.ai.AiSettings
+import ru.hznik.budget.domain.ai.LlmError
+import ru.hznik.budget.domain.ai.LlmProvider
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.CategoryKind
 import ru.hznik.budget.domain.model.OperationItem
@@ -107,12 +116,28 @@ data class DraftsUiState(
     val rememberable: Set<Long> = emptySet(),
     /** Черновики с подсказкой словаря — подпись «Знакомый магазин». */
     val knownStores: Set<Long> = emptySet(),
+    /** Подсказки помощника: id операции → id категории; не сохраняются без нажатия (spec drafts). */
+    val aiHints: Map<Long, Long> = emptyMap(),
+    /** Помощник включён и названия магазинов не скрыты — есть кнопка «Подсказать категории». */
+    val aiAvailable: Boolean = false,
+    val aiLoading: Boolean = false,
+    val aiError: LlmError? = null,
 ) {
+    /** Черновики, которым нужна подсказка: с названием, без выбора, без подсказки словаря, не перевод себе. */
+    val aiCandidates: List<OperationItem>
+        get() = drafts.filter {
+            val id = it.operation.id
+            it.operation.type != OperationType.OWN_TRANSFER && !it.operation.merchant.isNullOrBlank() && id !in chosen && id !in knownStores
+        }
+
     fun categoriesFor(item: OperationItem): List<Category> =
         if (item.operation.type == OperationType.INCOME) incomeCategories else expenseCategories
 
-    fun selectedFor(item: OperationItem): Long = chosen[item.operation.id] ?: item.operation.categoryId
+    fun selectedFor(item: OperationItem): Long = chosen[item.operation.id] ?: aiHints[item.operation.id] ?: item.operation.categoryId
 }
+
+/** Подсказки помощника на экране черновиков: живут только в памяти экрана. */
+private data class AiHintsState(val byOperation: Map<Long, Long> = emptyMap(), val loading: Boolean = false, val error: LlmError? = null)
 
 @HiltViewModel
 class DraftsViewModel @Inject constructor(
@@ -122,15 +147,20 @@ class DraftsViewModel @Inject constructor(
     private val confirmDrafts: ConfirmDrafts,
     private val markOwnTransfer: MarkOwnTransfer,
     private val splitOwnTransfer: SplitOwnTransfer,
+    private val suggestCategories: SuggestCategories,
+    aiSettings: AiSettings,
+    provider: LlmProvider,
     private val clock: Clock,
 ) : ViewModel() {
     private val chosen = MutableStateFlow<Map<Long, Long>>(emptyMap())
+    private val ai = MutableStateFlow(AiHintsState())
+    private val aiAvailable = combine(aiSettings.enabled, aiSettings.hideMerchants) { enabled, hide -> provider.isConfigured && enabled && !hide }
     private val remember = MutableStateFlow<Set<Long>>(emptySet())
 
     /** Черновики, где категорию выбрала галочка «Запомнить», а не пользователь. */
     private val autoChosen = mutableSetOf<Long>()
 
-    val uiState: StateFlow<DraftsUiState> = combine(
+    private val baseState: Flow<DraftsUiState> = combine(
         observeDrafts(),
         categories.observeAll(),
         operations.observeCategoryUsage(clock.today().minusDays(USAGE_DAYS)),
@@ -153,7 +183,35 @@ class DraftsViewModel @Inject constructor(
             rememberable = drafts.filter(confirmDrafts::canRemember).map { it.operation.id }.toSet(),
             knownStores = drafts.filter { DraftHint.isKnownStore(it.operation, all) }.map { it.operation.id }.toSet(),
         )
+    }
+
+    val uiState: StateFlow<DraftsUiState> = combine(baseState, ai, aiAvailable) { base, hints, available ->
+        val ids = base.drafts.map { it.operation.id }.toSet()
+        base.copy(
+            aiHints = if (available) hints.byOperation.filterKeys { it in ids && it !in base.chosen } else emptyMap(),
+            aiAvailable = available,
+            aiLoading = hints.loading,
+            aiError = hints.error.takeIf { available },
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DraftsUiState())
+
+    /** «Подсказать категории»: один запрос к помощнику; подсказки выбираются как предварительные (spec drafts). */
+    fun suggest() {
+        val state = uiState.value
+        if (!state.aiAvailable || state.aiLoading) return
+        val candidates = state.aiCandidates.map {
+            DraftForHint(it.operation.id, it.operation.merchant.orEmpty(), it.operation.type.categoryKind)
+        }
+        if (candidates.isEmpty()) return
+        ai.update { it.copy(loading = true, error = null) }
+        viewModelScope.launch {
+            when (val result = suggestCategories(candidates)) {
+                is CategorySuggestions.Found -> ai.update { AiHintsState(byOperation = it.byOperation + result.byOperation) }
+                is CategorySuggestions.Failure -> ai.update { it.copy(loading = false, error = result.error) }
+                CategorySuggestions.Unavailable -> ai.update { it.copy(loading = false) }
+            }
+        }
+    }
 
     fun choose(operationId: Long, categoryId: Long) {
         autoChosen -= operationId
@@ -227,6 +285,7 @@ fun DraftsRoute(onBack: () -> Unit, onEmpty: () -> Unit, viewModel: DraftsViewMo
         onToggleRemember = viewModel::toggleRemember,
         onMarkOwn = { item -> if (item.operation.merchant != null) askNameId = item.operation.id else viewModel.markOwn(item.operation.id, remember = false) },
         onSplit = viewModel::split,
+        onSuggest = viewModel::suggest,
     )
     askName?.let { item ->
         OwnNameDialog(
@@ -259,6 +318,7 @@ fun DraftsScreen(
     onMarkOwn: (OperationItem) -> Unit = {},
     onSplit: (Long) -> Unit = {},
     onToggleRemember: (OperationItem) -> Unit = {},
+    onSuggest: () -> Unit = {},
 ) {
     val colors = BudgetTheme.colors
     val count = state.drafts.size
@@ -270,6 +330,9 @@ fun DraftsScreen(
             color = colors.muted,
             modifier = Modifier.padding(start = 20.dp, bottom = 8.dp),
         )
+        if (state.aiAvailable && (state.aiCandidates.isNotEmpty() || state.aiLoading)) {
+            AiSuggestButton(loading = state.aiLoading, error = state.aiError, onClick = onSuggest)
+        }
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
@@ -291,6 +354,7 @@ fun DraftsScreen(
                         userChose = id in state.chosen,
                         onMarkOwn = { onMarkOwn(item) },
                         knownStore = id in state.knownStores,
+                        aiHint = id in state.aiHints,
                         rememberable = id in state.rememberable,
                         remember = id in state.remember,
                         onToggleRemember = { onToggleRemember(item) },
@@ -319,6 +383,46 @@ fun DraftsScreen(
 
 private val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
+const val DRAFTS_AI_SUGGEST_TAG = "drafts_ai_suggest"
+
+/** «Подсказать категории» и что уходит в модель; при ошибке — тот же текст, что в чате помощника. */
+@Composable
+private fun AiSuggestButton(loading: Boolean, error: LlmError?, onClick: () -> Unit) {
+    val colors = BudgetTheme.colors
+    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
+        OutlinedButton(
+            onClick = onClick,
+            enabled = !loading,
+            shape = RoundedCornerShape(18.dp),
+            border = BorderStroke(1.dp, colors.chipBorder),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primaryText),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag(DRAFTS_AI_SUGGEST_TAG),
+        ) {
+            if (loading) {
+                CircularProgressIndicator(strokeWidth = 2.dp, color = colors.primaryText, modifier = Modifier.size(18.dp))
+            } else {
+                Icon(painterResource(R.drawable.ic_nav_assistant), contentDescription = null, modifier = Modifier.size(18.dp))
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.drafts_ai_suggest), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        }
+        val message = when (error) {
+            null -> null
+            LlmError.NO_NETWORK -> R.string.assistant_error_network
+            LlmError.RATE_LIMITED -> R.string.assistant_error_rate
+            LlmError.TOKENS_EXHAUSTED -> R.string.assistant_error_tokens
+            else -> R.string.assistant_error_unavailable
+        }
+        Text(
+            stringResource(message ?: R.string.drafts_ai_note),
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+            color = if (message != null) colors.warn else colors.muted,
+            modifier = Modifier.padding(top = 8.dp, start = 4.dp, end = 4.dp),
+        )
+    }
+}
+
 @Composable
 private fun DraftCard(
     item: OperationItem,
@@ -328,6 +432,7 @@ private fun DraftCard(
     userChose: Boolean,
     onMarkOwn: () -> Unit,
     knownStore: Boolean = false,
+    aiHint: Boolean = false,
     rememberable: Boolean = false,
     remember: Boolean = false,
     onToggleRemember: () -> Unit = {},
@@ -389,6 +494,16 @@ private fun DraftCard(
                 fontWeight = FontWeight.Medium,
                 color = colors.positive,
                 modifier = Modifier.padding(top = 10.dp).background(colors.positiveSoft, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+        }
+        // Подсказка помощника (макет DraftsAiSuggest): сохраняется только по нажатию на выбранную категорию.
+        if (aiHint && !userChose) {
+            Text(
+                stringResource(R.string.drafts_ai_hint),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = colors.primaryText,
+                modifier = Modifier.padding(top = 10.dp).background(colors.primarySoft, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
             )
         }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {

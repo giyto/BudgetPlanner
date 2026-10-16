@@ -121,12 +121,13 @@ abstract class FlowTestBase {
         merchant: String? = null,
         comment: String? = null,
         source: OperationSource = OperationSource.MANUAL,
+        draft: Boolean = false,
     ): Long = runBlocking {
         val kind = if (type == OperationType.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE
         operations.insert(
             Operation(
                 type = type, amount = Money(rubles * 100 + kopecks), categoryId = category(categoryName, kind).id,
-                merchant = merchant, comment = comment, source = source,
+                merchant = merchant, comment = comment, source = source, isDraft = draft,
                 occurredAt = date.atTime(hour, 0).atZone(TEST_ZONE).toOffsetDateTime(),
             ),
         )

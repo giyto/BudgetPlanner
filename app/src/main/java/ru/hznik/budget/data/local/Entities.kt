@@ -214,3 +214,15 @@ data class CategoryRuleWithCategory(
     @Embedded val rule: CategoryRuleEntity,
     @Embedded(prefix = "c_") val category: CategoryEntity,
 )
+
+/** Сообщение диалога с помощником (design.md add-ai-assistant, решение 6); результаты инструментов не хранятся. */
+@Entity(tableName = "chat_messages")
+data class ChatMessageEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** `USER`, `ASSISTANT` или `ERROR`. */
+    val role: String,
+    val text: String,
+    /** Имена выполненных инструментов через запятую — для подписи под ответом. */
+    val tools: String,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+)

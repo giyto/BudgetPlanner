@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Сеть нужна только ИИ-помощнику (раздел 10 ТЗ, design.md add-ai-assistant, решение 3). Открытый HTTP запрещён везде.
+  Корневой сертификат НУЦ Минцифры (gu-st.ru, SHA-256 D2:6D:2D:02:…:8E:CF:31, до 2032 года) доверяется только
+  для доменов GigaChat, вместе с системными сертификатами; для остальных доменов — только системные.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">ngw.devices.sberbank.ru</domain>
+        <domain includeSubdomains="false">api.giga.chat</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/russian_trusted_root_ca" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

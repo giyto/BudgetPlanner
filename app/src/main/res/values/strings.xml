@@ -49,7 +49,6 @@
     <string name="stats_period_left">осталось %1$s</string>
     <string name="stats_period_overspent">перерасход %1$s</string>
     <string name="assistant_title">Помощник</string>
-    <string name="assistant_placeholder">Здесь можно будет спросить о расходах обычным языком.</string>
     <string name="settings_title">Настройки</string>
     <string name="settings_categories">Категории</string>
     <string name="settings_categories_hint">Свои категории, иконки и цвета, скрытые категории</string>
@@ -452,4 +451,56 @@
     <string name="widget_no_data">Откройте BudgetPlanner</string>
     <string name="widget_add_expense">Добавить трату</string>
     <string name="widget_preview_amount" translatable="false">1&#160;120&#160;₽</string>
+
+    <!-- ИИ-помощник (add-ai-assistant) -->
+    <string name="assistant_subtitle">Видит только итоги и суммы, а не ваши операции</string>
+    <string name="assistant_subtitle_short">Видит только итоги и суммы</string>
+    <string name="assistant_intro_title">Спросите про свои траты</string>
+    <string name="assistant_intro_text">«Хватит ли до стипендии, если куплю наушники?» - помощник посчитает по вашему бюджету и ответит обычным языком.</string>
+    <string name="assistant_sent_header">Уходит в модель GigaChat</string>
+    <string name="assistant_sent_totals">Итоги: бюджет, лимит на день, потрачено</string>
+    <string name="assistant_sent_categories">Суммы по категориям за период</string>
+    <string name="assistant_sent_merchants">Названия магазинов - можно отключить</string>
+    <string name="assistant_sent_merchants_off">Названия магазинов не отправляются</string>
+    <string name="assistant_kept_header">Остаётся на телефоне</string>
+    <string name="assistant_kept">Список операций, номера карт, остатки банка и тексты уведомлений</string>
+    <string name="assistant_enable">Включить помощника</string>
+    <string name="assistant_via_gigachat">Работает через GigaChat от Сбера, регистрация не нужна</string>
+    <string name="assistant_not_configured">Помощник недоступен в этой сборке</string>
+    <string name="assistant_tokens">Израсходовано %1$s %2$s</string>
+    <string name="assistant_new_dialog">Новый диалог</string>
+    <string name="assistant_new_dialog_title">Начать новый диалог?</string>
+    <string name="assistant_new_dialog_text">Текущий диалог удалится с телефона.</string>
+    <string name="assistant_new_dialog_confirm">Удалить и начать</string>
+    <string name="assistant_cancel">Отмена</string>
+    <string name="assistant_empty_title">Чем помочь?</string>
+    <string name="assistant_empty_text">Спросите про бюджет или выберите вопрос</string>
+    <string name="assistant_input_hint">Спросите про свои траты</string>
+    <string name="assistant_send">Отправить</string>
+    <string name="assistant_thinking">Считаю по вашему бюджету…</string>
+    <string name="assistant_retry">Повторить</string>
+    <string name="assistant_suggest_headphones">Хватит ли до стипендии, если куплю наушники за 3 000 ₽?</string>
+    <string name="assistant_suggest_top">На что я больше всего трачу?</string>
+    <string name="assistant_suggest_cafe">Сколько ушло на кафе за месяц?</string>
+    <string name="assistant_suggest_survive">Как дожить до стипендии?</string>
+    <string name="assistant_suggest_overpay">Где я переплачиваю?</string>
+    <string name="assistant_caption_budget">Посчитал по вашему бюджету</string>
+    <string name="assistant_caption_categories">Посмотрел траты по категориям</string>
+    <string name="assistant_caption_merchants">Посмотрел траты по магазинам</string>
+    <string name="assistant_error_network">Нет соединения с интернетом</string>
+    <string name="assistant_error_network_sub">Остальное приложение работает без сети</string>
+    <string name="assistant_error_rate">Слишком много запросов, попробуйте через минуту</string>
+    <string name="assistant_error_tokens">Лимит помощника закончился, попробуйте позже</string>
+    <string name="assistant_error_unavailable">Помощник временно недоступен</string>
+    <string name="assistant_error_too_many_calls">Не получилось посчитать, попробуйте переформулировать вопрос</string>
+    <string name="assistant_error_sub">Остальное приложение работает как обычно</string>
+    <string name="settings_group_assistant">ИИ-помощник</string>
+    <string name="settings_assistant_enabled">Помощник</string>
+    <string name="settings_assistant_enabled_sub">Отвечает на вопросы о тратах через GigaChat</string>
+    <string name="settings_assistant_hide_merchants">Не отправлять названия магазинов</string>
+    <string name="settings_assistant_hide_merchants_sub">В модель уходят только категории и суммы</string>
+    <string name="settings_assistant_tokens">Израсходовано на этом телефоне</string>
+    <string name="drafts_ai_suggest">Подсказать категории</string>
+    <string name="drafts_ai_hint">Подсказал помощник</string>
+    <string name="drafts_ai_note">Помощник получает только названия магазинов и список категорий - без сумм и дат. Подсказка сохранится, когда вы нажмёте на выбранную категорию.</string>
 </resources>

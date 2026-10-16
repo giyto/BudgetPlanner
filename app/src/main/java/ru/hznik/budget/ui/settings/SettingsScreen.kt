@@ -38,6 +38,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     autoImport: @Composable () -> Unit = {},
     reconcile: @Composable () -> Unit = {},
+    assistant: @Composable () -> Unit = {},
     notifications: @Composable () -> Unit = {},
     protection: @Composable () -> Unit = {},
     rules: @Composable () -> Unit = {},
@@ -52,6 +53,7 @@ fun SettingsScreen(
         ) {
             autoImport()
             reconcile()
+            assistant()
             notifications()
             protection()
             Text(

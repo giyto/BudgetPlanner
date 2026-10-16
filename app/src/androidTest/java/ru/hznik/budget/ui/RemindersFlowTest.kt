@@ -91,13 +91,16 @@ class NotificationsSettingsFlowTest : FlowTestBase() {
         rule.onNodeWithTag(NOTIFICATIONS_DENIED_TAG).assertDoesNotExist()
 
         overspend.performClick()
-        overspend.assertIsOff()
+        // Состояние переключателя приходит из DataStore не сразу: сначала ждём настройку, потом проверяем экран.
         rule.waitUntil(5_000) { runBlocking { NotificationType.OVERSPEND !in notificationSettings.enabled.first() } }
+        rule.waitForIdle()
+        overspend.assertIsOff()
         assertTrue(NotificationType.PAYMENT in runBlocking { notificationSettings.enabled.first() })
 
         overspend.performClick()
-        overspend.assertIsOn()
         rule.waitUntil(5_000) { runBlocking { NotificationType.OVERSPEND in notificationSettings.enabled.first() } }
+        rule.waitForIdle()
+        overspend.assertIsOn()
         rule.assertTouchTargets()
     }
 }

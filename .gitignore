@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Ключ GigaChat хранится только в local.properties; эти файлы — на случай отладки, чтобы ключ не ушёл в git.
+gigachat.key
+secrets.properties
