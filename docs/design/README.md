@@ -38,6 +38,9 @@
 | Черновики: «Знакомый магазин» и «Запомнить» | ![](screenshots/DraftsKnownStore.png) | ![](screenshots/DarkDraftsKnownStore.png) |
 | Настройки: правила для магазинов | ![](screenshots/SettingsRules.png) | ![](screenshots/DarkSettingsRules.png) |
 | Правило: выбор категории | ![](screenshots/RuleCategorySheet.png) | ![](screenshots/DarkRuleCategorySheet.png) |
+| Виджет на рабочем столе: средний, маленький, скрытая сумма | ![](screenshots/Widgets.png) | ![](screenshots/DarkWidgets.png) |
+| Уведомления приложения | ![](screenshots/NotificationsShade.png) | ![](screenshots/DarkNotificationsShade.png) |
+| Онбординг: подсказки вовремя | ![](screenshots/OnboardingNotifications.png) | ![](screenshots/DarkOnboardingNotifications.png) |
 
 Исходник каждого снимка лежит в `mockups/` под тем же именем с расширением `.dc.html`. Исключение — экраны статистики (`Stats*`, `CategoryOperations`): карточку категорий переделали (список категорий под кольцом, раскрытие «Остального», переход к операциям категории), поэтому старый макет статистики удалён, а снимки сделаны с самого приложения на эмуляторе в том же размере. Запись о статистике в `canvas.json` относится к удалённому макету.
 
@@ -55,3 +58,5 @@
 
 
 `Onboarding` (шаг автоимпорта) тоже отрисован из `mockups/NotificationImport.html`: `Onboarding.dc.html` в редакторе обновлён теми же текстами, но открывается только там. Настройки целиком — один высокий экран в `mockups/Settings.html` (`Settings.html?theme=dark`), со всеми разделами по порядку.
+
+Виджет, уведомления и шаг «Подсказки вовремя» (`Widgets`, `NotificationsShade`, `OnboardingNotifications`) лежат в `mockups/WidgetReminders.html` и выбираются так же, например `WidgetReminders.html?screen=NotificationsShade&theme=dark`. Раздел «Уведомления» добавлен в полный экран `Settings`.

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Виджет и уведомления</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;overflow:hidden}
+.light{--bg:#EFF1F5;--card:#FFFFFF;--card2:#E4E7ED;--ink:#191C1F;--muted:#575E68;--sub:#3A4048;--line:#E2E5EA;--chip:#CDD2DA;--pri:#4B52E0;--priT:#4B52E0;--priS:#E4E5FC;--pos:#0B7650;--posS:#DDF5EA;--warn:#B23A0A;--warnS:#FDE7DA;--hero:#191C1F;--heroB:#191C1F;--track:#2E3338;--segOn:#FFFFFF;--nav:#FFFFFF}
+.dark{--bg:#0F1114;--card:#1A1D21;--card2:#24282D;--ink:#F2F4F7;--muted:#A3AAB5;--sub:#C9CED6;--line:#2C3036;--chip:#3A3F46;--pri:#5B62F0;--priT:#A4A8FF;--priS:#262A4D;--pos:#4ADE9A;--posS:#16332A;--warn:#FF9A62;--warnS:#3A2418;--hero:#23272C;--heroB:#353A41;--track:#3A4048;--segOn:#33383F;--nav:#16191C}
+.screen{width:390px;height:844px;box-sizing:border-box;display:none;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Onest',system-ui,sans-serif;overflow:hidden}
+.screen.on{display:flex}
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0 8px;height:44px;flex-shrink:0}
+.back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.skip{color:var(--priT);font-size:15px;font-weight:600}
+.title{font-family:'Unbounded',sans-serif;font-weight:600;font-size:20px}
+.sub2{font-size:14px;color:var(--muted)}
+.prog{padding:8px 20px 0;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.prog div{display:flex;gap:6px}.prog span{flex:1;height:4px;border-radius:2px}
+.badge{align-self:center;position:relative;width:120px;height:120px;border-radius:60px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:18px}
+.badge>span{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:34px;background:var(--priS);color:var(--priT)}
+.ok{position:absolute;right:0;bottom:0;width:36px;height:36px;box-sizing:border-box;border-radius:18px;border:3px solid var(--bg);background:var(--posS);color:var(--pos);display:flex;align-items:center;justify-content:center;font-size:18px}
+h1{margin:18px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans-serif;font-size:23px;font-weight:600;line-height:1.2}
+.p{margin:10px 0 0;padding:0 28px;text-align:center;font-size:15px;line-height:1.45;color:var(--sub)}
+.list{margin:16px 16px 0;padding:4px 16px;background:var(--card);border-radius:22px;flex-shrink:0}
+.li{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 0;box-sizing:border-box;font-size:14px;line-height:1.35}
+.li+.li{border-top:1px solid var(--line)}
+.tile{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px;background:var(--posS);color:var(--pos)}
+.bottom{margin-top:auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;border-radius:18px;font-size:17px;font-weight:600;text-align:center;padding:0 12px}
+.btn2{display:flex;align-items:center;justify-content:center;min-height:52px;box-sizing:border-box;border-radius:18px;border:1px solid var(--chip);font-size:16px;font-weight:600}
+.hint{font-size:13px;line-height:1.4;color:var(--muted);display:flex;gap:8px;padding:0 4px}
+.warncard{margin:16px 16px 0;padding:16px;border-radius:22px;background:var(--warnS)}
+.card{margin:0 16px;background:var(--card);border-radius:22px;padding:16px}
+.group{font-size:14px;color:var(--muted);margin:18px 22px 8px}
+.row{display:flex;align-items:center;gap:12px}
+.ic{width:40px;height:40px;border-radius:12px;background:var(--card2);color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;font-size:20px}
+.t1{font-size:16px;font-weight:600}.t2{font-size:13px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:16px;border:1px solid var(--chip);font-size:15px;font-weight:500;white-space:nowrap;box-sizing:border-box}
+.sel{background:var(--pri);color:#fff;border-color:var(--pri)}
+.tag{display:inline-block;font-size:12px;font-weight:500;padding:3px 8px;border-radius:8px;margin-top:10px}
+.sum{font-size:16px;font-weight:600;white-space:nowrap}
+.plaque{margin:0 16px;border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:72px;box-sizing:border-box}
+.navbar{margin-top:auto;display:flex;justify-content:space-around;padding:10px 0 18px;background:var(--nav);border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.navbar div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.navbar i{font-size:24px}
+.navbar .on{color:var(--ink);font-weight:600}
+.navbar .on i{background:var(--priS);color:var(--priT);border-radius:16px;padding:4px 18px}
+.dim{opacity:.55}
+</style>
+<style>
+.wall{background:linear-gradient(160deg,#3B4A6B 0%,#26314A 55%,#1B2234 100%)}
+.dark .wall{background:linear-gradient(160deg,#1E2638 0%,#141A27 60%,#0D1119 100%)}
+.wlabel{color:rgba(255,255,255,.8);font-size:12px;margin:14px 22px 6px}
+.widget{border-radius:24px;background:var(--hero);border:1px solid var(--heroB);color:#fff;padding:14px 16px;box-sizing:border-box}
+.wsmall{width:170px;height:76px;margin-left:16px}
+.wmed{margin:0 16px;height:170px;display:flex;gap:12px}
+.wplus{width:56px;height:56px;border-radius:18px;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;flex:none}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;padding:22px 26px 0}
+.apps span{width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.18);justify-self:center}
+.shade{background:var(--bg)}
+.ncard{margin:0 12px 10px;background:var(--card);border-radius:22px;padding:14px 16px;display:flex;gap:12px}
+.nicon{width:36px;height:36px;border-radius:18px;background:var(--priS);color:var(--priT);display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+</style>
+</head>
+<body>
+
+<!-- Виджеты на рабочем столе: средний, маленький и со скрытой суммой -->
+<div class="screen wall" id="Widgets">
+  <div style="height:44px"></div>
+  <div class="wlabel">Средний 4×2</div>
+  <div class="widget wmed">
+    <div style="flex:1;display:flex;flex-direction:column">
+      <div style="font-size:13px;color:#B9BEC7">Можно сегодня</div>
+      <div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:38px;margin-top:4px">1 120 ₽</div>
+      <div style="height:6px;border-radius:3px;background:var(--track);margin-top:12px"><div style="width:25%;height:6px;border-radius:3px;background:#5EE0A8"></div></div>
+      <div style="font-size:13px;color:#B9BEC7;margin-top:auto">из 1 500 ₽ · 9 дней до дохода</div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end"><span class="wplus"><i class="ti ti-plus"></i></span></div>
+  </div>
+  <div class="wlabel">Маленький 2×1</div>
+  <div style="display:flex;gap:12px;padding-right:16px">
+    <div class="widget wsmall"><div style="font-size:12px;color:#B9BEC7">Можно сегодня</div><div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:26px;margin-top:2px">1 120 ₽</div></div>
+    <div class="widget wsmall" style="margin-left:0"><div style="font-size:12px;color:#B9BEC7">Можно сегодня</div><div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:26px;margin-top:2px;color:var(--warnOnHero,#FF9A62)">−300 ₽</div></div>
+  </div>
+  <div class="wlabel">Включена защита входа</div>
+  <div class="widget wmed" style="height:120px">
+    <div style="flex:1;display:flex;flex-direction:column">
+      <div style="font-size:13px;color:#B9BEC7">Можно сегодня</div>
+      <div style="font-family:'Unbounded',sans-serif;font-weight:600;font-size:38px;margin-top:4px;letter-spacing:2px">••• ₽</div>
+      <div style="font-size:12px;color:#B9BEC7;margin-top:auto">Откройте приложение, чтобы увидеть сумму</div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end"><span class="wplus"><i class="ti ti-plus"></i></span></div>
+  </div>
+  <div class="apps"><span></span><span></span><span></span><span></span></div>
+</div>
+
+<!-- Шторка: примеры уведомлений приложения -->
+<div class="screen shade" id="NotificationsShade">
+  <div style="padding:18px 22px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:600">Уведомления</span><span class="t2">16 октября</span></div>
+  <div class="ncard"><span class="nicon" style="background:var(--warnS);color:var(--warn)"><i class="ti ti-alert-triangle"></i></span><div style="flex:1"><div class="t2">BudgetPlanner · сейчас</div><div style="font-size:15px;font-weight:600;margin-top:2px">Перерасход 219 ₽</div><div style="font-size:14px;color:var(--sub);margin-top:2px">Завтрашний лимит станет 752 ₽</div></div></div>
+  <div class="ncard"><span class="nicon"><i class="ti ti-calendar"></i></span><div style="flex:1"><div class="t2">BudgetPlanner · 10:00</div><div style="font-size:15px;font-weight:600;margin-top:2px">Завтра платёж: Интернет, 650 ₽</div><div style="font-size:14px;color:var(--sub);margin-top:2px">Деньги на него уже отложены в резерв</div></div></div>
+  <div class="ncard"><span class="nicon" style="background:var(--posS);color:var(--pos)"><i class="ti ti-cash"></i></span><div style="flex:1"><div class="t2">BudgetPlanner · 12:40</div><div style="font-size:15px;font-weight:600;margin-top:2px">Пришло 9 000 ₽ — начать новый период?</div><div style="font-size:14px;color:var(--sub);margin-top:2px">Похоже на стипендию. Нажмите, чтобы начать</div></div></div>
+  <div class="ncard"><span class="nicon" style="background:var(--warnS);color:var(--warn)"><i class="ti ti-scale"></i></span><div style="flex:1"><div class="t2">BudgetPlanner · 14:26</div><div style="font-size:15px;font-weight:600;margin-top:2px">Расхождение с банком 450 ₽ · Альфа *1234</div><div style="font-size:14px;color:var(--sub);margin-top:2px">Нажмите, чтобы сверить</div></div></div>
+  <div style="margin:12px 22px 0;font-size:13px;line-height:1.45;color:var(--muted)">Перерасход — не чаще раза в день, платёж — накануне в 10:00. Если включена защита входа, на экране блокировки видно только «BudgetPlanner».</div>
+</div>
+
+<!-- Онбординг: разрешение на уведомления (Android 13+) -->
+<div class="screen" id="OnboardingNotifications">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="skip">Пропустить</span></div>
+  <div class="prog"><div><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--pri)"></span><span style="background:var(--card2)"></span></div><span class="sub2" style="font-size:13px">Шаг 5 из 6</span></div>
+  <div class="badge"><span><i class="ti ti-bell-ringing"></i></span></div>
+  <h1>Подсказки вовремя</h1>
+  <p class="p">BudgetPlanner напомнит о важном, даже если приложение закрыто. Уведомлений немного — только по делу.</p>
+  <div class="list">
+    <div class="li"><span class="tile" style="background:var(--warnS);color:var(--warn)"><i class="ti ti-alert-triangle"></i></span>Перерасход — не чаще раза в день</div>
+    <div class="li"><span class="tile"><i class="ti ti-calendar"></i></span>Обязательный платёж — накануне в 10:00</div>
+    <div class="li"><span class="tile"><i class="ti ti-cash"></i></span>Пришёл доход — начать новый период</div>
+    <div class="li"><span class="tile" style="background:var(--warnS);color:var(--warn)"><i class="ti ti-scale"></i></span>Расхождение с банком</div>
+  </div>
+  <div class="hint" style="margin:12px 24px 0"><i class="ti ti-adjustments"></i><span>Каждый тип можно выключить в настройках.</span></div>
+  <div class="bottom">
+    <div class="btn" style="background:var(--pri);color:#fff">Разрешить уведомления</div>
+    <div class="btn2">Не сейчас</div>
+  </div>
+</div>
+
+<script>
+// ?screen=NotificationsShade&theme=dark — какой экран и тема; без параметров — первый экран в светлой теме.
+const q = new URLSearchParams(location.search);
+document.body.className = q.get('theme') === 'dark' ? 'dark' : 'light';
+document.getElementById(q.get('screen') || 'Widgets').classList.add('on');
+</script>
+</body>
+</html>
