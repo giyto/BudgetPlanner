@@ -401,4 +401,50 @@
     <string name="rules_sheet_expense">Новые покупки в этом магазине будут сохраняться сюда</string>
     <string name="rules_sheet_income">Новые поступления будут сохраняться сюда</string>
     <string name="rules_change">Изменить категорию</string>
+
+    <!-- Виджет и напоминания (add-widget-and-reminders) -->
+    <string name="channel_overspend">Перерасход</string>
+    <string name="channel_payments">Платежи</string>
+    <string name="channel_new_period">Новый период</string>
+    <string name="channel_bank_mismatch">Расхождение с банком</string>
+    <string name="notif_overspend_title">Перерасход %1$s</string>
+    <string name="notif_overspend_text">Завтрашний лимит станет %1$s</string>
+    <string name="notif_overspend_text_last_day">Сегодня последний день периода</string>
+    <string name="notif_payment_title">Завтра платёж: %1$s, %2$s</string>
+    <string name="notif_payment_text">Деньги на него уже отложены в резерв</string>
+    <string name="notif_income_day_title">Наступил день дохода — начать новый период?</string>
+    <string name="notif_income_day_text">Нажмите, чтобы начать</string>
+    <string name="notif_income_arrived_title">Пришло %1$s — начать новый период?</string>
+    <string name="notif_income_arrived_text">Похоже на стипендию. Нажмите, чтобы начать</string>
+    <string name="notif_mismatch_title">Расхождение с банком %1$s · %2$s</string>
+    <string name="notif_mismatch_text">Нажмите, чтобы сверить</string>
+    <string name="notif_public_text">Новое уведомление</string>
+    <string name="settings_group_notifications">Уведомления</string>
+    <string name="settings_notif_overspend">Перерасход</string>
+    <string name="settings_notif_overspend_sub">Не чаще раза в день</string>
+    <string name="settings_notif_payments">Платежи</string>
+    <string name="settings_notif_payments_sub">Накануне в 10:00</string>
+    <string name="settings_notif_new_period">Новый период</string>
+    <string name="settings_notif_new_period_sub">В день дохода и когда пришла стипендия</string>
+    <string name="settings_notif_mismatch">Расхождение с банком</string>
+    <string name="settings_notif_mismatch_sub">Когда остаток не сходится с расчётом</string>
+    <string name="settings_notif_denied">Уведомления запрещены в системе</string>
+    <string name="settings_notif_allow">Разрешить</string>
+    <string name="onboarding_notif_title">Подсказки вовремя</string>
+    <string name="onboarding_notif_text">BudgetPlanner напомнит о важном, даже если приложение закрыто. Уведомлений немного — только по делу.</string>
+    <string name="onboarding_notif_overspend">Перерасход — не чаще раза в день</string>
+    <string name="onboarding_notif_payment">Обязательный платёж — накануне в 10:00</string>
+    <string name="onboarding_notif_income">Пришёл доход — начать новый период</string>
+    <string name="onboarding_notif_mismatch">Расхождение с банком</string>
+    <string name="onboarding_notif_note">Каждый тип можно выключить в настройках.</string>
+    <string name="onboarding_notif_allow">Разрешить уведомления</string>
+    <string name="onboarding_notif_later">Не сейчас</string>
+    <string name="widget_name">Можно сегодня</string>
+    <string name="widget_description">Сколько можно потратить сегодня и кнопка «Добавить трату»</string>
+    <string name="widget_can_spend">Можно сегодня</string>
+    <string name="widget_of_limit">из %1$s · %2$s</string>
+    <string name="widget_hidden_hint">Откройте приложение, чтобы увидеть сумму</string>
+    <string name="widget_no_data">Откройте BudgetPlanner</string>
+    <string name="widget_add_expense">Добавить трату</string>
+    <string name="widget_preview_amount" translatable="false">1&#160;120&#160;₽</string>
 </resources>

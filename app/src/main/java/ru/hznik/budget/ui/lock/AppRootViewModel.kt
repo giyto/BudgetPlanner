@@ -5,18 +5,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.Lazy
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.hznik.budget.domain.lock.AppLock
 import ru.hznik.budget.domain.lock.LockSettings
 import ru.hznik.budget.domain.lock.LockSettingsRepository
 import ru.hznik.budget.domain.lock.LockState
+import ru.hznik.budget.domain.reminders.CheckNotifications
+import ru.hznik.budget.domain.reminders.WidgetRefresher
 import ru.hznik.budget.domain.security.DatabaseAccess
 import ru.hznik.budget.domain.security.DatabaseState
+import ru.hznik.budget.domain.usecase.ObservePeriodStatus
 import ru.hznik.budget.notifications.NotificationIntake
 import javax.inject.Inject
 
@@ -40,7 +47,13 @@ class AppRootViewModel @Inject constructor(
     private val authenticator: DeviceAuthenticator,
     // Lazy: приём уведомлений тянет за собой Room, а базу можно создавать только после проверки ключа.
     private val notificationIntake: Lazy<NotificationIntake>,
+    // Lazy по той же причине: расчёт и проверка уведомлений читают Room.
+    private val observeStatus: Lazy<ObservePeriodStatus>,
+    private val checkNotifications: Lazy<CheckNotifications>,
+    private val widget: WidgetRefresher,
 ) : ViewModel() {
+    private var statusWatcher: Job? = null
+
     private val databaseState = MutableStateFlow<DatabaseState?>(null)
     private val settings = MutableStateFlow<LockSettings?>(null)
 
@@ -59,6 +72,7 @@ class AppRootViewModel @Inject constructor(
             databaseState.value = database.open()
             // Образцы старше суток удаляются и при запуске, даже если режим сбора выключен.
             runCatching { notificationIntake.get().purgeExpired() }
+            watchStatusIfReady()
         }
         viewModelScope.launch {
             lockSettings.observe().collect { current ->
@@ -78,6 +92,7 @@ class AppRootViewModel @Inject constructor(
         viewModelScope.launch {
             databaseState.value = null
             databaseState.value = database.open()
+            watchStatusIfReady()
         }
     }
 
@@ -86,6 +101,26 @@ class AppRootViewModel @Inject constructor(
             databaseState.value = null
             database.wipe()
             databaseState.value = database.open()
+            watchStatusIfReady()
+        }
+    }
+
+    /**
+     * Любое изменение расчёта (операция, период, платёж, новый день) и смена защиты входа: проверка уведомлений
+     * и обновление виджета (design.md add-widget-and-reminders, решения 2–3). Первая проверка — сразу при запуске:
+     * так приходит напоминание, пропущенное фоновой задачей.
+     */
+    private fun watchStatusIfReady() {
+        if (databaseState.value != DatabaseState.READY) {
+            // Данные недоступны: виджет не должен показывать прежнюю сумму (spec home-widget).
+            viewModelScope.launch { runCatching { widget.refresh() } }
+            return
+        }
+        if (statusWatcher != null) return
+        statusWatcher = viewModelScope.launch {
+            combine(observeStatus.get()(), lockSettings.observe().map { it.enabled }.distinctUntilChanged()) { status, locked -> status to locked }
+                .conflate()
+                .collect { runCatching { checkNotifications.get().invoke() } }
         }
     }
 

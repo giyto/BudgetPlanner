@@ -36,9 +36,14 @@ import ru.hznik.budget.domain.lock.LockSettings
 import ru.hznik.budget.domain.lock.LockSettingsRepository
 import ru.hznik.budget.domain.lock.LockTimeout
 import ru.hznik.budget.domain.model.IncomeSchedule
+import ru.hznik.budget.domain.reminders.AppNotification
+import ru.hznik.budget.domain.reminders.AppNotifier
+import ru.hznik.budget.domain.reminders.WidgetRefresher
 import ru.hznik.budget.domain.repository.IncomeScheduleRepository
 import ru.hznik.budget.domain.security.DatabaseAccess
 import ru.hznik.budget.domain.security.DatabaseState
+import ru.hznik.budget.reminders.NotificationPermission
+import ru.hznik.budget.reminders.RemindersBindings
 import ru.hznik.budget.ui.lock.AuthAvailability
 import ru.hznik.budget.ui.lock.AuthResult
 import ru.hznik.budget.ui.lock.AuthenticatorModule
@@ -79,6 +84,12 @@ object TestStart {
     /** Первое открытие базы — временный сбой, повтор проходит. */
     var databaseError = false
 
+    /**
+     * Нужно ли разрешение на уведомления. По умолчанию нет: шаг онбординга «Подсказки вовремя» не мешает
+     * старым тестам и не зависит от того, выдал ли установщик тестов разрешение сам.
+     */
+    var notificationPermissionNeeded = false
+
     fun reset() {
         onboarded = true
         periodStart = LocalDate.of(2026, 10, 1)
@@ -89,6 +100,7 @@ object TestStart {
         lock = LockSettings()
         keyLost = false
         databaseError = false
+        notificationPermissionNeeded = false
         TestElapsedClock.now = 0
     }
 }
@@ -282,5 +294,55 @@ class InMemoryIncomeScheduleRepository @Inject constructor() : IncomeScheduleRep
 
     override suspend fun set(schedule: IncomeSchedule) {
         state.value = schedule
+    }
+}
+
+/** Уведомления приложения в UI-тестах: записываются, а не показываются в шторке эмулятора. */
+@Singleton
+class RecordingAppNotifier @Inject constructor() : AppNotifier {
+    val shown = java.util.concurrent.CopyOnWriteArrayList<Pair<AppNotification, Boolean>>()
+
+    override fun show(notification: AppNotification, private: Boolean) {
+        shown += notification to private
+    }
+}
+
+/** Обновления виджета в UI-тестах только считаются. */
+@Singleton
+class CountingWidgetRefresher @Inject constructor() : WidgetRefresher {
+    val refreshes = java.util.concurrent.atomic.AtomicInteger()
+
+    override suspend fun refresh() {
+        refreshes.incrementAndGet()
+    }
+}
+
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [RemindersBindings::class])
+abstract class TestRemindersModule {
+    @Binds
+    abstract fun bindAppNotifier(impl: RecordingAppNotifier): AppNotifier
+
+    @Binds
+    abstract fun bindWidgetRefresher(impl: CountingWidgetRefresher): WidgetRefresher
+
+    @Binds
+    abstract fun bindNotificationPermission(impl: TestNotificationPermission): NotificationPermission
+}
+
+/** Разрешение на уведомления в UI-тестах задаёт [TestStart.notificationPermissionNeeded]; системный запрос не открывается. */
+@Singleton
+class TestNotificationPermission @Inject constructor() : NotificationPermission {
+    @Volatile
+    var requested = false
+
+    override fun isRequestNeeded(): Boolean = TestStart.notificationPermissionNeeded
+
+    override fun areEnabled(): Boolean = !TestStart.notificationPermissionNeeded
+
+    override suspend fun wasRequested(): Boolean = requested
+
+    override suspend fun markRequested() {
+        requested = true
     }
 }

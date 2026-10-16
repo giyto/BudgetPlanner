@@ -19,6 +19,7 @@ import ru.hznik.budget.domain.model.PlannedPayment
 import ru.hznik.budget.domain.usecase.CompleteOnboarding
 import ru.hznik.budget.domain.usecase.ObservePeriodStatus
 import ru.hznik.budget.domain.usecase.TodayTicker
+import ru.hznik.budget.reminders.NotificationPermission
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
 import ru.hznik.budget.testing.FakeIncomeScheduleRepository
@@ -50,7 +51,36 @@ class StageThreeViewModelsTest {
 
     private fun rub(r: Long) = r * 100
 
-    private fun onboarding() = OnboardingViewModel(categories, CompleteOnboarding(periods, schedule, TEST_CLOCK), lockSettings, TEST_CLOCK)
+    private val notificationPermission = FakeNotificationPermission()
+
+    private fun onboarding() = OnboardingViewModel(categories, CompleteOnboarding(periods, schedule, TEST_CLOCK), lockSettings, notificationPermission, TEST_CLOCK)
+
+    @Test
+    fun `notifications step comes between auto import and protection only when permission is needed`() = runTest {
+        notificationPermission.needed = true
+        val vm = onboarding()
+        assertEquals(6, vm.uiState.value.stepCount)
+        vm.next()
+        vm.onKey(AmountKey.Digit(5))
+        vm.onIncomeDay(25)
+        vm.next()
+        vm.skipPayments()
+        vm.next()
+        assertEquals(OnboardingStep.NOTIFICATIONS, vm.uiState.value.step)
+        assertEquals(5, vm.uiState.value.stepNumber)
+        assertTrue(vm.back())
+        assertEquals(OnboardingStep.AUTO_IMPORT, vm.uiState.value.step)
+        vm.next()
+        vm.onNotificationPermissionAnswered()
+        assertEquals(OnboardingStep.PROTECTION, vm.uiState.value.step)
+        assertEquals(6, vm.uiState.value.stepNumber)
+        assertTrue(notificationPermission.requested)
+        assertTrue(vm.back())
+        assertEquals(OnboardingStep.NOTIFICATIONS, vm.uiState.value.step)
+
+        notificationPermission.needed = false
+        assertEquals("без нужды в разрешении шага нет", 5, onboarding().uiState.value.stepCount)
+    }
 
     @Test
     fun `onboarding goes through steps and finishes with a period`() = runTest {
@@ -175,5 +205,20 @@ class StageThreeViewModelsTest {
             assertNull(state.status)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+}
+
+class FakeNotificationPermission : NotificationPermission {
+    var needed = false
+    var requested = false
+
+    override fun isRequestNeeded(): Boolean = needed
+
+    override fun areEnabled(): Boolean = !needed
+
+    override suspend fun wasRequested(): Boolean = requested
+
+    override suspend fun markRequested() {
+        requested = true
     }
 }

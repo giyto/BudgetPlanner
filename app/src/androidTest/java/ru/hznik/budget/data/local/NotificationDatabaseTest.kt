@@ -60,7 +60,7 @@ class NotificationDatabaseTest {
             override suspend fun open() = DatabaseState.READY
             override suspend fun wipe() = Unit
         }
-        return NotificationIntake(ready, { RoomNotificationRepository(db.notificationDao()) }, settings, emptySet(), { error("импорт не ожидается") }, clock)
+        return NotificationIntake(ready, { RoomNotificationRepository(db.notificationDao()) }, settings, emptySet(), { error("импорт не ожидается") }, { error("проверка не ожидается") }, clock)
     }
 
     private fun count(table: String): Int = db.openHelper.readableDatabase.query("SELECT count(*) FROM $table").use { it.moveToFirst(); it.getInt(0) }

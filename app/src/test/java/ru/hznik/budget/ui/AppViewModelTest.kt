@@ -20,6 +20,7 @@ import ru.hznik.budget.domain.usecase.DeleteOperation
 import ru.hznik.budget.domain.usecase.ObserveOnboardingDone
 import ru.hznik.budget.domain.usecase.RestoreDeletedOperation
 import ru.hznik.budget.domain.usecase.UndoDeletionBuffer
+import ru.hznik.budget.reminders.AppActionBus
 import ru.hznik.budget.testing.CAFE
 import ru.hznik.budget.testing.FakeCategoryRepository
 import ru.hznik.budget.testing.FakeIncomeScheduleRepository
@@ -45,6 +46,7 @@ class AppViewModelTest {
             RestoreDeletedOperation(operations, categories, buffer),
             ObserveOnboardingDone(FakePeriodRepository(), FakeIncomeScheduleRepository()),
             AppLock { 0L },
+            AppActionBus(),
         )
     }
 

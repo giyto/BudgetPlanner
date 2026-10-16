@@ -49,6 +49,7 @@ import kotlinx.coroutines.launch
 import ru.hznik.budget.BuildConfig
 import ru.hznik.budget.R
 import ru.hznik.budget.domain.stats.DateRange
+import ru.hznik.budget.reminders.AppAction
 import ru.hznik.budget.ui.assistant.AssistantScreen
 import ru.hznik.budget.ui.categories.CategoriesRoute
 import ru.hznik.budget.ui.categories.CategoryEditorRoute
@@ -92,6 +93,7 @@ import ru.hznik.budget.ui.rules.RulesSettingsItem
 import ru.hznik.budget.ui.settings.AutoImportSection
 import ru.hznik.budget.ui.settings.DemoDataSection
 import ru.hznik.budget.ui.settings.NotificationSamplesRoute
+import ru.hznik.budget.ui.settings.NotificationsSection
 import ru.hznik.budget.ui.settings.ProtectionSection
 import ru.hznik.budget.ui.settings.SettingsScreen
 import ru.hznik.budget.ui.stats.CategoryOperationsRoute
@@ -118,6 +120,9 @@ fun BudgetApp(
     }
     // Стартовый экран выбирается один раз: дальше переходы делает сама навигация.
     val startDestination: Any = remember { if (done) HomeGraph else Onboarding }
+
+    // Текущее значение, а не стартовый экран: онбординг мог закончиться в этом же запуске.
+    PendingActionEffect(appViewModel, navController, onboarded = done)
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -268,6 +273,7 @@ fun BudgetApp(
                     onOpenPeriod = dropUnlessResumed { navController.navigate(Period) },
                     autoImport = { AutoImportSection() },
                     reconcile = { ReconcileSettingsSection() },
+                    notifications = { NotificationsSection() },
                     rules = { RulesSettingsItem(onOpen = dropUnlessResumed { navController.navigate(CategoryRules) }) },
                     protection = { ProtectionSection() },
                     extra = { if (BuildConfig.DEBUG) DemoDataSection(onOpenSamples = dropUnlessResumed { navController.navigate(NotificationSamples) }) },
@@ -357,6 +363,28 @@ private fun BudgetBottomBar(
 
 private fun NavDestination?.isIn(tab: TopLevelDestination): Boolean =
     this?.hierarchy?.any { it.hasRoute(tab.graph::class) } == true
+
+/**
+ * Переход из виджета или уведомления (design.md add-widget-and-reminders, решение 6). До конца онбординга
+ * переходить некуда: событие просто снимается.
+ */
+@Composable
+private fun PendingActionEffect(appViewModel: AppViewModel, navController: NavHostController, onboarded: Boolean) {
+    val pending by appViewModel.pendingAction.collectAsStateWithLifecycle()
+    LaunchedEffect(pending, onboarded) {
+        val action = pending ?: return@LaunchedEffect
+        appViewModel.consumeAction(action)
+        if (!onboarded) return@LaunchedEffect
+        // Сначала главная: «Назад» с открытого экрана ведёт на неё, а не на прежний экран.
+        navController.popBackStack(Home, inclusive = false)
+        when (action.action) {
+            AppAction.OPEN_HOME -> Unit
+            AppAction.ADD_EXPENSE -> navController.navigate(OperationEditor())
+            AppAction.NEW_PERIOD -> navController.navigate(NewPeriod)
+            AppAction.RECONCILE -> navController.navigate(Reconcile(action.bankId, action.cardLast4))
+        }
+    }
+}
 
 private fun NavHostController.navigateToTab(tab: TopLevelDestination, reselected: Boolean) {
     if (reselected) {

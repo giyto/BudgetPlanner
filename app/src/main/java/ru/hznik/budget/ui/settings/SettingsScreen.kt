@@ -38,6 +38,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     autoImport: @Composable () -> Unit = {},
     reconcile: @Composable () -> Unit = {},
+    notifications: @Composable () -> Unit = {},
     protection: @Composable () -> Unit = {},
     rules: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
@@ -51,6 +52,7 @@ fun SettingsScreen(
         ) {
             autoImport()
             reconcile()
+            notifications()
             protection()
             Text(
                 stringResource(R.string.settings_group_budget),

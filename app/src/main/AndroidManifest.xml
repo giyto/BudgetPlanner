@@ -5,6 +5,9 @@
     <!-- Вход по отпечатку (FR-10, раздел 11 ТЗ). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+    <!-- Уведомления приложения на Android 13+ (FR-12, add-widget-and-reminders). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Пакеты банков: проверить, установлен ли банк (раздел «Автоимпорт» в настройках). -->
     <queries>
         <package android:name="ru.sberbankmobile" />
@@ -34,6 +37,34 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Переходы из виджета и уведомлений: не экспортируется, поэтому действие может прислать только само приложение. -->
+        <activity-alias
+            android:name=".AppActionAlias"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <!-- Виджет «Можно сегодня» (spec home-widget). -->
+        <receiver
+            android:name=".widget.BudgetWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/budget_widget_info" />
+        </receiver>
+        <!-- WorkManager создаётся с фабрикой Hilt в BudgetApplication, стандартный запуск отключён. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
         <!-- Доступ к уведомлениям банков (FR-05); включает пользователь в системных настройках. -->
         <service
             android:name=".notifications.BankNotificationListener"

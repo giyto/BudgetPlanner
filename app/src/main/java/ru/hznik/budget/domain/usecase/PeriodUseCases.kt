@@ -155,9 +155,10 @@ class StartNewPeriod @Inject constructor(
         val today = clock.today()
         if (amountKopecks < 0) return PeriodSetupResult.NegativeAmount
         if (nextIncome == null || !nextIncome.isAfter(today)) return PeriodSetupResult.IncomeDateNotInFuture
-        periods.startNew(today, nextIncome, amountKopecks)
-        // Предложение «Пришло N ₽ — начать новый период?» больше не нужно (сценарий 5.8).
+        // Предложение «Пришло N ₽ — начать новый период?» больше не нужно (сценарий 5.8). Снимается раньше
+        // нового периода: иначе проверка уведомлений между двумя записями увидит новый период с этим предложением.
         operations.clearNewPeriodSuggestion()
+        periods.startNew(today, nextIncome, amountKopecks)
         return PeriodSetupResult.Done
     }
 }

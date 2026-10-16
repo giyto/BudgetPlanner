@@ -89,7 +89,7 @@ class NotificationIntakeTest {
         override suspend fun open() = state
         override suspend fun wipe() = Unit
     }
-    private val intake = NotificationIntake(database, { repository }, settings, emptySet(), { error("импорт не ожидается") }, TEST_CLOCK)
+    private val intake = NotificationIntake(database, { repository }, settings, emptySet(), { error("импорт не ожидается") }, { error("проверка не ожидается") }, TEST_CLOCK)
     private val now = TEST_CLOCK.instant()
 
     private fun notification(packageName: String = "ru.sberbankmobile", text: String = "Покупка 450 ₽ Пятёрочка. Карта *1234", at: Instant = now) =

@@ -102,6 +102,7 @@ fun OnboardingRoute(
         onNext = viewModel::next,
         onSkip = viewModel::skipPayments,
         onProtectionEnabled = viewModel::finishWithProtection,
+        onNotificationsAnswered = viewModel::onNotificationPermissionAnswered,
         onKey = viewModel::onKey,
         onIncomeRegular = viewModel::onIncomeRegular,
         onIncomeDay = viewModel::onIncomeDay,
@@ -123,6 +124,7 @@ fun OnboardingScreen(
     onNext: () -> Unit,
     onSkip: () -> Unit,
     onProtectionEnabled: () -> Unit,
+    onNotificationsAnswered: () -> Unit,
     onKey: (AmountKey) -> Unit,
     onIncomeRegular: (Boolean) -> Unit,
     onIncomeDay: (Int) -> Unit,
@@ -141,7 +143,7 @@ fun OnboardingScreen(
                 IconButton(onClick = onBack) { Icon(painterResource(R.drawable.ic_back), stringResource(R.string.action_back), tint = colors.ink) }
             }
             Spacer(Modifier.weight(1f))
-            if (state.step == OnboardingStep.PAYMENTS || state.step == OnboardingStep.AUTO_IMPORT) {
+            if (state.step == OnboardingStep.PAYMENTS || state.step == OnboardingStep.AUTO_IMPORT || state.step == OnboardingStep.NOTIFICATIONS) {
                 TextButton(onClick = if (state.step == OnboardingStep.PAYMENTS) onSkip else onNext, enabled = !state.busy) {
                     Text(stringResource(R.string.onboarding_skip), color = colors.primaryText, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 }
@@ -160,12 +162,15 @@ fun OnboardingScreen(
                 OnboardingStep.MONEY -> MoneyStep(state, onKey, onIncomeRegular, onIncomeDay, onIncomeDate)
                 OnboardingStep.PAYMENTS -> PaymentsStep(state, onOpenPaymentForm, onRemovePayment)
                 OnboardingStep.AUTO_IMPORT -> AutoImportStep(importState)
+                OnboardingStep.NOTIFICATIONS -> NotificationsStep()
                 OnboardingStep.PROTECTION -> ProtectionStep(protection)
             }
         }
 
         if (state.step == OnboardingStep.AUTO_IMPORT) {
             AutoImportButtons(importState, busy = state.busy, onOpen = onOpenImportStep, onNext = onNext)
+        } else if (state.step == OnboardingStep.NOTIFICATIONS) {
+            NotificationsButtons(busy = state.busy, onAnswered = onNotificationsAnswered, onLater = onNext)
         } else if (state.step == OnboardingStep.PROTECTION) {
             ProtectionButtons(protection, busy = state.busy, onEnabled = onProtectionEnabled, onLater = onNext)
         } else {

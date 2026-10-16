@@ -11,6 +11,7 @@ import ru.hznik.budget.domain.notifications.SampleMasker
 import ru.hznik.budget.domain.notifications.SampleSettings
 import ru.hznik.budget.domain.notifications.SupportedBanks
 import ru.hznik.budget.domain.notifications.parser.BankNotificationParser
+import ru.hznik.budget.domain.reminders.CheckNotifications
 import ru.hznik.budget.domain.security.DatabaseAccess
 import ru.hznik.budget.domain.security.DatabaseState
 import ru.hznik.budget.domain.usecase.ImportNotification
@@ -33,6 +34,8 @@ class NotificationIntake @Inject constructor(
     private val parsers: Set<@JvmSuppressWildcards BankNotificationParser>,
     // Lazy по той же причине, что и репозиторий: сценарий тянет за собой Room.
     private val importLazy: Lazy<ImportNotification>,
+    // Lazy: проверка уведомлений тоже читает Room.
+    private val checkNotificationsLazy: Lazy<CheckNotifications>,
     private val clock: Clock,
 ) {
     private val repository: NotificationRepository get() = repositoryLazy.get()
@@ -54,6 +57,8 @@ class NotificationIntake @Inject constructor(
         val parsed = parser.parse(notification) ?: return
         // По одному: иначе два уведомления об одной покупке проходят проверку дублей одновременно (решение 5).
         importMutex.withLock { importLazy.get().invoke(notification, parsed) }
+        // Перерасход, «пришло N ₽» и расхождение — сразу после импорта; виджет обновляется за секунды (spec home-widget).
+        checkNotificationsLazy.get().invoke()
     }
 
     /** Удаляет образцы старше суток, даже если режим выключен; вызывается при каждом уведомлении банка, подключении сервиса и запуске приложения. */

@@ -16,6 +16,8 @@ import ru.hznik.budget.domain.usecase.DeletionEvent
 import ru.hznik.budget.domain.usecase.ObserveOnboardingDone
 import ru.hznik.budget.domain.usecase.RestoreDeletedOperation
 import ru.hznik.budget.domain.usecase.UndoDeletionBuffer
+import ru.hznik.budget.reminders.AppActionBus
+import ru.hznik.budget.reminders.PendingAction
 import javax.inject.Inject
 
 /**
@@ -29,7 +31,13 @@ class AppViewModel @Inject constructor(
     private val restore: RestoreDeletedOperation,
     observeOnboardingDone: ObserveOnboardingDone,
     private val appLock: AppLock,
+    private val actions: AppActionBus,
 ) : ViewModel() {
+    /** Переход из виджета или уведомления; BudgetApp виден только после разблокировки, поэтому и переход — после неё. */
+    val pendingAction: StateFlow<PendingAction?> = actions.pending
+
+    fun consumeAction(action: PendingAction) = actions.consume(action)
+
     /** Пройден ли онбординг; `null`, пока неизвестно — тогда виден только фон окна (design.md, решение 6). */
     val onboardingDone: StateFlow<Boolean?> = observeOnboardingDone().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 

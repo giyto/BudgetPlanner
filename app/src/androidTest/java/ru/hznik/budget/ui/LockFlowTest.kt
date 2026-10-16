@@ -232,8 +232,8 @@ class ProtectionSettingsFlowTest : FlowTestBase() {
         TestAuth.availability = AuthAvailability.NO_SCREEN_LOCK
         openSettings()
         waitForText("Сначала настройте блокировку экрана телефона", substring = true)
-        switch("Вход по отпечатку или PIN").assertIsNotEnabled()
-        rule.onNode(hasText("Настроить") and hasClickAction()).assertIsDisplayed()
+        switch("Вход по отпечатку или PIN").performScrollTo().assertIsNotEnabled()
+        rule.onNode(hasText("Настроить") and hasClickAction()).performScrollTo().assertIsDisplayed()
     }
 }
 

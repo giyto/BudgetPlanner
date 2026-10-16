@@ -21,6 +21,7 @@ import ru.hznik.budget.domain.usecase.CompleteOnboarding
 import ru.hznik.budget.domain.usecase.PaymentDraft
 import ru.hznik.budget.domain.usecase.PeriodSetupResult
 import ru.hznik.budget.domain.usecase.resolveNextIncome
+import ru.hznik.budget.reminders.NotificationPermission
 import ru.hznik.budget.ui.components.AmountInput
 import ru.hznik.budget.ui.components.AmountKey
 import ru.hznik.budget.ui.components.PaymentFormState
@@ -28,8 +29,11 @@ import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
 
-/** Шаги онбординга (сценарий 5.1): автоимпорт перед защитой входа. */
-enum class OnboardingStep { INTRO, MONEY, PAYMENTS, AUTO_IMPORT, PROTECTION }
+/**
+ * Шаги онбординга (сценарий 5.1): автоимпорт, затем уведомления и защита входа. Шаг уведомлений есть только
+ * на Android 13+ без выданного разрешения (add-widget-and-reminders).
+ */
+enum class OnboardingStep { INTRO, MONEY, PAYMENTS, AUTO_IMPORT, NOTIFICATIONS, PROTECTION }
 
 data class OnboardingUiState(
     val step: OnboardingStep = OnboardingStep.INTRO,
@@ -43,11 +47,15 @@ data class OnboardingUiState(
     val categories: List<Category> = emptyList(),
     val today: LocalDate,
     val busy: Boolean = false,
+    /** Показывать ли шаг «Подсказки вовремя»; решается один раз при открытии онбординга. */
+    val showNotifications: Boolean = false,
 ) {
+    val steps: List<OnboardingStep> get() = OnboardingStep.entries.filter { it != OnboardingStep.NOTIFICATIONS || showNotifications }
+
     val defaultCategoryId: Long? get() = categories.firstOrNull { it.defaultKey == "other_expense" }?.id ?: categories.lastOrNull()?.id
 
-    val stepNumber: Int get() = step.ordinal + 1
-    val stepCount: Int get() = OnboardingStep.entries.size
+    val stepNumber: Int get() = steps.indexOf(step) + 1
+    val stepCount: Int get() = steps.size
 
     val schedule: IncomeSchedule? get() = if (incomeRegular) incomeDay?.let { IncomeSchedule.Regular(it) } else IncomeSchedule.Irregular
 
@@ -57,7 +65,7 @@ data class OnboardingUiState(
     val canContinue: Boolean get() = when (step) {
         OnboardingStep.INTRO -> true
         OnboardingStep.MONEY -> amountInput.isNotEmpty() && nextIncome?.isAfter(today) == true
-        OnboardingStep.PAYMENTS, OnboardingStep.AUTO_IMPORT, OnboardingStep.PROTECTION -> !busy
+        OnboardingStep.PAYMENTS, OnboardingStep.AUTO_IMPORT, OnboardingStep.NOTIFICATIONS, OnboardingStep.PROTECTION -> !busy
     }
 }
 
@@ -70,9 +78,10 @@ class OnboardingViewModel @Inject constructor(
     categories: CategoryRepository,
     private val completeOnboarding: CompleteOnboarding,
     private val lockSettings: LockSettingsRepository,
+    private val notificationPermission: NotificationPermission,
     private val clock: Clock,
 ) : ViewModel() {
-    private val form = MutableStateFlow(OnboardingUiState(today = clock.today()))
+    private val form = MutableStateFlow(OnboardingUiState(today = clock.today(), showNotifications = notificationPermission.isRequestNeeded()))
     private val _events = Channel<OnboardingEvent>(Channel.BUFFERED)
     val events: Flow<OnboardingEvent> = _events.receiveAsFlow()
 
@@ -94,8 +103,9 @@ class OnboardingViewModel @Inject constructor(
             OnboardingStep.INTRO -> form.update { it.copy(step = OnboardingStep.MONEY) }
             OnboardingStep.MONEY -> form.update { it.copy(step = OnboardingStep.PAYMENTS) }
             OnboardingStep.PAYMENTS -> form.update { it.copy(step = OnboardingStep.AUTO_IMPORT) }
-            // «Дальше», «Вводить вручную» и «Пропустить» на шаге автоимпорта — к защите входа.
-            OnboardingStep.AUTO_IMPORT -> form.update { it.copy(step = OnboardingStep.PROTECTION) }
+            // «Дальше», «Вводить вручную» и «Пропустить» на шаге автоимпорта — к уведомлениям или защите входа.
+            OnboardingStep.AUTO_IMPORT -> form.update { it.copy(step = if (it.showNotifications) OnboardingStep.NOTIFICATIONS else OnboardingStep.PROTECTION) }
+            OnboardingStep.NOTIFICATIONS -> form.update { it.copy(step = OnboardingStep.PROTECTION) }
             OnboardingStep.PROTECTION -> finish(enableProtection = false)
         }
     }
@@ -104,8 +114,14 @@ class OnboardingViewModel @Inject constructor(
     fun back(): Boolean {
         val step = form.value.step
         if (step == OnboardingStep.INTRO) return false
-        form.update { it.copy(step = OnboardingStep.entries[step.ordinal - 1]) }
+        form.update { it.copy(step = it.steps[it.steps.indexOf(step) - 1]) }
         return true
+    }
+
+    /** Системный запрос разрешения закрыт с любым ответом: отказ не мешает пользоваться приложением. */
+    fun onNotificationPermissionAnswered() {
+        viewModelScope.launch { notificationPermission.markRequested() }
+        next()
     }
 
     fun onKey(key: AmountKey) = form.update { it.copy(amountInput = AmountInput.press(it.amountInput, key)) }
