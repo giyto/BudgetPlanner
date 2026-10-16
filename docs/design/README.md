@@ -23,7 +23,7 @@
 | Экран блокировки | ![](screenshots/LockScreen.png) | ![](screenshots/DarkLockScreen.png) |
 | Настройки: защита входа | ![](screenshots/SettingsProtection.png) | ![](screenshots/DarkSettingsProtection.png) |
 | Потеря ключа базы | ![](screenshots/KeyLost.png) | ![](screenshots/DarkKeyLost.png) |
-| Онбординг: снять ограничение (Android 13+, установка файлом) | ![](screenshots/OnboardingRestricted.png) | ![](screenshots/DarkOnboardingRestricted.png) |
+| Онбординг: снять ограничение | ![](screenshots/OnboardingRestricted.png) | ![](screenshots/DarkOnboardingRestricted.png) |
 | Онбординг: автозапуск на Xiaomi | ![](screenshots/OnboardingAutostart.png) | ![](screenshots/DarkOnboardingAutostart.png) |
 | Настройки: автоимпорт | ![](screenshots/SettingsAutoImport.png) | ![](screenshots/DarkSettingsAutoImport.png) |
 | Главная: новый период после зачисления и «Автоимпорт остановлен» | ![](screenshots/MainImportBanners.png) | ![](screenshots/DarkMainImportBanners.png) |
