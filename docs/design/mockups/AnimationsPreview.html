@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Анимации BudgetPlanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EFF1F5;--card:#FFFFFF;--card2:#E4E7ED;--ink:#191C1F;--muted:#575E68;--sub:#3A4048;--line:#E2E5EA;--chip:#CDD2DA;--pri:#4B52E0;--priS:#E4E5FC;--pos:#0B7650;--posS:#DDF5EA;--warn:#B23A0A;--warnS:#FDE7DA;--hero:#191C1F;--mint:#5EE0A8;--over:#FF9A62;--page:#D9DCE3}
+@media (prefers-color-scheme: dark){:root{--bg:#0F1114;--card:#1A1D21;--card2:#24282D;--ink:#F2F4F7;--muted:#A3AAB5;--sub:#C9CED6;--line:#2C3036;--chip:#3A3F46;--pri:#5B62F0;--priS:#262A4D;--pos:#4ADE9A;--posS:#16332A;--warn:#FF9A62;--warnS:#3A2418;--hero:#23272C;--page:#08090B}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);font-family:'Onest',system-ui,sans-serif;color:var(--ink)}
+header{max-width:1180px;margin:0 auto;padding:24px 16px 8px}
+h1{font-family:'Unbounded',sans-serif;font-size:24px;margin:0 0 6px}
+header p{margin:0;color:var(--muted);font-size:15px;line-height:1.45;max-width:760px}
+.toggle{display:inline-flex;align-items:center;gap:10px;margin-top:14px;background:var(--card);padding:10px 14px;border-radius:14px;font-size:15px;cursor:pointer;min-height:44px}
+.grid{max-width:1180px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+.demo{background:var(--card);border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.demo h2{margin:0;font-size:16px}
+.demo .note{margin:0;font-size:13px;color:var(--muted);line-height:1.4}
+.phone{background:var(--bg);border-radius:20px;height:380px;overflow:hidden;position:relative}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-size:14px;font-weight:600;border:0;border-radius:14px;padding:0 14px;min-height:44px;background:var(--pri);color:#fff;cursor:pointer}
+button.ghost{background:var(--card2);color:var(--ink)}
+/* hero */
+.hero{margin:14px;background:var(--hero);border-radius:22px;padding:16px;color:#fff}
+.hero .lbl{font-size:13px;color:#B9BEC7}
+.amount{font-family:'Unbounded',sans-serif;font-weight:600;font-size:40px;display:flex;line-height:1.15;height:46px;overflow:hidden;margin-top:6px;font-variant-numeric:tabular-nums}
+.amount.over{color:var(--over)}
+.col{position:relative;display:inline-block;overflow:hidden;height:46px}
+.col span{display:block;height:46px}
+.track{height:10px;border-radius:5px;background:rgba(255,255,255,.16);margin-top:14px;overflow:hidden}
+.fill{height:10px;border-radius:5px;background:var(--mint);width:0}
+.fill.over{background:var(--over)}
+.hero .sub{display:flex;justify-content:space-between;font-size:13px;color:#B9BEC7;margin-top:10px}
+.pcard{margin:0 14px;background:var(--card);border-radius:20px;padding:14px}
+.seg{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:10px 0}
+.seg div{height:8px}
+.nums{display:flex;font-size:13px;color:var(--muted)}
+.nums>div{flex:1}
+.nums b{display:block;font-size:16px;color:var(--ink);margin-top:2px}
+/* banners */
+.bwrap{overflow:hidden}
+.banner{margin:12px 14px 0;background:var(--warnS);border-radius:18px;padding:14px;display:flex;gap:10px;align-items:center}
+.banner b{color:var(--warn)}
+.plain{margin:12px 14px 0;background:var(--card);border-radius:18px;padding:14px;font-size:14px;color:var(--muted)}
+/* screens */
+.screen{position:absolute;inset:0;background:var(--bg);padding:16px}
+.screen .t{font-family:'Unbounded',sans-serif;font-size:22px;font-weight:600}
+.screen .row{background:var(--card);border-radius:16px;padding:14px;margin-top:10px;font-size:14px}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:56px;background:var(--card);display:flex;justify-content:space-around;align-items:center;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+.tabbar .on{color:var(--ink);font-weight:700}
+/* stats */
+.scard{margin:14px;background:var(--card);border-radius:22px;padding:14px 10px 8px}
+.donut{display:flex;gap:16px;align-items:center;padding:0 4px}
+#side{flex:1;min-width:0;font-size:12px;color:var(--muted)}
+#side>div{transition:opacity .2s}
+#side .v{font-family:'Unbounded',sans-serif;font-weight:600;font-size:20px;color:var(--ink);margin:2px 0}
+.cats{margin-top:10px}
+.cats .row{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px;border-radius:12px;font-size:14px;transition:background-color .25s}
+.cats .row.hl{background:var(--bg)}
+.cats i{width:10px;height:10px;border-radius:5px;flex:none}
+.cats .n{flex:1}
+.cats .p{font-weight:700;width:38px;text-align:right}
+.reduced #side>div,.reduced .cats .row{transition:none}
+.bars{display:flex;align-items:flex-end;gap:8px;height:120px;margin:10px 14px;background:var(--card);border-radius:18px;padding:12px}
+.bars div{flex:1;background:var(--pri);border-radius:6px 6px 2px 2px;height:0}
+/* onboarding */
+.prog{display:flex;gap:6px;margin:16px 16px 6px}
+.prog span{flex:1;height:4px;border-radius:2px;background:var(--card2);transition-property:background}
+.prog span.on{background:var(--pri)}
+.stepbox{position:absolute;top:40px;left:0;right:0;bottom:70px;overflow:hidden}
+.step{position:absolute;inset:0;padding:10px 18px}
+.step h3{font-family:'Unbounded',sans-serif;font-size:20px;margin:10px 0}
+.step p{font-size:14px;color:var(--sub);line-height:1.45}
+.obtn{position:absolute;left:16px;right:16px;bottom:14px;display:flex;gap:8px}
+.obtn button{flex:1}
+/* chat */
+.msgs{position:absolute;top:0;left:0;right:0;bottom:64px;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;overflow:hidden}
+.me{align-self:flex-end;background:var(--pri);color:#fff;border-radius:18px 18px 6px 18px;padding:10px 14px;font-size:14px;max-width:82%}
+.bot{align-self:flex-start;background:var(--card);border-radius:18px 18px 18px 6px;padding:10px 14px;font-size:14px;max-width:86%}
+.cap{align-self:flex-start;font-size:12px;color:var(--sub);background:var(--card2);border-radius:10px;padding:4px 8px}
+.dots{display:flex;gap:6px;align-items:center}
+.dots i{width:8px;height:8px;border-radius:4px;background:var(--pri);display:block}
+.dots i{animation:blink 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.25}40%{opacity:1}}
+.reduced .dots i{animation:none;opacity:.6}
+.input{position:absolute;left:12px;right:12px;bottom:12px;height:44px;border:1px solid var(--chip);border-radius:22px;padding:0 16px;display:flex;align-items:center;color:var(--muted);font-size:14px}
+.appear{animation:appear .25s ease-out}
+@keyframes appear{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.reduced .appear{animation:none}
+/* list */
+.pressable{transition:transform .15s ease-out;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pressable:active{transform:scale(.97)}
+.reduced .pressable{transition:none}
+.reduced .pressable:active{transform:none}
+.amount{transition:color .25s}
+.reduced .amount{transition:none}
+.segc{position:relative;display:flex;background:var(--card2);border-radius:14px;padding:4px;margin:10px 14px 0}
+.segc .pill{position:absolute;top:4px;bottom:4px;left:4px;border-radius:10px;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12);transition:transform .25s cubic-bezier(.4,0,.2,1),width .25s}
+.reduced .segc .pill{transition:none}
+.segc span{position:relative;flex:1;text-align:center;padding:10px 0;font-size:14px;color:var(--sub);cursor:pointer;min-height:40px;transition:color .25s}
+.segc span.on{color:var(--ink);font-weight:600}
+.seglabel{margin:14px 16px 0;font-size:12px;color:var(--muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{border:1px solid var(--chip);border-radius:16px;padding:0 14px;min-height:44px;display:inline-flex;align-items:center;font-size:14px;cursor:pointer;background:var(--card);color:var(--ink);transition:background-color .25s,color .25s,border-color .25s}
+.chip.sel{background:var(--pri);color:#fff;border-color:var(--pri)}
+.reduced .chip{transition:none}
+.dcard{margin:14px;background:var(--card);border-radius:20px;padding:14px}
+.item{background:var(--card);border-radius:16px;margin:0 14px;padding:0 14px;display:flex;justify-content:space-between;align-items:center;font-size:14px;overflow:hidden}
+</style>
+</head>
+<body>
+<header>
+  <h1>Как будут выглядеть анимации</h1>
+  <p>Предпросмотр этапа «Анимации»: те же длительности, что будут в приложении. Нажимайте кнопки под каждым примером. Галочка ниже показывает, как будет при системной настройке Android «Убрать анимацию».</p>
+  <label class="toggle"><input type="checkbox" id="reduce"> Убрать анимацию (как в настройках Android)</label>
+</header>
+
+<div class="grid">
+  <!-- 1. Главная: сумма, полоски -->
+  <section class="demo">
+    <h2>Главная: сумма и полоски</h2>
+    <p class="note">Меняются только изменившиеся цифры, 0,3 с. Полоски дорастают за 0,45 с. При перерасходе сумма и полоска плавно становятся оранжевыми. Зажмите карточку — она чуть уменьшится.</p>
+    <div class="phone">
+      <div class="hero pressable">
+        <div class="lbl">Можно потратить сегодня</div>
+        <div class="amount" id="amount"></div>
+        <div class="track"><div class="fill" id="fill"></div></div>
+        <div class="sub"><span id="spent">Потрачено 0 ₽</span><span>9 дней до дохода</span></div>
+      </div>
+      <div class="pcard pressable">
+        <div style="font-weight:600">Период до 25 октября</div>
+        <div class="seg"><div id="sSpent" style="background:var(--ink)"></div><div id="sRes" style="background:#8E95FF"></div><div id="sLeft" style="background:var(--mint)"></div></div>
+        <div class="nums"><div>Потрачено<b id="nSpent"></b></div><div>Резерв<b>650 ₽</b></div><div>Осталось<b id="nLeft"></b></div></div>
+      </div>
+    </div>
+    <div class="btns"><button id="buy">Покупка 450 ₽</button><button id="buyBig">Покупка 1 200 ₽</button><button class="ghost" id="resetHome">Сначала</button></div>
+  </section>
+
+  <!-- 2. Плашки -->
+  <section class="demo">
+    <h2>Плашки на главной</h2>
+    <p class="note">Раскрываются и сворачиваются за 0,25 с, карточки ниже сдвигаются плавно.</p>
+    <div class="phone">
+      <div class="bwrap" id="bwrap"><div class="banner pressable"><span style="font-size:20px">🔔</span><div><b>1 операция ждёт категорию</b><div style="font-size:13px;color:var(--muted)">Из уведомлений банка</div></div></div></div>
+      <div class="plain">Период до 25 октября · из 18 000 ₽</div>
+      <div class="plain">Последние операции</div>
+    </div>
+    <div class="btns"><button id="toggleBanner">Подтвердить черновик</button></div>
+  </section>
+
+  <!-- 3. Переходы -->
+  <section class="demo">
+    <h2>Переходы между экранами</h2>
+    <p class="note">Экран поверх разделов въезжает за 0,3 с, вкладки сменяются растворением за 0,2 с.</p>
+    <div class="phone" id="nav">
+      <div class="screen" id="scrHome"><div class="t">Бюджет</div><div class="row">Можно сегодня 1 500 ₽</div><div class="row">Последние операции</div></div>
+      <div class="tabbar"><span class="on" id="tabHome">Главная</span><span id="tabStats">Статистика</span></div>
+    </div>
+    <div class="btns"><button id="openSettings">Открыть настройки</button><button class="ghost" id="back">Назад</button><button class="ghost" id="switchTab">Сменить вкладку</button></div>
+  </section>
+
+  <!-- 4. Статистика -->
+  <section class="demo">
+    <h2>Статистика</h2>
+    <p class="note">Кольцо дорисовывается по кругу, столбики растут снизу, 0,6 с. Нажмите на кусочек кольца: остальные бледнеют, выбранный выдвигается, текст справа от кольца плавно сменяется, строка категории в списке подсвечивается. Расположение как в вашем макете статистики: внутри кольца ничего нет.</p>
+    <div class="phone" style="height:auto;padding-bottom:4px">
+      <div class="scard">
+        <div class="donut">
+          <svg width="124" height="124" viewBox="0 0 42 42" id="donut" style="cursor:pointer;flex:none"></svg>
+          <div id="side"></div>
+        </div>
+        <div class="cats" id="cats"></div>
+      </div>
+      <div class="bars" id="bars"></div>
+    </div>
+    <div class="btns"><button id="openStats">Открыть статистику</button></div>
+  </section>
+
+  <!-- 5. Онбординг -->
+  <section class="demo">
+    <h2>Шаги онбординга</h2>
+    <p class="note">Шаг въезжает справа, назад — слева, 0,3 с. Отрезок полосы закрашивается плавно.</p>
+    <div class="phone">
+      <div class="prog" id="prog"></div>
+      <div class="stepbox" id="stepbox"></div>
+      <div class="obtn"><button class="ghost" id="obBack">Назад</button><button id="obNext">Дальше</button></div>
+    </div>
+  </section>
+
+  <!-- 6. Чат -->
+  <section class="demo">
+    <h2>Чат помощника</h2>
+    <p class="note">Сообщения появляются снизу за 0,25 с, точки «Считаю…» мигают по очереди.</p>
+    <div class="phone" id="chatPhone">
+      <div class="msgs" id="msgs"></div>
+      <div class="input">Спросите про свои траты</div>
+    </div>
+    <div class="btns"><button id="ask">Задать вопрос</button><button class="ghost" id="clearChat">Новый диалог</button></div>
+  </section>
+
+  <!-- 8. Переключатели -->
+  <section class="demo">
+    <h2>Переключатели вариантов</h2>
+    <p class="note">Выделение плавно переезжает на выбранный вариант, 0,25 с.</p>
+    <div class="phone">
+      <div class="seglabel">Статистика</div>
+      <div class="segc" data-seg><div class="pill"></div><span class="on">Период</span><span>Месяц</span></div>
+      <div class="seglabel">Защита входа: блокировать</div>
+      <div class="segc" data-seg><div class="pill"></div><span>Сразу</span><span class="on">Через 1 мин</span><span>Через 5 мин</span></div>
+      <div class="seglabel">Новая операция</div>
+      <div class="segc" data-seg><div class="pill"></div><span class="on">Трата</span><span>Доход</span><span>Возврат</span></div>
+    </div>
+    <p class="note">Нажимайте на варианты прямо в примере.</p>
+  </section>
+
+  <!-- 9. Чипы и отклик -->
+  <section class="demo">
+    <h2>Выбор категории и отклик на нажатие</h2>
+    <p class="note">Чип категории плавно закрашивается, 0,25 с. Карточки, плашки и подсказки чуть уменьшаются под пальцем.</p>
+    <div class="phone">
+      <div class="dcard">
+        <div style="display:flex;justify-content:space-between;font-weight:600"><span>ИП Смирнова А. В.</span><span>−350 ₽</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Сегодня, 10:20 · покупка</div>
+        <div class="chips" id="chips"><span class="chip">Продукты</span><span class="chip">Кафе</span><span class="chip">Транспорт</span><span class="chip sel">Другое</span></div>
+      </div>
+      <div class="plain pressable">Плашка: 1 операция ждёт категорию</div>
+      <div class="plain pressable">Подсказка: На что я больше всего трачу?</div>
+    </div>
+    <p class="note">Нажимайте на чипы, зажимайте плашку и подсказку.</p>
+  </section>
+
+  <!-- 7. Списки -->
+  <section class="demo">
+    <h2>Список черновиков</h2>
+    <p class="note">Сохранённые карточки сворачиваются, оставшиеся поднимаются, 0,25 с.</p>
+    <div class="phone" id="list" style="padding-top:12px;display:flex;flex-direction:column;gap:10px"></div>
+    <div class="btns"><button id="saveDrafts">Сохранить 2 операции</button><button class="ghost" id="resetList">Сначала</button></div>
+  </section>
+</div>
+
+<script>
+const reduce = document.getElementById('reduce');
+const R = () => reduce.checked;
+reduce.addEventListener('change', () => document.body.classList.toggle('reduced', R()));
+const ms = (v) => R() ? 0 : v;
+const nbsp = ' ';
+const fmt = (k) => { const neg = k < 0; const s = Math.abs(k).toString().replace(/\B(?=(\d{3})+(?!\d))/g, nbsp); return (neg ? '−' : '') + s + nbsp + '₽'; };
+
+// 1. Прокрутка цифр: символы выравниваются справа, меняются только цифры.
+const amountEl = document.getElementById('amount');
+let shown = null;
+function renderAmount(value, prev) {
+  const next = fmt(value), old = prev == null ? null : fmt(prev);
+  amountEl.classList.toggle('over', value < 0);
+  const n = next.length, o = old ? old.length : 0, len = Math.max(n, o);
+  amountEl.innerHTML = '';
+  const down = prev != null && value < prev;
+  for (let i = 0; i < len; i++) {
+    const nc = next[n - len + i] ?? '', oc = old ? (old[o - len + i] ?? '') : nc;
+    const col = document.createElement('span'); col.className = 'col';
+    if (!old || nc === oc || !/\d/.test(nc + oc) || R()) { col.textContent = nc; if (nc === '') continue; amountEl.appendChild(col); continue; }
+    const inner = document.createElement('span'); inner.style.display = 'block';
+    const a = document.createElement('span'), b = document.createElement('span');
+    a.textContent = oc || nbsp; b.textContent = nc || nbsp;
+    // При уменьшении новая цифра въезжает сверху.
+    if (down) { inner.append(b, a); inner.style.transform = 'translateY(-46px)'; } else { inner.append(a, b); }
+    col.appendChild(inner); amountEl.appendChild(col);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      inner.style.transition = `transform ${ms(300)}ms cubic-bezier(.4,0,.2,1)`;
+      inner.style.transform = down ? 'translateY(0)' : 'translateY(-46px)';
+    }));
+  }
+}
+const LIMIT = 1500; let spent = 0, periodSpent = 2300;
+function home(animate) {
+  const can = LIMIT - spent;
+  renderAmount(can, animate ? shown : null); shown = can;
+  const frac = Math.min(1, spent / LIMIT);
+  const fill = document.getElementById('fill');
+  fill.style.transition = animate ? `width ${ms(450)}ms cubic-bezier(.4,0,.2,1), background-color ${ms(250)}ms` : 'none';
+  fill.style.width = (frac * 100) + '%'; fill.classList.toggle('over', can < 0);
+  document.getElementById('spent').textContent = 'Потрачено ' + fmt(spent);
+  const total = 18000, res = 650, left = total - periodSpent - res;
+  [['sSpent', periodSpent], ['sRes', res], ['sLeft', left]].forEach(([id, v]) => {
+    const el = document.getElementById(id); el.style.transition = animate ? `width ${ms(450)}ms cubic-bezier(.4,0,.2,1)` : 'none'; el.style.width = (v / total * 100) + '%';
+  });
+  document.getElementById('nSpent').textContent = fmt(periodSpent);
+  document.getElementById('nLeft').textContent = fmt(left);
+}
+document.getElementById('buy').onclick = () => { spent += 450; periodSpent += 450; home(true); };
+document.getElementById('buyBig').onclick = () => { spent += 1200; periodSpent += 1200; home(true); };
+document.getElementById('resetHome').onclick = () => { spent = 0; periodSpent = 2300; shown = null; home(false); };
+home(false);
+
+// 2. Плашка: раскрытие по высоте с проявлением.
+const bwrap = document.getElementById('bwrap'); let bannerOn = true;
+bwrap.style.height = bwrap.scrollHeight + 'px';
+document.getElementById('toggleBanner').onclick = (e) => {
+  bannerOn = !bannerOn;
+  bwrap.style.transition = `height ${ms(250)}ms cubic-bezier(.4,0,.2,1), opacity ${ms(250)}ms`;
+  bwrap.style.height = bannerOn ? bwrap.scrollHeight + 'px' : '0px';
+  bwrap.style.opacity = bannerOn ? 1 : 0;
+  e.target.textContent = bannerOn ? 'Подтвердить черновик' : 'Пришёл новый черновик';
+};
+
+// 3. Переходы.
+const nav = document.getElementById('nav'); let settings = null, tab = 'home';
+document.getElementById('openSettings').onclick = () => {
+  if (settings) return;
+  settings = document.createElement('div'); settings.className = 'screen';
+  settings.innerHTML = '<div class="t">‹ Настройки</div><div class="row">ИИ-помощник</div><div class="row">Уведомления</div><div class="row">Защита входа</div>';
+  settings.style.transform = 'translateX(20%)'; settings.style.opacity = 0; nav.appendChild(settings);
+  const under = document.getElementById('scrHome');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const t = `transform ${ms(300)}ms cubic-bezier(.4,0,.2,1), opacity ${ms(300)}ms`;
+    settings.style.transition = t; under.style.transition = t;
+    settings.style.transform = 'none'; settings.style.opacity = 1;
+    under.style.transform = 'translateX(-10%)'; under.style.opacity = 0;
+  }));
+};
+document.getElementById('back').onclick = () => {
+  if (!settings) return;
+  const s = settings, under = document.getElementById('scrHome'); settings = null;
+  s.style.transform = 'translateX(20%)'; s.style.opacity = 0; under.style.transform = 'none'; under.style.opacity = 1;
+  setTimeout(() => s.remove(), ms(300));
+};
+document.getElementById('switchTab').onclick = () => {
+  if (settings) return;
+  const scr = document.getElementById('scrHome');
+  scr.style.transition = `opacity ${ms(200)}ms`; scr.style.opacity = 0;
+  setTimeout(() => {
+    tab = tab === 'home' ? 'stats' : 'home';
+    scr.innerHTML = tab === 'home' ? '<div class="t">Бюджет</div><div class="row">Можно сегодня 1 500 ₽</div><div class="row">Последние операции</div>' : '<div class="t">Статистика</div><div class="row">Период · Месяц</div><div class="row">2 069 ₽ · 4 категории</div>';
+    document.getElementById('tabHome').classList.toggle('on', tab === 'home');
+    document.getElementById('tabStats').classList.toggle('on', tab === 'stats');
+    scr.style.opacity = 1;
+  }, ms(200));
+};
+
+// 4. Статистика.
+const parts = [[43, '#0F8A5F', 'Продукты', '3 380 ₽'], [19, '#D9701F', 'Кафе и рестораны', '1 500 ₽'], [14, '#4B52E0', 'Транспорт', '1 100 ₽'], [14, '#B9BEC7', 'Другое', '1 100 ₽'], [10, '#A98BF0', 'Здоровье', '790 ₽']];
+let selected = null;
+const side = document.getElementById('side'), cats = document.getElementById('cats');
+cats.innerHTML = parts.map(([p, c, n, v]) => `<div class="row"><i style="background:${c}"></i><span class="n">${n}</span><span>${v}</span><span class="p">${p}%</span></div>`).join('');
+function setSide() {
+  const html = selected == null
+    ? '<div><div>25 сен – 13 окт</div><div class="v">7 870 ₽</div><div>5 категорий</div></div>'
+    : `<div><div>${parts[selected][2]}</div><div class="v">${parts[selected][3]}</div><div>${parts[selected][0]}%</div></div>`;
+  [...cats.children].forEach((r, i) => r.classList.toggle('hl', i === selected));
+  const old = side.firstElementChild;
+  if (!old || R()) { side.innerHTML = html; return; }
+  old.style.opacity = 0;
+  setTimeout(() => { side.innerHTML = html; const n = side.firstElementChild; n.style.opacity = 0; requestAnimationFrame(() => requestAnimationFrame(() => { n.style.opacity = 1; })); }, 120);
+}
+function paintSelection() {
+  [...donut.querySelectorAll('circle[data-i]')].forEach(a => {
+    const i = +a.dataset.i;
+    a.style.transition = `stroke-opacity ${ms(220)}ms, stroke-width ${ms(220)}ms`;
+    a.style.strokeOpacity = selected == null || selected === i ? 1 : 0.25;
+    a.style.strokeWidth = selected === i ? 6.5 : 5;
+  });
+}
+const donut = document.getElementById('donut'); const C = 2 * Math.PI * 15.9;
+const barsEl = document.getElementById('bars'); const heights = [40, 70, 25, 90, 55, 30, 80];
+function stats() {
+  donut.innerHTML = '<circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--card2)" stroke-width="5"/>';
+  let offset = 0; const arcs = [];
+  selected = null; setSide();
+  parts.forEach(([p, c]) => {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    Object.entries({cx: 21, cy: 21, r: 15.9, fill: 'none', stroke: c, 'stroke-width': 5, transform: 'rotate(-90 21 21)'}).forEach(([k, v]) => el.setAttribute(k, v));
+    el.dataset.p = p; el.dataset.o = offset; el.dataset.i = arcs.length; offset += p; donut.appendChild(el); arcs.push(el);
+    el.addEventListener('click', () => { selected = selected === +el.dataset.i ? null : +el.dataset.i; paintSelection(); setSide(); });
+  });
+  barsEl.innerHTML = heights.map(() => '<div></div>').join('');
+  const start = performance.now(), dur = ms(600);
+  const step = (now) => {
+    const t = dur === 0 ? 1 : Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - t, 3);
+    arcs.forEach(a => {
+      const visible = Math.max(0, Math.min(+a.dataset.p, 100 * e - +a.dataset.o));
+      a.setAttribute('stroke-dasharray', `${visible / 100 * C} ${C}`);
+      a.setAttribute('stroke-dashoffset', `${-(+a.dataset.o) / 100 * C}`);
+    });
+    [...barsEl.children].forEach((b, i) => b.style.height = (heights[i] * e) + '%');
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+document.getElementById('openStats').onclick = stats; stats();
+
+// 5. Онбординг.
+const steps = [['Сколько можно потратить сегодня', 'BudgetPlanner делит деньги до следующего дохода на дни и каждый день показывает одну цифру.'], ['Сколько у вас денег на период', 'Введите сумму и дату следующего дохода.'], ['Обязательные платежи', 'Интернет, телефон, подписки — деньги на них отложатся заранее.'], ['Подсказки вовремя', 'Перерасход, платёж накануне в 10:00, новый период.']];
+let cur = 0; const stepbox = document.getElementById('stepbox'), prog = document.getElementById('prog');
+prog.innerHTML = steps.map(() => '<span></span>').join('');
+function showStep(i, dir) {
+  [...prog.children].forEach((s, k) => { s.style.transition = `background ${ms(250)}ms`; s.classList.toggle('on', k <= i); });
+  const el = document.createElement('div'); el.className = 'step';
+  el.innerHTML = `<div style="font-size:13px;color:var(--muted)">Шаг ${i + 1} из ${steps.length}</div><h3>${steps[i][0]}</h3><p>${steps[i][1]}</p>`;
+  const old = stepbox.lastElementChild;
+  if (dir && old) {
+    el.style.transform = `translateX(${dir * 30}%)`; el.style.opacity = 0; stepbox.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const t = `transform ${ms(300)}ms cubic-bezier(.4,0,.2,1), opacity ${ms(300)}ms`;
+      el.style.transition = t; old.style.transition = t;
+      el.style.transform = 'none'; el.style.opacity = 1; old.style.transform = `translateX(${-dir * 30}%)`; old.style.opacity = 0;
+      setTimeout(() => old.remove(), ms(300));
+    }));
+  } else { stepbox.innerHTML = ''; stepbox.appendChild(el); }
+}
+document.getElementById('obNext').onclick = () => { cur = (cur + 1) % steps.length; showStep(cur, cur === 0 ? -1 : 1); };
+document.getElementById('obBack').onclick = () => { if (cur > 0) { cur--; showStep(cur, -1); } };
+showStep(0, 0);
+
+// 6. Чат.
+const msgs = document.getElementById('msgs'); let busy = false;
+function add(html, cls) { const d = document.createElement('div'); d.className = cls + ' appear'; d.innerHTML = html; msgs.appendChild(d); return d; }
+document.getElementById('ask').onclick = () => {
+  if (busy) return; busy = true;
+  add('Хватит ли до стипендии, если куплю наушники за 3 000 ₽?', 'me');
+  const dots = add('<div class="dots"><i></i><i></i><i></i><span style="color:var(--muted);font-size:13px;margin-left:6px">Считаю по вашему бюджету…</span></div>', 'bot');
+  setTimeout(() => {
+    dots.remove();
+    add('✓ Посчитал по вашему бюджету', 'cap');
+    add('Хватит. После покупки до 25 октября останется <b>12 600 ₽</b>, с завтрашнего дня лимит станет 1 210 ₽ в день.', 'bot');
+    busy = false;
+  }, 1800);
+};
+document.getElementById('clearChat').onclick = () => { msgs.innerHTML = ''; busy = false; };
+
+// 7. Список.
+const list = document.getElementById('list');
+function fillList() {
+  list.innerHTML = '';
+  [['PYATEROCHKA', '−450 ₽'], ['ИП Смирнова А. В.', '−350 ₽'], ['Перевод от Мама М.', '+2 000 ₽']].forEach(([n, a]) => {
+    const it = document.createElement('div'); it.className = 'item'; it.style.height = '64px'; it.innerHTML = `<span>${n}</span><b>${a}</b>`; list.appendChild(it);
+  });
+}
+document.getElementById('saveDrafts').onclick = () => {
+  [...list.children].slice(0, 2).forEach(it => {
+    it.style.transition = `height ${ms(250)}ms cubic-bezier(.4,0,.2,1), opacity ${ms(250)}ms, margin ${ms(250)}ms`;
+    it.style.height = '0px'; it.style.opacity = 0; it.style.marginBottom = '-10px';
+    setTimeout(() => it.remove(), ms(250));
+  });
+};
+document.getElementById('resetList').onclick = fillList; fillList();
+
+// 8. Переключатели: выделение переезжает.
+document.querySelectorAll('[data-seg]').forEach(seg => {
+  const pill = seg.querySelector('.pill'), opts = [...seg.querySelectorAll('span')];
+  const place = () => {
+    const on = seg.querySelector('span.on');
+    pill.style.width = on.offsetWidth + 'px';
+    pill.style.transform = `translateX(${on.offsetLeft - 4}px)`;
+  };
+  opts.forEach(o => o.addEventListener('click', () => { opts.forEach(x => x.classList.toggle('on', x === o)); place(); }));
+  requestAnimationFrame(place);
+  window.addEventListener('resize', place);
+});
+
+// 9. Чипы: плавное закрашивание.
+document.querySelectorAll('#chips .chip').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('#chips .chip').forEach(x => x.classList.toggle('sel', x === c));
+}));
+</script>
+</body>
+</html>
