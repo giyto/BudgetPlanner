@@ -124,7 +124,7 @@
     <string name="home_overspent">Перерасход сегодня</string>
     <string name="home_of_daily_limit">из %1$s дневного лимита</string>
     <string name="home_tomorrow_limit">Завтра дневной лимит станет %1$s</string>
-    <string name="home_tomorrow_new_period">Завтра день дохода — начнётся новый период</string>
+    <string name="home_tomorrow_new_period">Завтра день дохода - начнётся новый период</string>
     <string name="home_spent_today">Сегодня потрачено %1$s</string>
     <string name="home_days_left">%1$d %2$s до дохода</string>
     <string name="home_period_until">Период до %1$s</string>
@@ -199,7 +199,7 @@
     <string name="new_period_title">Новый период</string>
     <string name="new_period_amount_title">Сколько у вас денег на начало дня</string>
     <string name="new_period_amount_hint">Подставлен остаток прошлого периода по расчёту приложения. Если в банке другая сумма, исправьте.</string>
-    <string name="new_period_income_today">Доход %1$s, записанный сегодня, добавится к этой сумме сам — не включайте его.</string>
+    <string name="new_period_income_today">Доход %1$s, записанный сегодня, добавится к этой сумме сам - не включайте его.</string>
     <string name="new_period_budget">Бюджет нового периода: %1$s</string>
     <string name="new_period_start">Начать период</string>
     <string name="settings_debug">Для разработки</string>
@@ -305,7 +305,7 @@
     <string name="home_drafts">%1$d %2$s категорию</string>
     <string name="home_drafts_subtitle">Из уведомлений банка</string>
     <string name="home_drafts_open">Открыть черновики</string>
-    <string name="home_income_suggestion">Пришло %1$s — начать новый период?</string>
+    <string name="home_income_suggestion">Пришло %1$s - начать новый период?</string>
     <string name="home_income_suggestion_text">Похоже на стипендию или зарплату. Новый период начнётся сегодня, этот доход в него войдёт.</string>
     <string name="home_income_suggestion_start">Начать</string>
     <string name="home_income_suggestion_later">Не сейчас</string>
@@ -318,7 +318,7 @@
     <string name="own_transfer_pair_text">Не трата и не доход: бюджет не меняется. Остатки обеих карт учтутся в сверке.</string>
     <string name="own_transfer_confirm">Верно</string>
     <string name="own_transfer_split">Это не перевод себе</string>
-    <string name="own_name_title">«%1$s» — это вы?</string>
+    <string name="own_name_title">«%1$s» - это вы?</string>
     <string name="own_name_text">Тогда переводы от «%1$s» и на «%1$s» будут сразу считаться переводами себе.</string>
     <string name="own_name_remember">Да, запомнить</string>
     <string name="own_name_once">Только этот раз</string>
@@ -373,10 +373,10 @@
     <string name="period_reconcile_matches">%1$s сходится</string>
     <string name="period_reconcile_mismatch">%1$s: расхождение %2$s</string>
     <string name="period_reconcile_button">Сверить с банком</string>
-    <string name="period_reconcile_hint">Введите остаток из приложения банка — BudgetPlanner сравнит его со своим расчётом.</string>
+    <string name="period_reconcile_hint">Введите остаток из приложения банка - BudgetPlanner сравнит его со своим расчётом.</string>
     <string name="operations_filter_account">%1$s с %2$s</string>
     <string name="operations_filter_account_clear">Снять фильтр по счёту</string>
-    <string name="operations_filter_account_hint">Не нашли трату? Добавьте её кнопкой «+» — она запишется на %1$s и войдёт в сверку.</string>
+    <string name="operations_filter_account_hint">Не нашли трату? Добавьте её кнопкой «+» - она запишется на %1$s и войдёт в сверку.</string>
     <string name="settings_reconcile_header">Сверка с банком</string>
     <string name="settings_reconcile_auto">Автоматическая сверка</string>
     <string name="settings_reconcile_auto_sub">Сравнивать остаток из уведомлений банка с расчётом и показывать расхождение</string>
@@ -392,7 +392,7 @@
     <string name="rules_count">%1$d %2$s</string>
     <string name="rules_expenses">Траты</string>
     <string name="rules_incomes">Доходы</string>
-    <string name="rules_empty">Правил пока нет. Правило появляется, когда вы подтверждаете черновик с галочкой «Запомнить» — тогда следующие покупки в этом магазине сохраняются сразу.</string>
+    <string name="rules_empty">Правил пока нет. Правило появляется, когда вы подтверждаете черновик с галочкой «Запомнить» - тогда следующие покупки в этом магазине сохраняются сразу.</string>
     <string name="rules_note">Правило появляется, когда вы подтверждаете черновик с галочкой «Запомнить». Изменение правила не меняет уже сохранённые операции.</string>
     <string name="rules_delete">Удалить правило «%1$s»</string>
     <string name="rules_deleted">Правило удалено</string>
@@ -412,9 +412,9 @@
     <string name="notif_overspend_text_last_day">Сегодня последний день периода</string>
     <string name="notif_payment_title">Завтра платёж: %1$s, %2$s</string>
     <string name="notif_payment_text">Деньги на него уже отложены в резерв</string>
-    <string name="notif_income_day_title">Наступил день дохода — начать новый период?</string>
+    <string name="notif_income_day_title">Наступил день дохода - начать новый период?</string>
     <string name="notif_income_day_text">Нажмите, чтобы начать</string>
-    <string name="notif_income_arrived_title">Пришло %1$s — начать новый период?</string>
+    <string name="notif_income_arrived_title">Пришло %1$s - начать новый период?</string>
     <string name="notif_income_arrived_text">Похоже на стипендию. Нажмите, чтобы начать</string>
     <string name="notif_mismatch_title">Расхождение с банком %1$s · %2$s</string>
     <string name="notif_mismatch_text">Нажмите, чтобы сверить</string>
@@ -431,16 +431,21 @@
     <string name="settings_notif_denied">Уведомления запрещены в системе</string>
     <string name="settings_notif_allow">Разрешить</string>
     <string name="onboarding_notif_title">Подсказки вовремя</string>
-    <string name="onboarding_notif_text">BudgetPlanner напомнит о важном, даже если приложение закрыто. Уведомлений немного — только по делу.</string>
-    <string name="onboarding_notif_overspend">Перерасход — не чаще раза в день</string>
-    <string name="onboarding_notif_payment">Обязательный платёж — накануне в 10:00</string>
-    <string name="onboarding_notif_income">Пришёл доход — начать новый период</string>
+    <string name="onboarding_notif_text">BudgetPlanner напомнит о важном, даже если приложение закрыто. Уведомлений немного - только по делу.</string>
+    <string name="onboarding_notif_overspend">Перерасход - не чаще раза в день</string>
+    <string name="onboarding_notif_payment">Обязательный платёж - накануне в 10:00</string>
+    <string name="onboarding_notif_income">Пришёл доход - начать новый период</string>
     <string name="onboarding_notif_mismatch">Расхождение с банком</string>
     <string name="onboarding_notif_note">Каждый тип можно выключить в настройках.</string>
     <string name="onboarding_notif_allow">Разрешить уведомления</string>
     <string name="onboarding_notif_later">Не сейчас</string>
     <string name="widget_name">Можно сегодня</string>
-    <string name="widget_description">Сколько можно потратить сегодня и кнопка «Добавить трату»</string>
+    <string name="widget_description">Сколько можно потратить сегодня</string>
+    <string name="widget_large_name">Можно сегодня и «+»</string>
+    <string name="widget_large_description">Сумма на сегодня, лимит, дни до дохода и кнопка «Добавить трату»</string>
+    <string name="widget_preview_limit" translatable="false">из 1&#160;500&#160;₽ · 9 дней до дохода</string>
+    <string name="protection_hide_widget">Прятать сумму на виджете</string>
+    <string name="protection_hide_widget_hint">Вместо суммы «••• ₽», кнопка «+» работает</string>
     <string name="widget_can_spend">Можно сегодня</string>
     <string name="widget_of_limit">из %1$s · %2$s</string>
     <string name="widget_hidden_hint">Откройте приложение, чтобы увидеть сумму</string>

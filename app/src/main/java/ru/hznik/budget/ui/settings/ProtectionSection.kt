@@ -68,6 +68,8 @@ class ProtectionViewModel @Inject constructor(private val repository: LockSettin
     fun setTimeout(timeout: LockTimeout) = viewModelScope.launch { repository.setTimeout(timeout) }
 
     fun setHideInRecents(hide: Boolean) = viewModelScope.launch { repository.setHideInRecents(hide) }
+
+    fun setHideWidgetAmount(hide: Boolean) = viewModelScope.launch { repository.setHideWidgetAmount(hide) }
 }
 
 /** Раздел «Защита входа» в настройках (spec app-lock, design.md add-data-protection, решение 10). */
@@ -138,6 +140,14 @@ fun ProtectionSection(viewModel: ProtectionViewModel = hiltViewModel()) {
                         onSelect = viewModel::setTimeout,
                     )
                 }
+                Divider()
+                SwitchRow(
+                    title = stringResource(R.string.protection_hide_widget),
+                    hint = stringResource(R.string.protection_hide_widget_hint),
+                    checked = current.hideWidgetAmount,
+                    enabled = true,
+                    onCheckedChange = viewModel::setHideWidgetAmount,
+                )
             }
             Divider()
             SwitchRow(

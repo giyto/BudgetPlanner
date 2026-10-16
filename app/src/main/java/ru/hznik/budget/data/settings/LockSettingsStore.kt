@@ -21,6 +21,7 @@ class DataStoreLockSettingsRepository @Inject constructor(
             enabled = prefs[ENABLED] ?: false,
             timeout = prefs[TIMEOUT]?.let { name -> LockTimeout.entries.firstOrNull { it.name == name } } ?: LockTimeout.ONE_MINUTE,
             hideInRecents = prefs[HIDE_IN_RECENTS] ?: false,
+            hideWidgetAmount = prefs[HIDE_WIDGET_AMOUNT] ?: false,
         )
     }
 
@@ -36,9 +37,14 @@ class DataStoreLockSettingsRepository @Inject constructor(
         dataStore.edit { it[HIDE_IN_RECENTS] = hide }
     }
 
+    override suspend fun setHideWidgetAmount(hide: Boolean) {
+        dataStore.edit { it[HIDE_WIDGET_AMOUNT] = hide }
+    }
+
     private companion object {
         val ENABLED = booleanPreferencesKey("lock_enabled")
         val TIMEOUT = stringPreferencesKey("lock_timeout")
         val HIDE_IN_RECENTS = booleanPreferencesKey("lock_hide_in_recents")
+        val HIDE_WIDGET_AMOUNT = booleanPreferencesKey("lock_hide_widget_amount")
     }
 }

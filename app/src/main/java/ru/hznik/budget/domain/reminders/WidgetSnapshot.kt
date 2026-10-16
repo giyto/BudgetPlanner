@@ -7,7 +7,7 @@ sealed interface WidgetSnapshot {
     /** Онбординг не пройден, периода нет или база недоступна: «Откройте BudgetPlanner». */
     data object NoData : WidgetSnapshot
 
-    /** Включена защита входа: «••• ₽» и кнопка «+». */
+    /** Защита входа и «Прятать сумму на виджете»: «••• ₽» и кнопка «+». */
     data object Hidden : WidgetSnapshot
 
     /** Суммы в копейках; [spentFraction] — потраченная доля дневного лимита от 0 до 1. */
@@ -21,9 +21,9 @@ sealed interface WidgetSnapshot {
     }
 
     companion object {
-        fun of(status: PeriodStatus?, lockEnabled: Boolean): WidgetSnapshot = when {
+        fun of(status: PeriodStatus?, amountHidden: Boolean): WidgetSnapshot = when {
             status == null -> NoData
-            lockEnabled -> Hidden
+            amountHidden -> Hidden
             else -> {
                 val limit = status.dailyLimit
                 val fraction = if (limit <= 0) 1f else (status.spentToday.toFloat() / limit).coerceIn(0f, 1f)

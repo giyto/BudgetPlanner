@@ -118,7 +118,7 @@ class AppRootViewModel @Inject constructor(
         }
         if (statusWatcher != null) return
         statusWatcher = viewModelScope.launch {
-            combine(observeStatus.get()(), lockSettings.observe().map { it.enabled }.distinctUntilChanged()) { status, locked -> status to locked }
+            combine(observeStatus.get()(), lockSettings.observe().map { it.widgetAmountHidden }.distinctUntilChanged()) { status, locked -> status to locked }
                 .conflate()
                 .collect { runCatching { checkNotifications.get().invoke() } }
         }

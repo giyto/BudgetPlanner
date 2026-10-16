@@ -162,7 +162,7 @@ class ImportFlowTest : FlowTestBase() {
         waitForHero("Можно потратить сегодня 1500 рублей")
         sber("Зачисление стипендии 9 000 ₽. Баланс 9 450 ₽")
         rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(INCOME_SUGGESTION_TAG)).fetchSemanticsNodes().isNotEmpty() }
-        rule.onNode(hasText("Пришло 9 000 ₽ — начать новый период?", substring = true)).assertIsDisplayed()
+        rule.onNode(hasText("Пришло 9 000 ₽ - начать новый период?", substring = true)).assertIsDisplayed()
         rule.onNode(hasText("Не сейчас") and hasClickAction()).performClick()
         rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(INCOME_SUGGESTION_TAG)).fetchSemanticsNodes().isEmpty() }
     }

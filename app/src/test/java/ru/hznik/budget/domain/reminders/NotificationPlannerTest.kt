@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.hznik.budget.domain.budget.BudgetCalculator
 import ru.hznik.budget.domain.budget.PeriodStatus
+import ru.hznik.budget.domain.lock.LockSettings
 import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationSource
@@ -169,14 +170,21 @@ class NotificationPlannerTest {
 
     @Test
     fun `widget snapshot shows hides or has no data`() {
-        assertEquals(WidgetSnapshot.NoData, WidgetSnapshot.of(null, lockEnabled = false))
-        assertEquals(WidgetSnapshot.Hidden, WidgetSnapshot.of(status(), lockEnabled = true))
-        val shown = WidgetSnapshot.of(status(spentRubles = 100), lockEnabled = false) as WidgetSnapshot.Shown
+        assertEquals(WidgetSnapshot.NoData, WidgetSnapshot.of(null, amountHidden = false))
+        assertEquals(WidgetSnapshot.Hidden, WidgetSnapshot.of(status(), amountHidden = true))
+        val shown = WidgetSnapshot.of(status(spentRubles = 100), amountHidden = false) as WidgetSnapshot.Shown
         assertEquals(shown.dailyLimitKopecks - 100_00, shown.canSpendKopecks)
         assertTrue(shown.spentFraction > 0f && shown.spentFraction < 1f)
-        val over = WidgetSnapshot.of(status(spentRubles = 5_000), lockEnabled = false) as WidgetSnapshot.Shown
+        val over = WidgetSnapshot.of(status(spentRubles = 5_000), amountHidden = false) as WidgetSnapshot.Shown
         assertTrue(over.overspent)
         assertEquals(1f, over.spentFraction)
+    }
+
+    @Test
+    fun `widget amount is hidden only with lock and the switch`() {
+        assertEquals(false, LockSettings(enabled = true).widgetAmountHidden)
+        assertEquals(false, LockSettings(enabled = false, hideWidgetAmount = true).widgetAmountHidden)
+        assertEquals(true, LockSettings(enabled = true, hideWidgetAmount = true).widgetAmountHidden)
     }
 
     @Test

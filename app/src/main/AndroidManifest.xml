@@ -42,7 +42,7 @@
             android:name=".AppActionAlias"
             android:exported="false"
             android:targetActivity=".MainActivity" />
-        <!-- Виджет «Можно сегодня» (spec home-widget). -->
+        <!-- Виджет «Можно сегодня» 2×1 (spec home-widget). -->
         <receiver
             android:name=".widget.BudgetWidgetReceiver"
             android:exported="true"
@@ -53,6 +53,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/budget_widget_info" />
+        </receiver>
+        <!-- Тот же виджет сразу размером 4×2: в списке виджетов две карточки (spec home-widget). -->
+        <receiver
+            android:name=".widget.BudgetWidgetLargeReceiver"
+            android:exported="true"
+            android:label="@string/widget_large_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/budget_widget_large_info" />
         </receiver>
         <!-- WorkManager создаётся с фабрикой Hilt в BudgetApplication, стандартный запуск отключён. -->
         <provider

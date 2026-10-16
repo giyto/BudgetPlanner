@@ -84,7 +84,7 @@ interface WidgetEntryPoint {
  * только сумма, средний 4×2 — сумма, доля лимита, дни до дохода и кнопка «+». Шрифты проекта виджету
  * недоступны (система рисует его своими), поэтому текст системным шрифтом.
  */
-class BudgetWidget : GlanceAppWidget() {
+open class BudgetWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(setOf(SMALL, MEDIUM))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -104,7 +104,7 @@ class BudgetWidget : GlanceAppWidget() {
         // Процесс мог запуститься ради виджета: базу сначала нужно проверить и открыть ключом.
         val ready = runCatching { entry.databaseAccess().open() == DatabaseState.READY }.getOrDefault(false)
         if (!ready) return flowOf(WidgetSnapshot.NoData)
-        return combine(entry.observePeriodStatus()(), entry.lockSettings().observe()) { status, lock -> WidgetSnapshot.of(status, lock.enabled) }
+        return combine(entry.observePeriodStatus()(), entry.lockSettings().observe()) { status, lock -> WidgetSnapshot.of(status, lock.widgetAmountHidden) }
             .distinctUntilChanged()
             .catch { emit(WidgetSnapshot.NoData) }
     }
@@ -115,14 +115,26 @@ class BudgetWidget : GlanceAppWidget() {
     }
 }
 
+/** Карточка «Можно сегодня» 2×1 в списке виджетов. */
 class BudgetWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = BudgetWidget()
 }
+
+/**
+ * Карточка «Можно сегодня и «+»» 4×2: тот же виджет, другой стартовый размер и превью. Отдельный класс виджета,
+ * чтобы `updateAll` находил экземпляры каждой карточки.
+ */
+class BudgetWidgetLargeReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = BudgetWidgetLarge()
+}
+
+class BudgetWidgetLarge : BudgetWidget()
 
 /** Обновление всех виджетов на рабочем столе после изменения расчёта (решение 2). */
 class GlanceWidgetRefresher @Inject constructor(@ApplicationContext private val context: Context) : WidgetRefresher {
     override suspend fun refresh() {
         runCatching { BudgetWidget().updateAll(context) }
+        runCatching { BudgetWidgetLarge().updateAll(context) }
     }
 }
 

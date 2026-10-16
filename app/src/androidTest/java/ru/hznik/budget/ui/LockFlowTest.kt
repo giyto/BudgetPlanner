@@ -228,6 +228,21 @@ class ProtectionSettingsFlowTest : FlowTestBase() {
     }
 
     @Test
+    fun hideWidgetAmountAppearsWithProtectionAndIsOffByDefault() {
+        openSettings()
+        rule.onNodeWithText("Прятать сумму на виджете").assertDoesNotExist()
+
+        TestAuth.result = AuthResult.Success
+        switch("Вход по отпечатку или PIN").performScrollTo().performClick()
+        rule.waitUntil(5_000) { state.enabled }
+        switch("Прятать сумму на виджете").performScrollTo().assertIsOff()
+        assertFalse("сумма на виджете видна, пока переключатель выключен", state.widgetAmountHidden)
+
+        switch("Прятать сумму на виджете").performClick()
+        rule.waitUntil(5_000) { state.widgetAmountHidden }
+    }
+
+    @Test
     fun withoutScreenLockSwitchIsDisabledWithHint() {
         TestAuth.availability = AuthAvailability.NO_SCREEN_LOCK
         openSettings()

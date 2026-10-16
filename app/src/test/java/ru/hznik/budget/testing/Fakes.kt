@@ -303,6 +303,8 @@ class FakeLockSettingsRepository(initial: LockSettings = LockSettings()) : LockS
     override suspend fun setTimeout(timeout: LockTimeout) = state.update { it.copy(timeout = timeout) }
 
     override suspend fun setHideInRecents(hide: Boolean) = state.update { it.copy(hideInRecents = hide) }
+
+    override suspend fun setHideWidgetAmount(hide: Boolean) = state.update { it.copy(hideWidgetAmount = hide) }
 }
 
 /** Сверка в памяти; ожидаемый остаток считается по операциям [operations] по тем же правилам, что и SQL. */

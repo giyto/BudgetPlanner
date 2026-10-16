@@ -19,7 +19,12 @@ data class LockSettings(
     val enabled: Boolean = false,
     val timeout: LockTimeout = LockTimeout.ONE_MINUTE,
     val hideInRecents: Boolean = false,
-)
+    /** «Прятать сумму на виджете»; действует только при включённой защите, по умолчанию сумма видна. */
+    val hideWidgetAmount: Boolean = false,
+) {
+    /** Виджет показывает «••• ₽» вместо суммы. */
+    val widgetAmountHidden: Boolean get() = enabled && hideWidgetAmount
+}
 
 interface LockSettingsRepository {
     fun observe(): Flow<LockSettings>
@@ -29,6 +34,8 @@ interface LockSettingsRepository {
     suspend fun setTimeout(timeout: LockTimeout)
 
     suspend fun setHideInRecents(hide: Boolean)
+
+    suspend fun setHideWidgetAmount(hide: Boolean)
 }
 
 /** Монотонные часы: перевод часов телефона не должен сокращать или продлевать таймаут блокировки. */
