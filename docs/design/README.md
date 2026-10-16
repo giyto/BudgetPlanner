@@ -41,6 +41,10 @@
 | Виджет на рабочем столе: средний, маленький, скрытая сумма | ![](screenshots/Widgets.png) | ![](screenshots/DarkWidgets.png) |
 | Уведомления приложения | ![](screenshots/NotificationsShade.png) | ![](screenshots/DarkNotificationsShade.png) |
 | Онбординг: подсказки вовремя | ![](screenshots/OnboardingNotifications.png) | ![](screenshots/DarkOnboardingNotifications.png) |
+| Помощник: включение и какие данные уходят в модель | ![](screenshots/AssistantIntro.png) | ![](screenshots/DarkAssistantIntro.png) |
+| Помощник: пустой диалог и подсказки вопросов | ![](screenshots/AssistantEmpty.png) | ![](screenshots/DarkAssistantEmpty.png) |
+| Помощник: ответ, ошибка сети, ответ готовится | ![](screenshots/AssistantStates.png) | ![](screenshots/DarkAssistantStates.png) |
+| Черновики: подсказка категорий от помощника | ![](screenshots/DraftsAiSuggest.png) | ![](screenshots/DarkDraftsAiSuggest.png) |
 
 Исходник каждого снимка лежит в `mockups/` под тем же именем с расширением `.dc.html`. Исключение — экраны статистики (`Stats*`, `CategoryOperations`): карточку категорий переделали (список категорий под кольцом, раскрытие «Остального», переход к операциям категории), поэтому старый макет статистики удалён, а снимки сделаны с самого приложения на эмуляторе в том же размере. Запись о статистике в `canvas.json` относится к удалённому макету.
 
@@ -60,3 +64,5 @@
 `Onboarding` (шаг автоимпорта) тоже отрисован из `mockups/NotificationImport.html`: `Onboarding.dc.html` в редакторе обновлён теми же текстами, но открывается только там. Настройки целиком — один высокий экран в `mockups/Settings.html` (`Settings.html?theme=dark`), со всеми разделами по порядку.
 
 Виджет, уведомления и шаг «Подсказки вовремя» (`Widgets`, `NotificationsShade`, `OnboardingNotifications`) лежат в `mockups/WidgetReminders.html` и выбираются так же, например `WidgetReminders.html?screen=NotificationsShade&theme=dark`. Раздел «Уведомления» добавлен в полный экран `Settings`.
+
+Экраны ИИ-помощника (`AssistantIntro`, `AssistantEmpty`, `AssistantStates`, `DraftsAiSuggest`) лежат в `mockups/AiAssistant.html` и выбираются так же, например `AiAssistant.html?screen=AssistantStates&theme=dark`. Чат с ответами — по-прежнему `Assistant.dc.html`. Раздел «ИИ-помощник» добавлен в `mockups/Settings.html`.

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ИИ-помощник</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;overflow:hidden}
+.light{--bg:#EFF1F5;--card:#FFFFFF;--card2:#E4E7ED;--ink:#191C1F;--muted:#575E68;--sub:#3A4048;--line:#E2E5EA;--chip:#CDD2DA;--pri:#4B52E0;--priT:#4B52E0;--priS:#E4E5FC;--pos:#0B7650;--posS:#DDF5EA;--warn:#B23A0A;--warnS:#FDE7DA;--hero:#191C1F;--heroB:#191C1F;--track:#2E3338;--segOn:#FFFFFF;--nav:#FFFFFF}
+.dark{--bg:#0F1114;--card:#1A1D21;--card2:#24282D;--ink:#F2F4F7;--muted:#A3AAB5;--sub:#C9CED6;--line:#2C3036;--chip:#3A3F46;--pri:#5B62F0;--priT:#A4A8FF;--priS:#262A4D;--pos:#4ADE9A;--posS:#16332A;--warn:#FF9A62;--warnS:#3A2418;--hero:#23272C;--heroB:#353A41;--track:#3A4048;--segOn:#33383F;--nav:#16191C}
+.screen{width:390px;height:844px;box-sizing:border-box;display:none;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Onest',system-ui,sans-serif;overflow:hidden}
+.screen.on{display:flex}
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0 8px;height:44px;flex-shrink:0}
+.back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.skip{color:var(--priT);font-size:15px;font-weight:600}
+.title{font-family:'Unbounded',sans-serif;font-weight:600;font-size:20px}
+.sub2{font-size:14px;color:var(--muted)}
+.prog{padding:8px 20px 0;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.prog div{display:flex;gap:6px}.prog span{flex:1;height:4px;border-radius:2px}
+.badge{align-self:center;position:relative;width:120px;height:120px;border-radius:60px;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:18px}
+.badge>span{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:34px;background:var(--priS);color:var(--priT)}
+.ok{position:absolute;right:0;bottom:0;width:36px;height:36px;box-sizing:border-box;border-radius:18px;border:3px solid var(--bg);background:var(--posS);color:var(--pos);display:flex;align-items:center;justify-content:center;font-size:18px}
+h1{margin:18px 0 0;padding:0 24px;text-align:center;font-family:'Unbounded',sans-serif;font-size:23px;font-weight:600;line-height:1.2}
+.p{margin:10px 0 0;padding:0 28px;text-align:center;font-size:15px;line-height:1.45;color:var(--sub)}
+.list{margin:16px 16px 0;padding:4px 16px;background:var(--card);border-radius:22px;flex-shrink:0}
+.li{display:flex;align-items:center;gap:12px;min-height:48px;padding:8px 0;box-sizing:border-box;font-size:14px;line-height:1.35}
+.li+.li{border-top:1px solid var(--line)}
+.tile{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px;background:var(--posS);color:var(--pos)}
+.bottom{margin-top:auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px;border-radius:18px;font-size:17px;font-weight:600;text-align:center;padding:0 12px}
+.btn2{display:flex;align-items:center;justify-content:center;min-height:52px;box-sizing:border-box;border-radius:18px;border:1px solid var(--chip);font-size:16px;font-weight:600}
+.hint{font-size:13px;line-height:1.4;color:var(--muted);display:flex;gap:8px;padding:0 4px}
+.warncard{margin:16px 16px 0;padding:16px;border-radius:22px;background:var(--warnS)}
+.card{margin:0 16px;background:var(--card);border-radius:22px;padding:16px}
+.group{font-size:14px;color:var(--muted);margin:18px 22px 8px}
+.row{display:flex;align-items:center;gap:12px}
+.ic{width:40px;height:40px;border-radius:12px;background:var(--card2);color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;font-size:20px}
+.t1{font-size:16px;font-weight:600}.t2{font-size:13px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:16px;border:1px solid var(--chip);font-size:15px;font-weight:500;white-space:nowrap;box-sizing:border-box}
+.sel{background:var(--pri);color:#fff;border-color:var(--pri)}
+.tag{display:inline-block;font-size:12px;font-weight:500;padding:3px 8px;border-radius:8px;margin-top:10px}
+.sum{font-size:16px;font-weight:600;white-space:nowrap}
+.plaque{margin:0 16px;border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:72px;box-sizing:border-box}
+.navbar{margin-top:auto;display:flex;justify-content:space-around;padding:10px 0 18px;background:var(--nav);border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.navbar div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.navbar i{font-size:24px}
+.navbar .on{color:var(--ink);font-weight:600}
+.navbar .on i{background:var(--priS);color:var(--priT);border-radius:16px;padding:4px 18px}
+.dim{opacity:.55}
+</style>
+<style>
+.check{width:24px;height:24px;border-radius:6px;border:2px solid var(--chip);box-sizing:border-box;flex:none}
+.chead{display:flex;align-items:flex-start;justify-content:space-between;padding:14px 12px 12px 20px;border-bottom:1px solid var(--line);flex-shrink:0}
+.chead h2{margin:0;font-family:'Unbounded',sans-serif;font-size:26px;font-weight:600}
+.shield{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);margin-top:6px}
+.iconbtn{width:44px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink);flex:none}
+.tokens{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--card2);border-radius:10px;padding:4px 8px;margin-top:8px}
+.msgs{flex:1;display:flex;flex-direction:column;gap:10px;padding:16px 16px 8px;overflow:hidden}
+.me{align-self:flex-end;max-width:78%;background:var(--pri);color:#fff;border-radius:22px 22px 6px 22px;padding:12px 16px;font-size:16px;line-height:1.4}
+.bot{align-self:flex-start;max-width:86%;background:var(--card);border-radius:22px 22px 22px 6px;padding:14px 16px;font-size:16px;line-height:1.45}
+.done{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);background:var(--card2);border-radius:12px;padding:6px 10px}
+.err{align-self:stretch;background:var(--warnS);border-radius:22px;padding:14px 16px;display:flex;gap:12px}
+.err .t1{color:var(--warn)}
+.retry{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:14px;background:var(--card);font-size:15px;font-weight:600;margin-top:10px;box-sizing:border-box}
+.dots{align-self:flex-start;background:var(--card);border-radius:22px 22px 22px 6px;padding:14px 16px;display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted)}
+.dots i{font-size:8px;color:var(--priT)}
+.sugg{display:flex;gap:8px;padding:0 16px 10px;overflow:hidden;flex-shrink:0}
+.sgrid{display:flex;flex-direction:column;gap:8px;padding:0 16px}
+.sgrid .chip{justify-content:flex-start;background:var(--card);border-color:transparent;white-space:normal;padding:10px 16px;font-size:15px}
+.inputrow{display:flex;gap:10px;align-items:center;padding:0 16px 12px;flex-shrink:0}
+.field{flex:1;min-height:52px;border-radius:26px;border:1px solid var(--chip);display:flex;align-items:center;padding:0 18px;font-size:16px;color:var(--muted);box-sizing:border-box;background:var(--bg)}
+.send{width:52px;height:52px;border-radius:26px;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;flex:none}
+.send.off{background:var(--card2);color:var(--muted)}
+.cols{display:flex;flex-direction:column;gap:0}
+.lbl{font-size:13px;font-weight:600;color:var(--muted);text-transform:none;margin:14px 22px 6px}
+.aitag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:3px 8px;border-radius:8px;margin-top:10px;background:var(--priS);color:var(--priT)}
+.askbtn{margin:12px 16px 0;min-height:52px;border-radius:18px;border:1px solid var(--chip);display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:600;color:var(--priT);box-sizing:border-box}
+</style>
+</head>
+<body>
+
+<!-- Помощник выключен: что умеет и какие данные уходят в модель -->
+<div class="screen" id="AssistantIntro">
+  <div class="chead"><div><h2>Помощник</h2><div class="shield"><i class="ti ti-shield"></i>Видит только итоги и суммы, а не ваши операции</div></div></div>
+  <div class="badge" style="margin-top:16px;width:104px;height:104px"><span><i class="ti ti-sparkles"></i></span></div>
+  <h1 style="font-size:21px;margin-top:14px">Спросите про свои траты</h1>
+  <p class="p" style="font-size:14px">«Хватит ли до стипендии, если куплю наушники?» - помощник посчитает по вашему бюджету и ответит обычным языком.</p>
+  <div class="lbl">Уходит в модель GigaChat</div>
+  <div class="list" style="margin-top:0">
+    <div class="li"><span class="tile" style="background:var(--priS);color:var(--priT)"><i class="ti ti-calculator"></i></span>Итоги: бюджет, лимит на день, потрачено</div>
+    <div class="li"><span class="tile" style="background:var(--priS);color:var(--priT)"><i class="ti ti-chart-pie"></i></span>Суммы по категориям за период</div>
+    <div class="li"><span class="tile" style="background:var(--priS);color:var(--priT)"><i class="ti ti-building-store"></i></span>Названия магазинов - можно отключить</div>
+  </div>
+  <div class="lbl">Остаётся на телефоне</div>
+  <div class="list" style="margin-top:0">
+    <div class="li"><span class="tile"><i class="ti ti-lock"></i></span>Список операций, номера карт, остатки банка и тексты уведомлений</div>
+  </div>
+  <div class="bottom" style="padding-bottom:12px">
+    <div class="btn" style="background:var(--pri);color:#fff">Включить помощника</div>
+    <div class="hint" style="justify-content:center"><i class="ti ti-cloud"></i><span>Работает через GigaChat от Сбера, регистрация не нужна</span></div>
+  </div>
+  <div class="navbar" style="margin-top:0"><div><i class="ti ti-home"></i>Главная</div><div><i class="ti ti-list"></i>Операции</div><div><i class="ti ti-chart-pie"></i>Статистика</div><div class="on"><i class="ti ti-sparkles"></i>Помощник</div></div>
+</div>
+
+<!-- Помощник включён, диалог пустой -->
+<div class="screen" id="AssistantEmpty">
+  <div class="chead"><div><h2>Помощник</h2><div class="shield"><i class="ti ti-shield"></i>Видит только итоги и суммы</div><span class="tokens"><i class="ti ti-coins"></i>Израсходовано 0 токенов</span></div><span class="iconbtn dim"><i class="ti ti-message-plus"></i></span></div>
+  <div class="msgs" style="justify-content:center;align-items:center;text-align:center">
+    <div class="badge" style="margin-top:0;width:88px;height:88px"><span style="width:56px;height:56px;font-size:30px"><i class="ti ti-sparkles"></i></span></div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:19px;font-weight:600;margin-top:12px">Чем помочь?</div>
+    <div style="font-size:14px;color:var(--muted);margin-top:6px;padding:0 24px;line-height:1.4">Спросите про бюджет или выберите вопрос</div>
+  </div>
+  <div class="sgrid">
+    <span class="chip"><i class="ti ti-headphones" style="margin-right:10px;color:var(--priT)"></i>Хватит ли до стипендии, если куплю наушники за 3 000 ₽?</span>
+    <span class="chip"><i class="ti ti-chart-pie" style="margin-right:10px;color:var(--priT)"></i>На что я больше всего трачу?</span>
+    <span class="chip"><i class="ti ti-coffee" style="margin-right:10px;color:var(--priT)"></i>Сколько ушло на кафе за месяц?</span>
+    <span class="chip"><i class="ti ti-calendar-dollar" style="margin-right:10px;color:var(--priT)"></i>Как дожить до стипендии?</span>
+  </div>
+  <div class="inputrow" style="margin-top:14px"><div class="field">Спросите про свои траты</div><span class="send off"><i class="ti ti-send-2"></i></span></div>
+  <div class="navbar" style="margin-top:0"><div><i class="ti ti-home"></i>Главная</div><div><i class="ti ti-list"></i>Операции</div><div><i class="ti ti-chart-pie"></i>Статистика</div><div class="on"><i class="ti ti-sparkles"></i>Помощник</div></div>
+</div>
+
+<!-- Чат: ответ готовится, ошибка сети, мало токенов -->
+<div class="screen" id="AssistantStates">
+  <div class="chead"><div><h2>Помощник</h2><div class="shield"><i class="ti ti-shield"></i>Видит только итоги и суммы</div><span class="tokens"><i class="ti ti-coins"></i>Израсходовано 12 480 токенов</span></div><span class="iconbtn"><i class="ti ti-message-plus"></i></span></div>
+  <div class="msgs">
+    <div class="me">Сколько ушло на кафе за месяц?</div>
+    <div class="done"><i class="ti ti-check"></i>Посмотрел траты по категориям</div>
+    <div class="bot">За последние 30 дней на кафе ушло <b>1&nbsp;520&nbsp;₽</b> - 6 раз, в среднем 253&nbsp;₽ за поход.</div>
+    <div class="me">А на продукты?</div>
+    <div class="err"><i class="ti ti-wifi-off" style="font-size:22px;color:var(--warn)"></i><div><div class="t1">Нет соединения с интернетом</div><div class="t2" style="line-height:1.4;margin-top:2px">Остальное приложение работает без сети</div><span class="retry"><i class="ti ti-refresh"></i>Повторить</span></div></div>
+    <div class="me">Как дожить до стипендии?</div>
+    <div class="dots"><i class="ti ti-circle-filled"></i><i class="ti ti-circle-filled"></i><i class="ti ti-circle-filled"></i><span>Считаю по вашему бюджету…</span></div>
+  </div>
+  <div class="inputrow"><div class="field">Спросите про свои траты</div><span class="send off"><i class="ti ti-send-2"></i></span></div>
+  <div class="navbar" style="margin-top:0"><div><i class="ti ti-home"></i>Главная</div><div><i class="ti ti-list"></i>Операции</div><div><i class="ti ti-chart-pie"></i>Статистика</div><div class="on"><i class="ti ti-sparkles"></i>Помощник</div></div>
+</div>
+
+<!-- Черновики: «Подсказать категории» и подсказка помощника -->
+<div class="screen" id="DraftsAiSuggest">
+  <div class="top" style="justify-content:flex-start;gap:4px;height:auto;padding-top:14px"><span class="back"><i class="ti ti-chevron-left"></i></span><div><div class="title">Черновики</div><div class="sub2">2 операции из уведомлений банка</div></div></div>
+  <div class="askbtn"><i class="ti ti-sparkles"></i>Подсказать категории</div>
+  <div class="card" style="margin-top:12px">
+    <div class="row"><span class="ic"><i class="ti ti-shopping-bag"></i></span><div style="flex:1"><div class="t1">ИП Смирнова А. В.</div><div class="t2">Сегодня, 10:20 · покупка</div></div><span class="sum">−350 ₽</span></div>
+    <span class="aitag"><i class="ti ti-sparkles"></i>Подсказал помощник</span>
+    <div style="display:flex;gap:8px;margin-top:12px;overflow:hidden"><span class="chip sel">Продукты</span><span class="chip">Кафе</span><span class="chip">Транспорт</span><span class="chip">Другое</span></div>
+    <div class="row" style="margin-top:12px;min-height:44px"><span class="check"></span><span style="font-size:15px">Запомнить для «ИП Смирнова А. В.»</span></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="row"><span class="ic"><i class="ti ti-receipt"></i></span><div style="flex:1"><div class="t1">KOFEMANIYA</div><div class="t2">Сегодня, 09:05 · покупка</div></div><span class="sum">−290 ₽</span></div>
+    <span class="aitag"><i class="ti ti-sparkles"></i>Подсказал помощник</span>
+    <div style="display:flex;gap:8px;margin-top:12px;overflow:hidden"><span class="chip">Продукты</span><span class="chip sel">Кафе</span><span class="chip">Транспорт</span><span class="chip">Другое</span></div>
+    <div class="row" style="margin-top:12px;min-height:44px"><span class="check"></span><span style="font-size:15px">Запомнить для «KOFEMANIYA»</span></div>
+  </div>
+  <div style="margin:12px 22px 0;font-size:13px;line-height:1.45;color:var(--muted)">Помощник получает только названия магазинов и список категорий - без сумм и дат. Подсказка сохранится, когда вы нажмёте на выбранную категорию.</div>
+  <div class="bottom"><div class="btn" style="background:var(--card2);color:var(--muted)">Сохранить</div></div>
+</div>
+
+<script>
+// ?screen=AssistantStates&theme=dark - какой экран и тема; без параметров - первый экран в светлой теме.
+const q = new URLSearchParams(location.search);
+document.body.className = q.get('theme') === 'dark' ? 'dark' : 'light';
+document.getElementById(q.get('screen') || 'AssistantIntro').classList.add('on');
+</script>
+</body>
+</html>
