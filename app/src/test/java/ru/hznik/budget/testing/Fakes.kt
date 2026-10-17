@@ -149,6 +149,11 @@ class FakeOperationRepository(val categories: FakeCategoryRepository) : Operatio
 
     override suspend fun update(operation: Operation) = state.update { list -> list.map { if (it.id == operation.id) operation else it } }
 
+    override suspend fun updateAndInsert(updated: Operation, counterpart: Operation?) {
+        update(updated)
+        counterpart?.let { insert(it) }
+    }
+
     override suspend fun delete(id: Long) = state.update { list -> list.filterNot { it.id == id } }
 
     override suspend fun restore(operation: Operation) = state.update { it + operation }

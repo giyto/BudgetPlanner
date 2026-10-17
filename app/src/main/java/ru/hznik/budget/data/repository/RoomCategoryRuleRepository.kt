@@ -32,7 +32,7 @@ class RoomCategoryRuleRepository @Inject constructor(
     override suspend fun delete(ruleId: Long) = dao.delete(ruleId)
 
     override suspend fun restore(rule: CategoryRule) {
-        dao.insert(rule.toEntity(clock.millis()))
+        dao.insertIfAbsent(rule.toEntity(clock.millis()))
     }
 
     override suspend fun confirmAndRemember(confirmations: List<DraftConfirmation>, rules: List<CategoryRule>) {

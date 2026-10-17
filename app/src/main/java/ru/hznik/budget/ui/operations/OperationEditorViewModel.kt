@@ -37,6 +37,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.OffsetDateTime
 import javax.inject.Inject
+import ru.hznik.budget.ui.launchSave
 
 data class EditorUiState(
     val isEdit: Boolean,
@@ -149,7 +150,7 @@ class OperationEditorViewModel @Inject constructor(
         val f = form.value
         if (busy || !uiState.value.canSave) return
         busy = true
-        viewModelScope.launch {
+        launchSave(onFailure = { busy = false }) {
             val now = OffsetDateTime.now(clock)
             val date = if (f.dateChosen || f.originalTime != null) f.date else clock.today()
             val candidate = f.originalTime?.let { OffsetDateTime.of(date, it.toLocalTime(), it.offset) }
@@ -167,8 +168,8 @@ class OperationEditorViewModel @Inject constructor(
                     account = account,
                 ),
             )
-            if (result is SaveResult.Saved) _events.send(EditorEvent.Close)
-            busy = false
+            // Сохранено — экран закрывается, кнопка остаётся занятой до конца перехода.
+            if (result is SaveResult.Saved) _events.send(EditorEvent.Close) else busy = false
         }
     }
 
@@ -176,7 +177,7 @@ class OperationEditorViewModel @Inject constructor(
         val id = operationId ?: return
         if (busy) return
         busy = true
-        viewModelScope.launch {
+        launchSave(onFailure = { busy = false }) {
             deleteOperation(id)
             _events.send(EditorEvent.Close)
         }

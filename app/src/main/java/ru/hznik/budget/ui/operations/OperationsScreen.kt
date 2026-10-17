@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,6 +65,8 @@ import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.domain.repository.AccountFilter
 import ru.hznik.budget.domain.usecase.DayGroup
+import ru.hznik.budget.ui.components.AddOperationFab
+import ru.hznik.budget.ui.components.CategorySheetRow
 import ru.hznik.budget.ui.components.CategoryTile
 import ru.hznik.budget.ui.components.NavigationHeader
 import ru.hznik.budget.ui.components.ScreenTitle
@@ -156,18 +157,7 @@ fun OperationsScreen(
                 DayCard(group, state.today, onOpenOperation, itemMotion())
             }
         }
-        FloatingActionButton(
-            onClick = onAddOperation,
-            shape = RoundedCornerShape(20.dp),
-            containerColor = colors.primary,
-            contentColor = colors.onPrimary,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 20.dp)
-                .size(60.dp),
-        ) {
-            Icon(painterResource(R.drawable.ic_add), stringResource(R.string.action_add_operation), Modifier.size(26.dp))
-        }
+        AddOperationFab(onAddOperation, Modifier.align(Alignment.BottomEnd))
     }
 
     if (showCategoryFilter) {
@@ -449,7 +439,7 @@ private fun CategoryFilterSheet(categories: List<Category>, selectedId: Long?, o
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = colors.background) {
         LazyColumn(modifier = Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             item {
-                SheetRow(text = stringResource(R.string.operations_filter_category_clear), selected = selectedId == null, onClick = { onSelect(null) })
+                CategorySheetRow(text = stringResource(R.string.operations_filter_category_clear), selected = selectedId == null, onClick = { onSelect(null) })
             }
             listOf(CategoryKind.EXPENSE to R.string.categories_tab_expense, CategoryKind.INCOME to R.string.categories_tab_income).forEach { (kind, title) ->
                 item {
@@ -461,29 +451,9 @@ private fun CategoryFilterSheet(categories: List<Category>, selectedId: Long?, o
                     )
                 }
                 items(categories.filter { it.kind == kind }, key = { it.id }) { category ->
-                    SheetRow(category.name, category.id == selectedId, { onSelect(category.id) }, category)
+                    CategorySheetRow(category.name, category.id == selectedId, { onSelect(category.id) }, category)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun SheetRow(text: String, selected: Boolean, onClick: () -> Unit, category: Category? = null) {
-    val colors = BudgetTheme.colors
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 52.dp)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp),
-    ) {
-        if (category != null) {
-            CategoryTile(category, size = 32.dp)
-            Spacer(Modifier.width(12.dp))
-        }
-        Text(text, fontSize = 15.sp, color = colors.ink, modifier = Modifier.weight(1f))
-        if (selected) Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = colors.primaryText)
     }
 }

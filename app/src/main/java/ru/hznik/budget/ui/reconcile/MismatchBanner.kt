@@ -1,34 +1,9 @@
 package ru.hznik.budget.ui.reconcile
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,10 +13,10 @@ import kotlinx.coroutines.flow.stateIn
 import ru.hznik.budget.R
 import ru.hznik.budget.domain.reconcile.ReconState
 import ru.hznik.budget.domain.usecase.ObserveMismatches
+import ru.hznik.budget.ui.components.AlertBanner
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.format.accountLabel
-import ru.hznik.budget.ui.theme.BudgetTheme
 import javax.inject.Inject
 import kotlin.math.abs
 
@@ -60,7 +35,6 @@ class MismatchBannerViewModel @Inject constructor(observeMismatches: ObserveMism
 @Composable
 fun MismatchBanner(mismatches: List<ReconState>, onOpen: () -> Unit) {
     if (mismatches.isEmpty()) return
-    val colors = BudgetTheme.colors
     val single = mismatches.singleOrNull()?.pending
     val title: String
     val subtitle: String
@@ -76,31 +50,13 @@ fun MismatchBanner(mismatches: List<ReconState>, onOpen: () -> Unit) {
         subtitle = mismatches.map { accountLabel(it.account) }.joinToString(" и ")
         spoken = "$title. $subtitle"
     }
-    val openLabel = stringResource(R.string.reconcile_banner_open)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        // Тег до clearAndSetSemantics: семантика после него (в том числе тег) стирается.
-        modifier = Modifier
-            .testTag(MISMATCH_BANNER_TAG)
-            .fillMaxWidth()
-            .background(colors.warnSoft, RoundedCornerShape(22.dp))
-            .clickable(onClickLabel = openLabel, onClick = onOpen)
-            .clearAndSetSemantics {
-                contentDescription = spoken
-                role = Role.Button
-                onClick(label = openLabel) { onOpen(); true }
-            }
-            .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp).background(colors.card, RoundedCornerShape(14.dp))) {
-            Icon(painterResource(R.drawable.ic_alert), contentDescription = null, tint = colors.warn, modifier = Modifier.size(22.dp))
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
-            Text(subtitle, fontSize = 13.sp, color = colors.muted)
-        }
-        Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = colors.ink)
-    }
+    AlertBanner(
+        icon = R.drawable.ic_alert,
+        title = title,
+        subtitle = subtitle,
+        onClickLabel = stringResource(R.string.reconcile_banner_open),
+        onClick = onOpen,
+        modifier = Modifier.testTag(MISMATCH_BANNER_TAG),
+        description = spoken,
+    )
 }

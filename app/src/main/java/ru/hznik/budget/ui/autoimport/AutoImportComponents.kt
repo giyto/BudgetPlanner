@@ -1,41 +1,20 @@
 package ru.hznik.budget.ui.autoimport
 
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import ru.hznik.budget.R
 import ru.hznik.budget.domain.notifications.SetupStep
+import ru.hznik.budget.ui.components.AlertBanner
+import ru.hznik.budget.ui.components.PrimaryButton
 import ru.hznik.budget.ui.theme.BudgetTheme
 
 const val AUTO_IMPORT_STOPPED_TAG = "auto_import_stopped"
@@ -76,43 +55,23 @@ fun stepHint(state: AutoImportState): String? = when (state.step) {
 /** Главная кнопка следующего шага включения автоимпорта (spec notification-import). */
 @Composable
 fun SetupStepButton(state: AutoImportState, onOpen: (SetupStep) -> Unit, modifier: Modifier = Modifier) {
-    val colors = BudgetTheme.colors
-    Button(
-        onClick = { onOpen(state.step) },
-        enabled = state.step != SetupStep.DONE,
-        shape = RoundedCornerShape(18.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-        modifier = modifier.fillMaxWidth().height(56.dp),
-    ) {
-        Text(stepButtonText(state.step), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-    }
+    PrimaryButton(stepButtonText(state.step), onClick = { onOpen(state.step) }, modifier = modifier, enabled = state.step != SetupStep.DONE)
 }
 
-/** Плашка на главной: автоимпорт включали, а он не работает. */
+/** Плашка на главной: автоимпорт включали, а он не работает. Справа вместо стрелки — «Исправить». */
 @Composable
 fun AutoImportStoppedBanner(state: AutoImportState, onFix: (SetupStep) -> Unit) {
     if (!state.stopped) return
-    val colors = BudgetTheme.colors
     val step = if (state.step == SetupStep.DONE) SetupStep.NOTIFICATION_ACCESS else state.step
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.warnSoft, RoundedCornerShape(22.dp))
-            .clickable { onFix(step) }
-            .semantics { role = Role.Button }
-            .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .testTag(AUTO_IMPORT_STOPPED_TAG),
+    val fix = stringResource(R.string.auto_import_fix)
+    AlertBanner(
+        icon = R.drawable.ic_bell,
+        title = stringResource(R.string.auto_import_stopped),
+        subtitle = stringResource(R.string.auto_import_stopped_text),
+        onClickLabel = fix,
+        onClick = { onFix(step) },
+        modifier = Modifier.testTag(AUTO_IMPORT_STOPPED_TAG),
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp).background(colors.card, RoundedCornerShape(14.dp))) {
-            Icon(painterResource(R.drawable.ic_bell), contentDescription = null, tint = colors.warn, modifier = Modifier.size(22.dp))
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(R.string.auto_import_stopped), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
-            Text(stringResource(R.string.auto_import_stopped_text), fontSize = 13.sp, color = colors.muted)
-        }
-        Text(stringResource(R.string.auto_import_fix), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.primaryText)
+        Text(fix, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = BudgetTheme.colors.primaryText)
     }
 }

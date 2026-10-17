@@ -25,27 +25,20 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,7 +54,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -71,15 +63,17 @@ import ru.hznik.budget.R
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.usecase.InputType
 import ru.hznik.budget.domain.usecase.SaveOperation
+import ru.hznik.budget.ui.components.BudgetDatePicker
+import ru.hznik.budget.ui.components.ButtonSize
 import ru.hznik.budget.ui.components.CategoryTile
+import ru.hznik.budget.ui.components.ChoiceChip
+import ru.hznik.budget.ui.components.PrimaryButton
+import ru.hznik.budget.ui.components.SegmentedChoice
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.theme.BudgetTheme
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.ui.format.accountLabel
-import ru.hznik.budget.ui.components.SlidingSelectionRow
 
 @Composable
 fun OperationEditorRoute(onClose: () -> Unit, viewModel: OperationEditorViewModel = hiltViewModel()) {
@@ -154,34 +148,30 @@ fun OperationEditorScreen(
         }
 
         Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ChipButton(
+            ChoiceChip(
                 icon = R.drawable.ic_calendar,
                 text = dateChipLabel(state.date, state.today, stringResource(R.string.editor_today), stringResource(R.string.editor_yesterday)),
                 onClick = { showDatePicker = true },
                 modifier = Modifier.weight(1f),
+                horizontalPadding = 10.dp,
             )
-            ChipButton(
+            ChoiceChip(
                 icon = R.drawable.ic_comment,
                 text = state.comment.ifBlank { stringResource(R.string.editor_comment) },
                 onClick = { showComment = true },
                 modifier = Modifier.weight(1f),
+                horizontalPadding = 10.dp,
             )
         }
 
         Spacer(Modifier.weight(1f))
         AmountKeypad(onKey, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
-        Button(
+        PrimaryButton(
+            text = stringResource(R.string.action_save),
             onClick = onSave,
             enabled = state.canSave,
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-            modifier = Modifier
-                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 20.dp)
-                .fillMaxWidth()
-                .height(56.dp),
-        ) {
-            Text(stringResource(R.string.action_save), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        }
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 20.dp),
+        )
     }
 
     if (showAllCategories) {
@@ -194,7 +184,14 @@ fun OperationEditorScreen(
         CommentSheet(state.comment, onCommentChanged, onDismiss = { showComment = false })
     }
     if (showDatePicker) {
-        OperationDatePicker(state.date, state.today, onDismiss = { showDatePicker = false }) {
+        // Операции в будущем не бывает: позже сегодняшнего дня и года выбрать нельзя.
+        BudgetDatePicker(
+            initial = state.date,
+            title = stringResource(R.string.editor_pick_date),
+            isAllowed = { !it.isAfter(state.today) },
+            onDismiss = { showDatePicker = false },
+            isYearAllowed = { it <= state.today.year },
+        ) {
             onDateSelected(it)
             showDatePicker = false
         }
@@ -234,38 +231,22 @@ private fun EditorHeader(
 
 @Composable
 private fun TypeSegment(selected: InputType, onSelect: (InputType) -> Unit) {
-    val colors = BudgetTheme.colors
     val label = stringResource(R.string.editor_type_group)
-    val types = listOf(
-        InputType.EXPENSE to R.string.editor_type_expense,
-        InputType.INCOME to R.string.editor_type_income,
-        InputType.REFUND to R.string.editor_type_refund,
+    SegmentedChoice(
+        options = listOf(
+            InputType.EXPENSE to stringResource(R.string.editor_type_expense),
+            InputType.INCOME to stringResource(R.string.editor_type_income),
+            InputType.REFUND to stringResource(R.string.editor_type_refund),
+        ),
+        selected = selected,
+        onSelect = onSelect,
+        modifier = Modifier.semantics { contentDescription = label },
+        equalWidths = false,
+        segmentPadding = 14.dp,
+        segmentMinHeight = 40.dp,
+        // При крупном шрифте подпись переносится, а не обрезается.
+        maxLines = Int.MAX_VALUE,
     )
-    SlidingSelectionRow(
-        selectedIndex = types.indexOfFirst { it.first == selected },
-        indicatorColor = colors.segmentOn,
-        indicatorShape = RoundedCornerShape(20.dp),
-        modifier = Modifier
-            .background(colors.segmentTrack, RoundedCornerShape(24.dp))
-            .padding(4.dp)
-            .semantics { contentDescription = label },
-    ) { segment ->
-        types.forEachIndexed { index, (type, text) ->
-            val isSelected = type == selected
-            Surface(
-                selected = isSelected,
-                onClick = { onSelect(type) },
-                shape = RoundedCornerShape(20.dp),
-                color = Color.Transparent,
-                contentColor = colors.ink,
-                modifier = Modifier.heightIn(min = 40.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = segment(index).padding(horizontal = 14.dp)) {
-                    Text(stringResource(text), style = MaterialTheme.typography.titleSmall)
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -344,29 +325,6 @@ private fun CategoryChoice(category: Category, selected: Boolean, onClick: () ->
     }
 }
 
-@Composable
-private fun ChipButton(icon: Int, text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = BudgetTheme.colors
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
-        color = colors.card,
-        contentColor = colors.ink,
-        border = BorderStroke(1.dp, colors.chipBorder),
-        modifier = modifier.heightIn(min = 48.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 10.dp),
-        ) {
-            Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(text, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AllCategoriesSheet(
@@ -435,45 +393,7 @@ private fun CommentSheet(comment: String, onChange: (String) -> Unit, onDismiss:
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth(),
             )
-            Button(
-                onClick = { onChange(text); onDismiss() },
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-            ) {
-                Text(stringResource(R.string.action_done))
-            }
+            PrimaryButton(text = stringResource(R.string.action_done), onClick = { onChange(text); onDismiss() }, size = ButtonSize.Medium)
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun OperationDatePicker(date: LocalDate, today: LocalDate, onDismiss: () -> Unit, onSelect: (LocalDate) -> Unit) {
-    // DatePicker работает с полуночью UTC выбранного дня.
-    val selectable = remember(today) {
-        object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = !utcMillisToDate(utcTimeMillis).isAfter(today)
-            override fun isSelectableYear(year: Int) = year <= today.year
-        }
-    }
-    val pickerState = rememberDatePickerState(
-        initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        selectableDates = selectable,
-    )
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = { pickerState.selectedDateMillis?.let { onSelect(utcMillisToDate(it)) } ?: onDismiss() }) {
-                Text(stringResource(R.string.action_done))
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    ) {
-        DatePicker(state = pickerState, title = { Text(stringResource(R.string.editor_pick_date), Modifier.padding(start = 24.dp, top = 16.dp)) })
-    }
-}
-
-private fun utcMillisToDate(millis: Long): LocalDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()

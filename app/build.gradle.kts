@@ -50,6 +50,10 @@ android {
         // BuildConfig.DEBUG прячет раздел «Для разработки» (демо-данные) из релизной сборки.
         buildConfig = true
     }
+    testOptions {
+        // android.util.Log в JVM-тестах ничего не делает: журнал сбоев (runLogged) не роняет unit-тесты.
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 room {

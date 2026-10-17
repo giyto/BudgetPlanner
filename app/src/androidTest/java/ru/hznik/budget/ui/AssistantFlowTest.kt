@@ -36,15 +36,11 @@ import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.ui.assistant.ASSISTANT_INPUT_TAG
 import ru.hznik.budget.ui.assistant.ASSISTANT_SEND_TAG
 import ru.hznik.budget.ui.drafts.DRAFTS_AI_SUGGEST_TAG
-import ru.hznik.budget.ui.drafts.DRAFTS_LIST_TAG
-import ru.hznik.budget.ui.home.DRAFTS_BANNER_TAG
 import ru.hznik.budget.ui.settings.ASSISTANT_HIDE_MERCHANTS_TAG
 import ru.hznik.budget.ui.settings.ASSISTANT_SWITCH_TAG
 import javax.inject.Inject
 
 private fun FlowTestBase.openAssistant() = rule.onNode(hasText("Помощник") and isSelectable()).performClick()
-
-private fun FlowTestBase.tapText(text: String) = rule.onNode(hasText(text) and hasClickAction()).performClick()
 
 /** Раздел «Помощник»: включение и сборка без ключа (spec ai-assistant; задача 5.1). */
 @HiltAndroidTest
@@ -178,7 +174,7 @@ class AssistantSettingsFlowTest : FlowTestBase() {
     @Test
     fun switchesInSettings() {
         runBlocking { aiSettings.setEnabled(true) }
-        rule.onNode(hasContentDescription("Настройки") and hasClickAction()).performClick()
+        openSettings()
         val assistant = rule.onNodeWithTag(ASSISTANT_SWITCH_TAG)
         assistant.performScrollTo().assertIsOn()
         rule.onNodeWithText("Израсходовано на этом телефоне").performScrollTo().assertIsDisplayed()
@@ -199,17 +195,15 @@ class AssistantSettingsFlowTest : FlowTestBase() {
 class DraftsAiSuggestFlowTest : FlowTestBase() {
     @Inject lateinit var aiSettings: AiSettings
 
-    private fun openDrafts() {
+    private fun openDraftFromBank() {
         insert("Другое", 350, merchant = "ИП Смирнова А. В.", source = OperationSource.NOTIFICATION, draft = true)
-        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(DRAFTS_BANNER_TAG)).fetchSemanticsNodes().isNotEmpty() }
-        rule.onNodeWithTag(DRAFTS_BANNER_TAG).performClick()
-        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(DRAFTS_LIST_TAG)).fetchSemanticsNodes().isNotEmpty() }
+        openDrafts()
     }
 
     @Test
     fun suggestionIsSavedOnlyAfterTap() {
         runBlocking { aiSettings.setEnabled(true) }
-        openDrafts()
+        openDraftFromBank()
         TestLlmProvider.answers += LlmResult.Text("""{"ИП Смирнова А. В.": "Продукты"}""", TokenUsage(40))
         rule.onNodeWithTag(DRAFTS_AI_SUGGEST_TAG).performClick()
         waitForText("Подсказал помощник", timeoutMs = 10_000)
@@ -230,7 +224,7 @@ class DraftsAiSuggestFlowTest : FlowTestBase() {
             aiSettings.setEnabled(true)
             aiSettings.setHideMerchants(true)
         }
-        openDrafts()
+        openDraftFromBank()
         rule.onNodeWithTag(DRAFTS_AI_SUGGEST_TAG).assertDoesNotExist()
     }
 }
@@ -247,7 +241,7 @@ class AssistantOffNoRequestsFlowTest : FlowTestBase() {
         openAssistant()
         waitForText("Включить помощника")
         rule.onNode(hasText("Главная") and isSelectable()).performClick()
-        rule.onNode(hasContentDescription("Настройки") and hasClickAction()).performClick()
+        openSettings()
         rule.onNodeWithTag(ASSISTANT_SWITCH_TAG).performScrollTo().assertIsOff()
         rule.waitForIdle()
         assertTrue(TestLlmProvider.calls.isEmpty())

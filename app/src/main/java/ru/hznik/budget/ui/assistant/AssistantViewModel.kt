@@ -14,6 +14,7 @@ import ru.hznik.budget.domain.ai.ChatMessage
 import ru.hznik.budget.domain.ai.ChatRepository
 import ru.hznik.budget.domain.ai.LlmProvider
 import javax.inject.Inject
+import ru.hznik.budget.ui.launchSave
 
 data class AssistantUiState(
     /** `null`, пока настройки не прочитаны: виден только фон. */
@@ -49,7 +50,7 @@ class AssistantViewModel @Inject constructor(
     /** «Включить помощника»: без ключа в сборке включать нечего. */
     fun enable() {
         if (!configured) return
-        viewModelScope.launch { settings.setEnabled(true) }
+        launchSave { settings.setEnabled(true) }
     }
 
     fun send(text: String): Boolean = session.ask(text)

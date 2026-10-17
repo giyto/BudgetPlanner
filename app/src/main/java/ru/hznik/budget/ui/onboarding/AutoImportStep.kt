@@ -1,6 +1,5 @@
 package ru.hznik.budget.ui.onboarding
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,11 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,8 +35,11 @@ import ru.hznik.budget.domain.notifications.SetupStep
 import ru.hznik.budget.ui.autoimport.AutoImportState
 import ru.hznik.budget.ui.autoimport.SetupStepButton
 import ru.hznik.budget.ui.autoimport.stepHint
-import ru.hznik.budget.ui.lock.PointsCard
+import ru.hznik.budget.ui.components.PointsCard
+import ru.hznik.budget.ui.components.PrimaryButton
+import ru.hznik.budget.ui.components.SecondaryButton
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.TextRoles
 
 /** Содержимое шага «Автоимпорт» по макету Onboarding (spec onboarding, сценарий 5.1, шаг 4). */
 @Composable
@@ -105,8 +104,7 @@ fun AutoImportStep(state: AutoImportState) {
                 )
                 Text(
                     stringResource(R.string.onboarding_import_revoke),
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
+                    style = TextRoles.hint,
                     color = colors.muted,
                     modifier = Modifier.padding(top = 12.dp, bottom = 8.dp, start = 8.dp, end = 8.dp),
                 )
@@ -123,7 +121,7 @@ private fun RestrictedCard() {
         modifier = Modifier.padding(top = 18.dp, bottom = 8.dp).fillMaxWidth().background(colors.warnSoft, RoundedCornerShape(22.dp)).padding(16.dp),
     ) {
         Text(stringResource(R.string.onboarding_import_restricted_title), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
-        Text(stringResource(R.string.setup_restricted_hint), fontSize = 13.sp, lineHeight = 18.sp, color = colors.sub)
+        Text(stringResource(R.string.setup_restricted_hint), style = TextRoles.hint, color = colors.sub)
     }
 }
 
@@ -134,7 +132,6 @@ private fun RestrictedCard() {
  */
 @Composable
 fun AutoImportButtons(state: AutoImportState, busy: Boolean, onOpen: (SetupStep) -> Unit, onNext: () -> Unit) {
-    val colors = BudgetTheme.colors
     var pending by rememberSaveable { mutableStateOf(state.step != SetupStep.DONE) }
     LaunchedEffect(state.step) {
         if (state.step != SetupStep.DONE) {
@@ -146,27 +143,14 @@ fun AutoImportButtons(state: AutoImportState, busy: Boolean, onOpen: (SetupStep)
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(16.dp)) {
         if (state.step == SetupStep.DONE) {
-            Button(
-                onClick = onNext,
-                enabled = !busy,
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-            ) { Text(stringResource(R.string.onboarding_next), fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
+            PrimaryButton(stringResource(R.string.onboarding_next), onClick = onNext, enabled = !busy)
         } else {
             SetupStepButton(state, onOpen = onOpen)
             // У шага «Снять ограничение» подсказка уже в карточке над кнопками.
             stepHint(state)?.takeIf { state.step != SetupStep.RESTRICTED_SETTINGS }?.let {
-                Text(it, fontSize = 13.sp, lineHeight = 18.sp, color = colors.muted)
+                Text(it, style = TextRoles.hint, color = BudgetTheme.colors.muted)
             }
-            OutlinedButton(
-                onClick = onNext,
-                enabled = !busy,
-                shape = RoundedCornerShape(18.dp),
-                border = BorderStroke(1.dp, colors.chipBorder),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.ink),
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-            ) { Text(stringResource(R.string.onboarding_import_manual), fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+            SecondaryButton(stringResource(R.string.onboarding_import_manual), onClick = onNext, enabled = !busy)
         }
     }
 }

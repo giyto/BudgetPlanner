@@ -66,6 +66,7 @@ import ru.hznik.budget.reminders.PendingAction
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
 import javax.inject.Inject
+import ru.hznik.budget.common.runLogged
 
 /** Зависимости виджета: Glance создаёт его сам, без внедрения через конструктор. */
 @EntryPoint
@@ -133,8 +134,8 @@ class BudgetWidgetLarge : BudgetWidget()
 /** Обновление всех виджетов на рабочем столе после изменения расчёта (решение 2). */
 class GlanceWidgetRefresher @Inject constructor(@ApplicationContext private val context: Context) : WidgetRefresher {
     override suspend fun refresh() {
-        runCatching { BudgetWidget().updateAll(context) }
-        runCatching { BudgetWidgetLarge().updateAll(context) }
+        runLogged(TAG, "Обновление виджета не удалось") { BudgetWidget().updateAll(context) }
+        runLogged(TAG, "Обновление большого виджета не удалось") { BudgetWidgetLarge().updateAll(context) }
     }
 }
 
@@ -223,3 +224,5 @@ private fun AddButton(onClick: Action) {
         Image(provider = ImageProvider(R.drawable.ic_widget_add), contentDescription = null, modifier = GlanceModifier.size(28.dp))
     }
 }
+
+private const val TAG = "BudgetWidget"

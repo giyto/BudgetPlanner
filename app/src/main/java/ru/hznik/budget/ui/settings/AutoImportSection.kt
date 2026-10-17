@@ -21,8 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,7 +33,9 @@ import ru.hznik.budget.ui.autoimport.RefreshOnResume
 import ru.hznik.budget.ui.autoimport.SetupStepButton
 import ru.hznik.budget.ui.autoimport.rememberStepOpener
 import ru.hznik.budget.ui.autoimport.stepHint
+import ru.hznik.budget.ui.components.SettingsSection
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.TextRoles
 
 const val AUTO_IMPORT_STATUS_TAG = "auto_import_status"
 
@@ -53,25 +53,19 @@ fun AutoImportSection(viewModel: AutoImportViewModel = hiltViewModel()) {
         else -> Triple(R.string.auto_import_off, R.string.auto_import_off_hint, false)
     }
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(
-            stringResource(R.string.settings_group_auto_import),
-            fontSize = 14.sp,
-            color = colors.muted,
-            modifier = Modifier.padding(start = 6.dp, bottom = 8.dp).semantics { heading() },
-        )
-        Column(modifier = Modifier.fillMaxWidth().background(colors.card, RoundedCornerShape(22.dp)).padding(horizontal = 18.dp, vertical = 6.dp)) {
+    SettingsSection(stringResource(R.string.settings_group_auto_import)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(colors.card, RoundedCornerShape(22.dp)).padding(horizontal = 18.dp, vertical = 6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 64.dp).testTag(AUTO_IMPORT_STATUS_TAG)) {
                 Box(Modifier.size(10.dp).background(if (ok) colors.positive else colors.warn, CircleShape))
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(statusTitle), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
-                    Text(stringResource(statusHint), fontSize = 13.sp, lineHeight = 18.sp, color = colors.muted)
+                    Text(stringResource(statusTitle), style = TextRoles.itemTitle, color = colors.ink)
+                    Text(stringResource(statusHint), style = TextRoles.hint, color = colors.muted)
                 }
             }
             if (state.step != SetupStep.DONE) {
                 SetupStepButton(state, onOpen = open, modifier = Modifier.padding(top = 4.dp))
-                stepHint(state)?.let { Text(it, fontSize = 13.sp, lineHeight = 18.sp, color = colors.muted, modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)) }
+                stepHint(state)?.let { Text(it, style = TextRoles.hint, color = colors.muted, modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)) }
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(colors.line))
             Text(stringResource(R.string.auto_import_banks), fontSize = 13.sp, color = colors.muted, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))

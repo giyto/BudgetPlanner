@@ -64,6 +64,11 @@ class RoomOperationRepository @Inject constructor(
         dao.update(operation.toEntity(createdAt))
     }
 
+    override suspend fun updateAndInsert(updated: Operation, counterpart: Operation?) {
+        val createdAt = dao.get(updated.id)?.createdAt ?: clock.millis()
+        dao.updateAndInsert(updated.toEntity(createdAt), counterpart?.copy(id = 0)?.toEntity(createdAt = clock.millis()))
+    }
+
     override suspend fun delete(id: Long) = dao.delete(id)
 
     override suspend fun restore(operation: Operation) {

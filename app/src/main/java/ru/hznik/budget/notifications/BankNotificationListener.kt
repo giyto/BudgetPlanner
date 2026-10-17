@@ -13,6 +13,7 @@ import ru.hznik.budget.domain.notifications.BankNotification
 import ru.hznik.budget.domain.notifications.SupportedBanks
 import java.time.Instant
 import javax.inject.Inject
+import ru.hznik.budget.common.runLogged
 
 /**
  * Доступ к уведомлениям (FR-05). Пакет проверяется первой строкой: уведомление чужого приложения
@@ -28,7 +29,7 @@ class BankNotificationListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
         ListenerStatus.onConnected()
-        scope.launch { runCatching { intake.purgeExpired() } }
+        scope.launch { runLogged(TAG, "Очистка образцов не удалась") { intake.purgeExpired() } }
         // Уведомления, пришедшие, пока сервис был выгружен и ещё висящие в шторке.
         val active = runCatching { activeNotifications }.getOrNull().orEmpty()
         active.forEach(::handle)
@@ -46,7 +47,7 @@ class BankNotificationListener : NotificationListenerService() {
     private fun handle(sbn: StatusBarNotification) {
         // Чтение extras банка может бросить (например, BadParcelableException): сервис не падает и ничего не пишет в лог.
         val bank = runCatching { sbn.toBankNotification() }.getOrNull() ?: return
-        scope.launch { runCatching { intake.accept(bank) } }
+        scope.launch { runLogged(TAG, "Импорт уведомления не удался") { intake.accept(bank) } }
     }
 }
 
@@ -72,3 +73,5 @@ internal fun StatusBarNotification.toBankNotification(): BankNotification? {
         text = text?.toString(),
     )
 }
+
+private const val TAG = "BankNotifications"

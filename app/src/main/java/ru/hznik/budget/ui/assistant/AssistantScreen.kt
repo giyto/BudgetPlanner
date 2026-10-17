@@ -30,8 +30,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,10 +71,12 @@ import ru.hznik.budget.domain.ai.ChatRole
 import ru.hznik.budget.domain.ai.LlmError
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
-import ru.hznik.budget.ui.lock.Badge
-import ru.hznik.budget.ui.lock.PointsCard
+import ru.hznik.budget.ui.components.Badge
+import ru.hznik.budget.ui.components.PointsCard
+import ru.hznik.budget.ui.components.PrimaryButton
 import ru.hznik.budget.ui.components.pressScale
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.TextRoles
 import ru.hznik.budget.ui.theme.LocalReducedMotion
 import ru.hznik.budget.ui.components.itemMotion
 import androidx.compose.ui.graphics.graphicsLayer
@@ -178,14 +178,7 @@ private fun AssistantIntro(state: AssistantUiState, onEnable: () -> Unit, modifi
         }
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             if (state.configured) {
-                Button(
-                    onClick = onEnable,
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                ) {
-                    Text(stringResource(R.string.assistant_enable), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                }
+                PrimaryButton(stringResource(R.string.assistant_enable), onClick = onEnable)
                 Text(stringResource(R.string.assistant_via_gigachat), fontSize = 13.sp, color = colors.muted, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 10.dp))
             } else {
                 Text(
@@ -434,7 +427,7 @@ private fun ErrorCard(message: ChatMessage, retryEnabled: Boolean, onRetry: () -
         Icon(painterResource(R.drawable.ic_alert), contentDescription = null, tint = colors.warn, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(12.dp))
         Column {
-            Text(stringResource(title), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.warn)
+            Text(stringResource(title), style = TextRoles.itemTitle, color = colors.warn)
             Text(stringResource(sub), fontSize = 13.sp, color = colors.sub, modifier = Modifier.padding(top = 2.dp))
             Surface(
                 onClick = onRetry,

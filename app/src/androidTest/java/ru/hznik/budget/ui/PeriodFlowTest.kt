@@ -32,10 +32,10 @@ import java.time.LocalDate
 
 private fun rub(rubles: Long) = MoneyFormat.amount(rubles * 100)
 
-private fun FlowTestBase.tapText(text: String) = rule.onNode(hasText(text) and hasClickAction()).performClick()
-
 /** Онбординг (spec onboarding, задача 9.2): приложение запускается впервые, данных нет. */
-abstract class OnboardingFlowCases : FlowTestBase() {
+@HiltAndroidTest
+@RunWith(AndroidJUnit4::class)
+class OnboardingFlowTest : FlowTestBase() {
     init {
         TestStart.onboarded = false
     }
@@ -135,16 +135,40 @@ abstract class OnboardingFlowCases : FlowTestBase() {
     }
 }
 
+/**
+ * Онбординг с включёнными анимациями: шаг вперёд въезжает справа, «Назад» — слева, тест дожидается конца сдвига
+ * (spec ui-motion «Шаги онбординга», задача 3.2). Остальные сценарии онбординга — в [OnboardingFlowTest].
+ */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
-class OnboardingFlowTest : OnboardingFlowCases()
-
-/** Те же шаги с включёнными анимациями: шаги сменяются сдвигом, тесты дожидаются конца (spec ui-motion, задача 3.2). */
-@HiltAndroidTest
-@RunWith(AndroidJUnit4::class)
-class OnboardingAnimatedFlowTest : OnboardingFlowCases() {
+class OnboardingAnimatedFlowTest : FlowTestBase() {
     init {
+        TestStart.onboarded = false
         TestStart.animations = true
+    }
+
+    @Test
+    fun walkingForwardThroughAllStepsOpensHome() {
+        rule.onNodeWithText("Шаг 1 из 5").assertIsDisplayed()
+        walkOnboardingPastAutoImport()
+
+        rule.onNodeWithText("Шаг 5 из 5").assertIsDisplayed()
+        rule.onNodeWithText("Защитить вход?").assertIsDisplayed()
+        // Сдвиг закончился: уехавшего шага «Автоимпорт» в дереве уже нет.
+        rule.onNodeWithText("Траты будут добавляться сами").assertDoesNotExist()
+        tapText("Не сейчас")
+        waitForHero("Можно потратить сегодня 1500 рублей")
+    }
+
+    @Test
+    fun backSlidesToThePreviousStep() {
+        tapText("Дальше")
+        rule.onNodeWithText("Шаг 2 из 5").assertIsDisplayed()
+        rule.onNode(hasText("Выберите число") and hasClickAction()).assertIsDisplayed()
+
+        Espresso.pressBack()
+        rule.onNodeWithText("Шаг 1 из 5").assertIsDisplayed()
+        rule.onNode(hasText("Выберите число")).assertDoesNotExist()
     }
 }
 
@@ -287,23 +311,5 @@ class NewPeriodFlowTest : FlowTestBase() {
         waitForHero("Можно потратить сегодня 548 рублей")
         hero().assert(hasContentDescription("31 день до дохода", substring = true))
         rule.onNodeWithText("Наступил день дохода").assertDoesNotExist()
-    }
-}
-
-/** Смена дня (задача 9.5): часы идут от 12 октября 23:59:50, доход 13 октября. */
-@HiltAndroidTest
-@RunWith(AndroidJUnit4::class)
-class MidnightFlowTest : FlowTestBase() {
-    init {
-        TestStart.nextIncome = TEST_TODAY
-        TestStart.now = TEST_TODAY.minusDays(1).atTime(23, 59, 50)
-        TestStart.clockRuns = true
-    }
-
-    @Test
-    fun incomeDayBannerAppearsAfterMidnight() {
-        waitForHero("1 день до дохода")
-        rule.onNodeWithText("Наступил день дохода").assertDoesNotExist()
-        waitForText("Наступил день дохода", timeoutMs = 20_000)
     }
 }

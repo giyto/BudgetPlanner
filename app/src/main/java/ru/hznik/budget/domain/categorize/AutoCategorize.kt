@@ -4,6 +4,7 @@ import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.domain.repository.CategoryRuleRepository
 import javax.inject.Inject
+import ru.hznik.budget.domain.model.byDefaultKey
 
 /**
  * Категория и тип новой операции из уведомления; [isDraft] — категорию ещё должен подтвердить пользователь.
@@ -36,7 +37,7 @@ class AutoCategorize @Inject constructor(private val rules: CategoryRuleReposito
         /** Категория из словаря для покупки: видимая категория по умолчанию или `null`. */
         fun dictionaryCategory(merchant: String?, categories: List<Category>): Category? {
             val key = MerchantDictionary.categoryKeyFor(merchant) ?: return null
-            return categories.firstOrNull { it.defaultKey == key && !it.hidden }
+            return categories.byDefaultKey(key)?.takeUnless { it.hidden }
         }
 
         /** Тип по категории правила: «Переводы» делают трату переводом и наоборот; возврат и доход не меняются. */

@@ -15,7 +15,6 @@ import ru.hznik.budget.domain.budget.nextIncomeDate
 import ru.hznik.budget.domain.model.IncomeSchedule
 import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.OperationType
-import ru.hznik.budget.domain.model.Period
 import ru.hznik.budget.domain.model.PaymentRepeat
 import ru.hznik.budget.domain.model.PlannedPayment
 import ru.hznik.budget.domain.repository.IncomeScheduleRepository
@@ -178,8 +177,3 @@ internal fun PaymentDraft.toPayment(id: Long = 0, paidOperationId: Long? = null,
     id = id, name = name.trim(), amount = amount, dueDate = dueDate, repeat = repeat, categoryId = categoryId,
     paidOperationId = paidOperationId, repeatDay = repeatDay,
 )
-
-/** Текущий период (для экранов, которым нужен сам период, а не расчёт). */
-class ObserveCurrentPeriod @Inject constructor(private val periods: PeriodRepository) {
-    operator fun invoke(): Flow<Period?> = periods.observeCurrent()
-}

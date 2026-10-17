@@ -8,6 +8,10 @@
     <!-- Только ИИ-помощник и только когда он включён (раздел 11 ТЗ, spec ai-assistant). -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- WorkManager добавляет его для задач с условием «есть сеть»; у приложения таких задач нет, а из сетевых
+         разрешений должно остаться только INTERNET (spec app-foundation «Разрешения приложения»). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+
     <!-- Уведомления приложения на Android 13+ (FR-12, add-widget-and-reminders). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

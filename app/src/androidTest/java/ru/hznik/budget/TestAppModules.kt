@@ -1,7 +1,6 @@
 package ru.hznik.budget
 
 import android.content.Context
-import android.os.SystemClock
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
@@ -59,7 +58,6 @@ import ru.hznik.budget.ui.theme.MotionModule
 import ru.hznik.budget.ui.theme.MotionSettings
 import java.io.File
 import java.time.Clock
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -80,9 +78,6 @@ object TestStart {
     var nextIncome: LocalDate = LocalDate.of(2026, 10, 25)
     var startAmountKopecks = 18_000_00L
     var now: LocalDateTime = TEST_TODAY.atTime(12, 0)
-
-    /** Часы идут в реальном времени от [now]: так проверяется смена дня в полночь. */
-    var clockRuns = false
 
     /** Настройки защиты входа при запуске; по умолчанию защита выключена. */
     var lock = LockSettings()
@@ -111,7 +106,6 @@ object TestStart {
         nextIncome = LocalDate.of(2026, 10, 25)
         startAmountKopecks = 18_000_00L
         now = TEST_TODAY.atTime(12, 0)
-        clockRuns = false
         lock = LockSettings()
         keyLost = false
         databaseError = false
@@ -248,24 +242,10 @@ object TestDatabaseModule {
 object TestTimeModule {
     @Provides
     @Singleton
-    fun provideClock(): Clock {
-        val start = TestStart.now.atZone(TEST_ZONE).toInstant()
-        return if (TestStart.clockRuns) RunningClock(start, TEST_ZONE) else Clock.fixed(start, TEST_ZONE)
-    }
+    fun provideClock(): Clock = Clock.fixed(TestStart.now.atZone(TEST_ZONE).toInstant(), TEST_ZONE)
 
     @Provides
     fun provideElapsedClock(): ElapsedClock = TestElapsedClock
-}
-
-/** Часы, которые идут от [start] вместе с монотонным временем устройства. */
-private class RunningClock(private val start: Instant, private val zone: ZoneId) : Clock() {
-    private val startedAt = SystemClock.elapsedRealtime()
-
-    override fun getZone(): ZoneId = zone
-
-    override fun withZone(zone: ZoneId): Clock = RunningClock(start, zone)
-
-    override fun instant(): Instant = start.plusMillis(SystemClock.elapsedRealtime() - startedAt)
 }
 
 /**

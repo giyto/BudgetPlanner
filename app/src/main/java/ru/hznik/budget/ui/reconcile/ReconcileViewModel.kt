@@ -29,6 +29,7 @@ import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
+import ru.hznik.budget.ui.launchSave
 
 /** Что делать с расхождением на виде одной карты (макет Reconcile). */
 enum class ReconcileOption { ADJUST, FIND, SKIP }
@@ -108,12 +109,9 @@ class ReconcileViewModel @Inject constructor(
         val account = uiState.value.selected?.account ?: return
         if (resolving) return
         resolving = true
-        viewModelScope.launch {
-            try {
-                resolveMismatch(account, resolution)
-            } finally {
-                resolving = false
-            }
+        launchSave(onFailure = { resolving = false }) {
+            resolveMismatch(account, resolution)
+            resolving = false
         }
     }
 
@@ -141,7 +139,7 @@ class ReconcileViewModel @Inject constructor(
     fun submitManual() {
         val manual = local.value.manual ?: return
         val account = manual.selected ?: return
-        viewModelScope.launch {
+        launchSave {
             when (manualReconcile(account, manual.inputKopecks)) {
                 is ManualResult.Mismatched -> local.update { it.copy(selected = account, manual = null, option = ReconcileOption.ADJUST) }
                 ManualResult.Anchored, ManualResult.Matched -> _finished.value = true

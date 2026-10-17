@@ -15,14 +15,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import ru.hznik.budget.TEST_ZONE
-import ru.hznik.budget.TestStart
 import ru.hznik.budget.domain.categorize.CategoryRule
 import ru.hznik.budget.domain.model.CategoryKind
-import ru.hznik.budget.domain.notifications.BankNotification
 import ru.hznik.budget.domain.repository.CategoryRuleRepository
-import ru.hznik.budget.notifications.NotificationIntake
-import ru.hznik.budget.ui.drafts.DRAFTS_LIST_TAG
 import ru.hznik.budget.ui.drafts.rememberTag
 import ru.hznik.budget.ui.home.DRAFTS_BANNER_TAG
 import ru.hznik.budget.ui.rules.RULES_LIST_TAG
@@ -31,28 +26,14 @@ import javax.inject.Inject
 /** Правила «магазин → категория» и подсказка словаря на экранах (spec auto-categorization, drafts; задачи 4.1–4.4). */
 @HiltAndroidTest
 class AutoCategoryFlowTest : FlowTestBase() {
-    @Inject lateinit var intake: NotificationIntake
-
     @Inject lateinit var rules: CategoryRuleRepository
 
-    private var key = 1
-
-    private fun sber(text: String) = runBlocking {
-        intake.accept(BankNotification("ru.sberbankmobile", "0|ru.sberbankmobile|${key++}|null|10001", TestStart.now.atZone(TEST_ZONE).toInstant(), "СберБанк", text))
-    }
-
     private fun bannerShown() = rule.onAllNodes(hasTestTag(DRAFTS_BANNER_TAG)).fetchSemanticsNodes().isNotEmpty()
-
-    private fun openDrafts() {
-        rule.waitUntil(5_000) { bannerShown() }
-        rule.onNodeWithTag(DRAFTS_BANNER_TAG).performClick()
-        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(DRAFTS_LIST_TAG)).fetchSemanticsNodes().isNotEmpty() }
-    }
 
     private fun draftId(merchantStart: String): Long = allOperations().first { it.isDraft && it.merchant!!.startsWith(merchantStart) }.id
 
     private fun openRules() {
-        rule.onNodeWithContentDescription("Настройки").performClick()
+        openSettings()
         rule.onNode(hasText("Правила для магазинов") and hasClickAction()).performScrollTo().performClick()
         rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(RULES_LIST_TAG)).fetchSemanticsNodes().isNotEmpty() }
     }

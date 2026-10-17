@@ -6,7 +6,6 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
@@ -20,6 +19,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.hznik.budget.CountingWidgetRefresher
 import ru.hznik.budget.FakeDatabaseAccess
 import ru.hznik.budget.InMemoryLockSettingsRepository
 import ru.hznik.budget.TestAuth
@@ -29,6 +29,7 @@ import ru.hznik.budget.domain.lock.AppLock
 import ru.hznik.budget.domain.lock.LockSettings
 import ru.hznik.budget.domain.lock.LockSettingsRepository
 import ru.hznik.budget.domain.lock.LockTimeout
+import ru.hznik.budget.domain.reminders.WidgetRefresher
 import ru.hznik.budget.domain.security.DatabaseAccess
 import ru.hznik.budget.ui.home.HOME_HERO_TAG
 import ru.hznik.budget.ui.lock.AuthAvailability
@@ -39,11 +40,7 @@ import ru.hznik.budget.ui.lock.LOCK_SCREEN_TAG
 import ru.hznik.budget.ui.stats.STATS_LIST_TAG
 import javax.inject.Inject
 
-private fun FlowTestBase.tap(text: String) = rule.onNode(hasText(text) and hasClickAction()).performClick()
-
 private fun FlowTestBase.waitForTag(tag: String) = rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty() }
-
-private fun FlowTestBase.openSettings() = rule.onNode(hasContentDescription("Настройки") and hasClickAction()).performClick()
 
 private fun FlowTestBase.switch(title: String) = rule.onNode(hasText(title, substring = true) and isToggleable())
 
@@ -67,7 +64,7 @@ class LockScreenFlowTest : FlowTestBase() {
         rule.onNodeWithTag(BOTTOM_BAR_TAG).assertDoesNotExist()
 
         TestAuth.result = AuthResult.Success
-        tap("Разблокировать")
+        tapText("Разблокировать")
         waitForHero("Можно потратить сегодня")
         rule.onNodeWithTag(LOCK_SCREEN_TAG).assertDoesNotExist()
     }
@@ -87,7 +84,7 @@ class LockScreenFlowTest : FlowTestBase() {
     fun errorFromSystemIsShown() {
         waitForTag(LOCK_SCREEN_TAG)
         TestAuth.result = AuthResult.Error("Слишком много попыток")
-        tap("Разблокировать")
+        tapText("Разблокировать")
         waitForText("Слишком много попыток")
     }
 
@@ -95,7 +92,7 @@ class LockScreenFlowTest : FlowTestBase() {
     fun afterUnlockTheSameScreenIsOpen() {
         waitForTag(LOCK_SCREEN_TAG)
         TestAuth.result = AuthResult.Success
-        tap("Разблокировать")
+        tapText("Разблокировать")
         rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(BOTTOM_BAR_TAG)).fetchSemanticsNodes().isNotEmpty() }
         openTab("Статистика")
         waitForTag(STATS_LIST_TAG)
@@ -115,7 +112,7 @@ class LockScreenFlowTest : FlowTestBase() {
         rule.onNodeWithTag(STATS_LIST_TAG).assertDoesNotExist()
 
         TestAuth.result = AuthResult.Success
-        tap("Разблокировать")
+        tapText("Разблокировать")
         waitForTag(STATS_LIST_TAG)
         rule.onNode(hasText("Статистика") and hasClickAction()).assertIsDisplayed()
     }
@@ -155,13 +152,13 @@ class KeyLostFlowTest : FlowTestBase() {
         rule.onNodeWithText("Не удалось открыть данные").assertIsDisplayed()
         rule.onNodeWithTag(BOTTOM_BAR_TAG).assertDoesNotExist()
 
-        tap("Удалить данные и начать заново")
-        tap("Отмена")
+        tapText("Удалить данные и начать заново")
+        tapText("Отмена")
         rule.onNodeWithTag(KEY_LOST_TAG).assertIsDisplayed()
         assertFalse((database as FakeDatabaseAccess).wiped)
 
-        tap("Удалить данные и начать заново")
-        tap("Удалить")
+        tapText("Удалить данные и начать заново")
+        tapText("Удалить")
         waitForText("Шаг 1 из 5")
         assertTrue((database as FakeDatabaseAccess).wiped)
     }
@@ -178,7 +175,7 @@ class DatabaseErrorFlowTest : FlowTestBase() {
     fun retryOpensTheApp() {
         waitForTag(DATABASE_ERROR_TAG)
         rule.onNode(hasText("Удалить данные и начать заново")).assertDoesNotExist()
-        tap("Попробовать снова")
+        tapText("Попробовать снова")
         waitForHero("Можно потратить сегодня")
     }
 }
@@ -188,7 +185,11 @@ class DatabaseErrorFlowTest : FlowTestBase() {
 class ProtectionSettingsFlowTest : FlowTestBase() {
     @Inject lateinit var lockSettings: LockSettingsRepository
 
+    @Inject lateinit var widget: WidgetRefresher
+
     private val state get() = (lockSettings as InMemoryLockSettingsRepository).state.value
+
+    private val widgetRefreshes get() = (widget as CountingWidgetRefresher).refreshes
 
     @Test
     fun enableNeedsCheckAndShowsTimeout() {
@@ -207,7 +208,7 @@ class ProtectionSettingsFlowTest : FlowTestBase() {
         rule.onNodeWithText("Через 1 мин").performScrollTo().assertIsDisplayed()
 
         rule.onNodeWithText("Сразу").performScrollTo()
-        tap("Сразу")
+        tapText("Сразу")
         rule.waitUntil(5_000) { state.timeout == LockTimeout.IMMEDIATELY }
 
         // Выключение тоже через проверку.
@@ -229,6 +230,8 @@ class ProtectionSettingsFlowTest : FlowTestBase() {
 
     @Test
     fun hideWidgetAmountAppearsWithProtectionAndIsOffByDefault() {
+        // Первое обновление виджета при запуске не должно засчитаться за обновление после переключателя.
+        rule.waitUntil(5_000) { widgetRefreshes.get() >= 1 }
         openSettings()
         rule.onNodeWithText("Прятать сумму на виджете").assertDoesNotExist()
 
@@ -238,8 +241,18 @@ class ProtectionSettingsFlowTest : FlowTestBase() {
         switch("Прятать сумму на виджете").performScrollTo().assertIsOff()
         assertFalse("сумма на виджете видна, пока переключатель выключен", state.widgetAmountHidden)
 
+        // Изменение этих настроек сразу обновляет виджет (spec home-widget, «Скрытая сумма на виджете»).
+        val beforeHide = widgetRefreshes.get()
         switch("Прятать сумму на виджете").performClick()
         rule.waitUntil(5_000) { state.widgetAmountHidden }
+        rule.waitUntil(5_000) { widgetRefreshes.get() > beforeHide }
+
+        // «Защиту выключили»: виджет сразу показывает сумму.
+        val beforeOff = widgetRefreshes.get()
+        switch("Вход по отпечатку или PIN").performScrollTo().performClick()
+        rule.waitUntil(5_000) { !state.enabled }
+        rule.waitUntil(5_000) { widgetRefreshes.get() > beforeOff }
+        rule.onNodeWithText("Прятать сумму на виджете").assertDoesNotExist()
     }
 
     @Test
@@ -262,13 +275,7 @@ class OnboardingProtectionFlowTest : FlowTestBase() {
     @Inject lateinit var lockSettings: LockSettingsRepository
 
     private fun reachProtectionStep() {
-        tap("Дальше")
-        typeAmount("18000")
-        tap("Выберите число")
-        tap("25")
-        tap("Дальше")
-        tap("Пропустить")
-        tap("Вводить вручную")
+        walkOnboardingPastAutoImport()
         rule.onNodeWithText("Шаг 5 из 5").assertIsDisplayed()
         rule.onNodeWithText("Защитить вход?").assertIsDisplayed()
     }
@@ -277,12 +284,12 @@ class OnboardingProtectionFlowTest : FlowTestBase() {
     fun enableTurnsProtectionOnAndOpensHome() {
         reachProtectionStep()
         TestAuth.result = AuthResult.Cancelled
-        tap("Включить")
+        tapText("Включить")
         rule.waitForIdle()
         rule.onNodeWithText("Шаг 5 из 5").assertIsDisplayed()
 
         TestAuth.result = AuthResult.Success
-        tap("Включить")
+        tapText("Включить")
         waitForHero("Можно потратить сегодня 1500 рублей")
         assertTrue((lockSettings as InMemoryLockSettingsRepository).state.value.enabled)
         // Защиту только что включили после проверки: блокировать сразу незачем.
@@ -298,7 +305,7 @@ class OnboardingProtectionFlowTest : FlowTestBase() {
         reachProtectionStep()
         rule.onNode(hasText("Настроить блокировку экрана") and hasClickAction()).assertIsDisplayed()
         rule.onNode(hasText("Включить") and hasClickAction()).assertDoesNotExist()
-        tap("Не сейчас")
+        tapText("Не сейчас")
         waitForHero("Можно потратить сегодня")
         assertFalse((lockSettings as InMemoryLockSettingsRepository).state.value.enabled)
     }

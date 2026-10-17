@@ -35,9 +35,13 @@ import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
 import ru.hznik.budget.domain.model.PaymentRepeat
 import ru.hznik.budget.domain.model.PlannedPayment
+import ru.hznik.budget.domain.notifications.BankNotification
 import ru.hznik.budget.domain.repository.CategoryRepository
 import ru.hznik.budget.domain.repository.OperationRepository
 import ru.hznik.budget.domain.repository.PlannedPaymentRepository
+import ru.hznik.budget.notifications.NotificationIntake
+import ru.hznik.budget.ui.drafts.DRAFTS_LIST_TAG
+import ru.hznik.budget.ui.home.DRAFTS_BANNER_TAG
 import ru.hznik.budget.ui.home.HOME_HERO_TAG
 import ru.hznik.budget.ui.lock.DATABASE_ERROR_TAG
 import ru.hznik.budget.ui.lock.KEY_LOST_TAG
@@ -94,6 +98,11 @@ abstract class FlowTestBase {
 
     @Inject lateinit var payments: PlannedPaymentRepository
 
+    /** Автоимпорт уведомлений банков: тот же синглтон, что получает сервис уведомлений. */
+    @Inject lateinit var intake: NotificationIntake
+
+    private var notificationKey = 0
+
     @Before
     fun inject() {
         hiltRule.inject()
@@ -141,9 +150,47 @@ abstract class FlowTestBase {
 
     fun allOperations(): List<Operation> = runBlocking { operations.observe(ru.hznik.budget.domain.repository.OperationFilter()).first().map { it.operation } }
 
+    // --- Уведомления банков ---
+
+    /** Новый ключ уведомления Сбера, такой же по виду, как у системы. */
+    fun nextSberKey(): String = "0|ru.sberbankmobile|${++notificationKey}|null|10001"
+
+    /**
+     * Уведомление Сбера в автоимпорт — тот же путь, что у сервиса уведомлений (spec notification-import). У каждого вызова
+     * по умолчанию свой ключ, иначе второе уведомление теста отбросилось бы как повторная доставка; повтор задаётся явным [key].
+     */
+    fun sber(text: String, key: String = nextSberKey()) = runBlocking {
+        intake.accept(BankNotification("ru.sberbankmobile", key, TestStart.now.atZone(TEST_ZONE).toInstant(), "СберБанк", text))
+    }
+
     // --- Шаги по экранам ---
 
+    fun tapText(text: String) = rule.onNode(hasText(text) and hasClickAction()).performClick()
+
     fun openTab(label: String) = rule.onNode(hasText(label) and isSelectable()).performClick()
+
+    fun openSettings() = rule.onNode(hasContentDescription("Настройки") and hasClickAction()).performClick()
+
+    /** Черновики с плашки на главной: плашка появляется, когда черновик дошёл из базы. */
+    fun openDrafts() {
+        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(DRAFTS_BANNER_TAG)).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithTag(DRAFTS_BANNER_TAG).performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(DRAFTS_LIST_TAG)).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    /**
+     * Онбординг до шага после «Автоимпорта» (spec onboarding): доход 18 000 ₽ каждый месяц 25 числа, без платежей,
+     * ввод вручную. Следующий шаг — «Подсказки вовремя», если нужно разрешение на уведомления, иначе «Защита входа».
+     */
+    fun walkOnboardingPastAutoImport() {
+        tapText("Дальше")
+        typeAmount("18000")
+        tapText("Выберите число")
+        tapText("25")
+        tapText("Дальше")
+        tapText("Пропустить")
+        tapText("Вводить вручную")
+    }
 
     fun tapAdd() = rule.onNode(hasContentDescription("Добавить операцию") and hasClickAction()).performClick()
 

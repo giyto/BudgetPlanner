@@ -201,4 +201,20 @@ class DatabaseTest {
         migrationHelper.createDatabase(name, 1).close()
         migrationHelper.runMigrationsAndValidate(name, 1, true).close()
     }
+
+    @Test
+    fun updateAndInsertIsOneTransaction() = runTest {
+        val products = categoryNamed("Продукты")
+        val id = add(products, 450, merchant = "Пятёрочка")
+        val original = operations.get(id)!!
+        // Вторая сторона ссылается на несуществующую категорию: вставка падает, и обновление первой откатывается.
+        val failed = runCatching { operations.updateAndInsert(original.copy(comment = "изменено"), original.copy(id = 0, categoryId = 999_999)) }
+        assertTrue(failed.isFailure)
+        assertEquals(original, operations.get(id))
+        assertEquals(1, operations.observe(OperationFilter()).first().size)
+
+        operations.updateAndInsert(original.copy(comment = "изменено"), original.copy(id = 0, merchant = "Магнит"))
+        assertEquals("изменено", operations.get(id)!!.comment)
+        assertEquals(2, operations.observe(OperationFilter()).first().size)
+    }
 }

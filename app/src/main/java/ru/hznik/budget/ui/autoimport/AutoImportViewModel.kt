@@ -32,6 +32,7 @@ import ru.hznik.budget.domain.notifications.SupportedBanks
 import ru.hznik.budget.notifications.BankNotificationListener
 import ru.hznik.budget.notifications.ListenerStatus
 import javax.inject.Inject
+import ru.hznik.budget.ui.launchSave
 
 data class AutoImportState(
     val step: SetupStep = SetupStep.NOTIFICATION_ACCESS,
@@ -92,7 +93,7 @@ class AutoImportViewModel @Inject constructor(
         granted.value = nowGranted
         sberInstalled.value = installedBanks()
         if (nowGranted) {
-            viewModelScope.launch { settings.setWasEnabled() }
+            launchSave { settings.setWasEnabled() }
             watchConnection()
         }
     }
@@ -115,9 +116,9 @@ class AutoImportViewModel @Inject constructor(
     /** Экран системы для шага; шаги, которые нельзя проверить, считаются пройденными после открытия. */
     fun intentsFor(step: SetupStep): List<Intent> {
         when (step) {
-            SetupStep.NOTIFICATION_ACCESS -> viewModelScope.launch { settings.setAccessAttempted() }
-            SetupStep.RESTRICTED_SETTINGS -> viewModelScope.launch { settings.setRestrictedVisited() }
-            SetupStep.AUTOSTART -> viewModelScope.launch { settings.setAutostartDone() }
+            SetupStep.NOTIFICATION_ACCESS -> launchSave { settings.setAccessAttempted() }
+            SetupStep.RESTRICTED_SETTINGS -> launchSave { settings.setRestrictedVisited() }
+            SetupStep.AUTOSTART -> launchSave { settings.setAutostartDone() }
             SetupStep.DONE -> Unit
         }
         return SetupDevice.intents(context, step)

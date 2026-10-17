@@ -38,9 +38,11 @@ import ru.hznik.budget.ui.components.PaymentFormState
 import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
+import ru.hznik.budget.domain.model.byDefaultKey
+import ru.hznik.budget.domain.model.DefaultCategories
+import ru.hznik.budget.ui.launchSave
 
 /** Ключ категории по умолчанию для новых платежей. */
-private const val OTHER_EXPENSE = "other_expense"
 
 data class PeriodUiState(
     val status: PeriodStatus? = null,
@@ -63,17 +65,17 @@ class PeriodViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeriodUiState())
 
     fun markPaid(id: Long) {
-        viewModelScope.launch { markPaid.invoke(id) }
+        launchSave { markPaid.invoke(id) }
     }
 
     fun changeStartAmount(kopecks: Long) {
         val period = uiState.value.status?.period ?: return
-        viewModelScope.launch { updatePeriod(kopecks, period.nextIncomeDate) }
+        launchSave { updatePeriod(kopecks, period.nextIncomeDate) }
     }
 
     fun changeIncomeDate(date: LocalDate) {
         val period = uiState.value.status?.period ?: return
-        viewModelScope.launch { updatePeriod(period.startAmountKopecks, date) }
+        launchSave { updatePeriod(period.startAmountKopecks, date) }
     }
 }
 
@@ -87,7 +89,7 @@ data class PaymentEditorUiState(
     /** Скрытая категория остаётся в списке, если она уже выбрана у платежа. */
     val categories: List<Category> get() = allExpense.filter { !it.hidden || it.id == form.categoryId }
 
-    val defaultCategoryId: Long? get() = categories.firstOrNull { it.defaultKey == OTHER_EXPENSE }?.id ?: categories.lastOrNull()?.id
+    val defaultCategoryId: Long? get() = categories.byDefaultKey(DefaultCategories.OTHER_EXPENSE)?.id ?: categories.lastOrNull()?.id
 }
 
 @HiltViewModel
@@ -131,9 +133,13 @@ class PaymentEditorViewModel @Inject constructor(
         }
         if (busy) return
         busy = true
-        viewModelScope.launch {
-            if (save(paymentId, draft) is PaymentSaveResult.Saved) _close.send(Unit) else form.update { it.copy(form = it.form.copy(showErrors = true)) }
-            busy = false
+        launchSave(onFailure = { busy = false }) {
+            if (save(paymentId, draft) is PaymentSaveResult.Saved) {
+                _close.send(Unit)
+            } else {
+                form.update { it.copy(form = it.form.copy(showErrors = true)) }
+                busy = false
+            }
         }
     }
 
@@ -141,7 +147,7 @@ class PaymentEditorViewModel @Inject constructor(
         val id = paymentId ?: return
         if (busy) return
         busy = true
-        viewModelScope.launch {
+        launchSave(onFailure = { busy = false }) {
             delete.invoke(id)
             _close.send(Unit)
         }
@@ -200,7 +206,7 @@ class NewPeriodViewModel @Inject constructor(
         val s = _state.value
         if (!s.canStart) return
         _state.update { it.copy(busy = true) }
-        viewModelScope.launch {
+        launchSave(onFailure = { _state.update { it.copy(busy = false) } }) {
             if (startNewPeriod(s.amountKopecks, s.nextIncome) == PeriodSetupResult.Done) {
                 _close.send(Unit)
             } else {

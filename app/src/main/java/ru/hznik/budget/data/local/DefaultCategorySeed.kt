@@ -19,12 +19,12 @@ val DEFAULT_CATEGORIES: List<DefaultCategory> = listOf(
     DefaultCategory("health", CategoryKind.EXPENSE, "Здоровье", "pill", "purple"),
     DefaultCategory("subscriptions", CategoryKind.EXPENSE, "Подписки", "repeat", "blue"),
     DefaultCategory(DefaultCategories.TRANSFERS, CategoryKind.EXPENSE, "Переводы", "transfer", "gray"),
-    DefaultCategory("other_expense", CategoryKind.EXPENSE, "Другое", "dots", "gray"),
+    DefaultCategory(DefaultCategories.OTHER_EXPENSE, CategoryKind.EXPENSE, "Другое", "dots", "gray"),
     DefaultCategory("stipend", CategoryKind.INCOME, "Стипендия", "cap", "green"),
     DefaultCategory("salary", CategoryKind.INCOME, "Зарплата", "briefcase", "green"),
     DefaultCategory("transfer_in", CategoryKind.INCOME, "Перевод", "transfer", "blue"),
     DefaultCategory("gift", CategoryKind.INCOME, "Подарок", "gift", "pink"),
-    DefaultCategory("other_income", CategoryKind.INCOME, "Другое", "dots", "gray"),
+    DefaultCategory(DefaultCategories.OTHER_INCOME, CategoryKind.INCOME, "Другое", "dots", "gray"),
 )
 
 /** Вставляет категории по умолчанию. Вызывается один раз, при создании базы. */

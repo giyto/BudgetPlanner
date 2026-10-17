@@ -4,6 +4,7 @@ import ru.hznik.budget.domain.model.OperationType
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.random.Random
+import ru.hznik.budget.domain.model.DefaultCategories
 
 /** Прошлый период демо-данных: с [start] по [end] не включая (как `end_date` у завершённого периода). */
 data class DemoPeriod(val start: LocalDate, val end: LocalDate, val startAmountKopecks: Long)
@@ -65,7 +66,7 @@ object DemoDataPlan {
         if (random.nextDouble() < 0.06) add(DemoOperation(at(), OperationType.EXPENSE, "entertainment", rubles(400, 1_500), merchant = FUN.random(random)))
         if (random.nextDouble() < 0.03) add(DemoOperation(at(), OperationType.EXPENSE, "health", rubles(200, 1_200), merchant = "Аптека"))
         if (random.nextDouble() < 0.03) add(DemoOperation(at(), OperationType.TRANSFER, "transfers", rubles(300, 1_000), comment = "Другу"))
-        if (random.nextDouble() < 0.03) add(DemoOperation(at(), OperationType.EXPENSE, "other_expense", rubles(100, 500)))
+        if (random.nextDouble() < 0.03) add(DemoOperation(at(), OperationType.EXPENSE, DefaultCategories.OTHER_EXPENSE, rubles(100, 500)))
         if (day.dayOfMonth == 5) add(DemoOperation(day.atTime(9, 0), OperationType.EXPENSE, "subscriptions", 299_00, merchant = "Подписка на музыку"))
         if (day.dayOfMonth == 10) add(DemoOperation(day.atTime(9, 5), OperationType.EXPENSE, "connection", 650_00, merchant = "Мобильная связь"))
     }

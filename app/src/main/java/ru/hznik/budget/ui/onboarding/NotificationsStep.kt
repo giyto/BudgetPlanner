@@ -3,18 +3,13 @@ package ru.hznik.budget.ui.onboarding
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,14 +18,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.hznik.budget.R
-import ru.hznik.budget.ui.lock.Badge
-import ru.hznik.budget.ui.lock.PointsCard
+import ru.hznik.budget.ui.components.Badge
+import ru.hznik.budget.ui.components.PointsCard
+import ru.hznik.budget.ui.components.PrimaryButton
+import ru.hznik.budget.ui.components.SecondaryButton
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.TextRoles
 
 /** Шаг «Подсказки вовремя» (макет OnboardingNotifications, spec onboarding): что и когда пришлёт приложение. */
 @Composable
@@ -67,8 +64,7 @@ fun NotificationsStep() {
         )
         Text(
             stringResource(R.string.onboarding_notif_note),
-            fontSize = 13.sp,
-            lineHeight = 18.sp,
+            style = TextRoles.hint,
             color = colors.muted,
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp, start = 4.dp, end = 4.dp, bottom = 8.dp),
         )
@@ -78,27 +74,9 @@ fun NotificationsStep() {
 /** «Разрешить уведомления» открывает системный запрос; любой ответ и «Не сейчас» ведут к защите входа. */
 @Composable
 fun NotificationsButtons(busy: Boolean, onAnswered: () -> Unit, onLater: () -> Unit) {
-    val colors = BudgetTheme.colors
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onAnswered() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(16.dp)) {
-        Button(
-            onClick = { launcher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-            enabled = !busy,
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-        ) {
-            Text(stringResource(R.string.onboarding_notif_allow), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        }
-        OutlinedButton(
-            onClick = onLater,
-            enabled = !busy,
-            shape = RoundedCornerShape(18.dp),
-            border = BorderStroke(1.dp, colors.chipBorder),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.ink),
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-        ) {
-            Text(stringResource(R.string.onboarding_notif_later), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        }
+        PrimaryButton(stringResource(R.string.onboarding_notif_allow), onClick = { launcher.launch(Manifest.permission.POST_NOTIFICATIONS) }, enabled = !busy)
+        SecondaryButton(stringResource(R.string.onboarding_notif_later), onClick = onLater, enabled = !busy)
     }
 }

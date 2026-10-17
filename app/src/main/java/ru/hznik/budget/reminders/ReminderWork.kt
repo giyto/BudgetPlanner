@@ -24,6 +24,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import ru.hznik.budget.common.runLogged
 
 /**
  * Постановка фоновых задач (design.md add-widget-and-reminders, решение 4): `DailyWork` на ближайшие 10:00 и
@@ -85,10 +86,10 @@ class DailyWork @AssistedInject constructor(
     override suspend fun doWork(): Result {
         try {
             if (database.open() == DatabaseState.READY) {
-                runCatching { intake.get().purgeExpired() }
-                runCatching { check.get().invoke() }
+                runLogged(TAG, "Очистка образцов не удалась") { intake.get().purgeExpired() }
+                runLogged(TAG, "Проверка уведомлений не удалась") { check.get().invoke() }
             } else {
-                runCatching { widget.refresh() }
+                runLogged(TAG, "Обновление виджета не удалось") { widget.refresh() }
             }
         } finally {
             // Остановленную системой задачу WorkManager запустит снова, и следующую поставит уже она:
@@ -111,10 +112,16 @@ class MidnightWork @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         try {
-            if (database.open() == DatabaseState.READY) runCatching { check.get().invoke() } else runCatching { widget.refresh() }
+            if (database.open() == DatabaseState.READY) {
+                runLogged(TAG, "Проверка уведомлений не удалась") { check.get().invoke() }
+            } else {
+                runLogged(TAG, "Обновление виджета не удалось") { widget.refresh() }
+            }
         } finally {
             if (!isStopped) scheduler.scheduleNextMidnight()
         }
         return Result.success()
     }
 }
+
+private const val TAG = "Reminders"

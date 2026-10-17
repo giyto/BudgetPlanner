@@ -114,6 +114,26 @@ class ImportNotificationTest {
     }
 
     @Test
+    fun `notification left in the shade longer than a week is not imported again`() = runTest {
+        // Ключ помнится неделю: после перезагрузки висящее уведомление вернуло бы удалённую операцию.
+        val posted = now.minus(ImportNotification.KEY_LIFETIME).minusSeconds(60)
+        val old = BankNotification("ru.sberbankmobile", "key-old", posted, "СберБанк", "текст")
+        assertEquals(ImportResult.EXPIRED, import(old, parsed(at = posted, balance = 12_300)))
+        assertEquals(0, all().size)
+        assertEquals(null, recon.get(ReconAccount("sber", "1234")))
+    }
+
+    @Test
+    fun `notification exactly a week old is still imported`() = runTest {
+        // Ключи старше недели удаляются, а ровно недельный ещё помнится: граница не теряет уведомлений.
+        val posted = now.minus(ImportNotification.KEY_LIFETIME)
+        val edge = BankNotification("ru.sberbankmobile", "key-edge", posted, "СберБанк", "текст")
+        assertEquals(ImportResult.IMPORTED, import(edge, parsed(at = posted)))
+        assertEquals(ImportResult.DUPLICATE, import(edge, parsed(at = posted)))
+        assertEquals(1, all().size)
+    }
+
+    @Test
     fun `two notifications for one purchase within two minutes give one operation`() = runTest {
         import(notification("a"), parsed())
         assertEquals(ImportResult.DUPLICATE, import(notification("b"), parsed(merchant = "ПЯТЁРОЧКА", at = now.plusSeconds(30))))

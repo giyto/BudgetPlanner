@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -18,14 +17,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -63,11 +59,14 @@ import ru.hznik.budget.ui.components.ChoiceChip
 import ru.hznik.budget.ui.components.NavigationHeader
 import ru.hznik.budget.ui.components.RollingAmount
 import ru.hznik.budget.ui.components.PaymentForm
+import ru.hznik.budget.ui.components.PrimaryButton
+import ru.hznik.budget.ui.components.SecondaryButton
 import ru.hznik.budget.ui.components.formatDayMonth
 import ru.hznik.budget.ui.components.parseRubles
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.TextRoles
 
 /** Сбор одноразовых событий «закрыть» только на активном экране. */
 @Composable
@@ -75,20 +74,6 @@ private fun CloseOnEvent(events: Flow<Unit>, onClose: () -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(events, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) { events.collect { onClose() } }
-    }
-}
-
-@Composable
-private fun PrimaryButton(text: String, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = BudgetTheme.colors
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(18.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-        modifier = modifier.fillMaxWidth().height(56.dp),
-    ) {
-        Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -130,9 +115,7 @@ fun PeriodRoute(
                 HorizontalDivider(color = colors.line)
                 PeriodLine(stringResource(R.string.period_budget), MoneyFormat.amount(status.budget), status.budget, onChange = null)
             }
-            OutlinedButton(onClick = onStartNewPeriod, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-                Text(stringResource(R.string.home_start_new_period), color = colors.primaryText, fontWeight = FontWeight.SemiBold)
-            }
+            SecondaryButton(stringResource(R.string.home_start_new_period), onClick = onStartNewPeriod, contentColor = colors.primaryText)
             reconcile()
             Text(
                 stringResource(R.string.period_payments),
@@ -240,14 +223,12 @@ fun PaymentEditorRoute(onClose: () -> Unit, viewModel: PaymentEditorViewModel = 
     CloseOnEvent(viewModel.close, onClose)
     val colors = BudgetTheme.colors
     Column(modifier = Modifier.fillMaxSize().background(colors.background).imePadding()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            NavigationHeader(
-                stringResource(if (state.isEdit) R.string.payment_edit_title else R.string.payment_new_title),
-                R.drawable.ic_back,
-                stringResource(R.string.action_back),
-                onClose,
-                Modifier.weight(1f),
-            )
+        NavigationHeader(
+            stringResource(if (state.isEdit) R.string.payment_edit_title else R.string.payment_new_title),
+            R.drawable.ic_back,
+            stringResource(R.string.action_back),
+            onClose,
+        ) {
             if (state.isEdit) {
                 IconButton(onClick = viewModel::delete, modifier = Modifier.padding(end = 4.dp)) {
                     Icon(painterResource(R.drawable.ic_delete), stringResource(R.string.payment_delete), tint = colors.ink)
@@ -265,7 +246,7 @@ fun PaymentEditorRoute(onClose: () -> Unit, viewModel: PaymentEditorViewModel = 
         } else {
             Spacer(Modifier.weight(1f))
         }
-        PrimaryButton(stringResource(R.string.action_save), state.loaded, viewModel::save, Modifier.padding(16.dp))
+        PrimaryButton(stringResource(R.string.action_save), onClick = viewModel::save, modifier = Modifier.padding(16.dp), enabled = state.loaded)
     }
 }
 
@@ -290,11 +271,11 @@ fun NewPeriodRoute(onClose: () -> Unit, viewModel: NewPeriodViewModel = hiltView
                 maxLines = 1,
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).semantics { contentDescription = SpokenMoney.amount(state.amountKopecks) },
             )
-            Text(stringResource(R.string.new_period_amount_hint), fontSize = 13.sp, color = colors.muted)
+            Text(stringResource(R.string.new_period_amount_hint), style = TextRoles.hint, color = colors.muted)
             if (state.incomeTodayKopecks > 0) {
                 Text(
                     stringResource(R.string.new_period_income_today, MoneyFormat.amount(state.incomeTodayKopecks)),
-                    fontSize = 13.sp,
+                    style = TextRoles.hint,
                     color = colors.ink,
                     modifier = Modifier.fillMaxWidth().background(colors.warnSoft, RoundedCornerShape(12.dp)).padding(10.dp),
                 )
@@ -312,7 +293,7 @@ fun NewPeriodRoute(onClose: () -> Unit, viewModel: NewPeriodViewModel = hiltView
             )
             AmountKeypad(viewModel::onKey, Modifier.padding(top = 4.dp))
         }
-        PrimaryButton(stringResource(R.string.new_period_start), state.canStart, viewModel::start, Modifier.padding(16.dp))
+        PrimaryButton(stringResource(R.string.new_period_start), onClick = viewModel::start, modifier = Modifier.padding(16.dp), enabled = state.canStart)
     }
 
     if (pickDate) {

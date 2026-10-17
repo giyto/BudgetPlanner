@@ -8,23 +8,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,7 +37,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -62,6 +53,9 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import ru.hznik.budget.R
+import ru.hznik.budget.ui.components.Badge
+import ru.hznik.budget.ui.components.PointsCard
+import ru.hznik.budget.ui.components.PrimaryButton
 import ru.hznik.budget.ui.theme.BudgetTheme
 
 const val LOCK_SCREEN_TAG = "lock_screen"
@@ -169,16 +163,12 @@ fun LockScreen() {
                 modifier = Modifier.padding(top = 10.dp),
             )
         }
-        Button(
+        PrimaryButton(
+            text = stringResource(R.string.lock_unlock),
             onClick = unlock,
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-            modifier = Modifier.padding(16.dp).fillMaxWidth().height(56.dp),
-        ) {
-            Icon(painterResource(R.drawable.ic_fingerprint), contentDescription = null, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.width(10.dp))
-            Text(stringResource(R.string.lock_unlock), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        }
+            modifier = Modifier.padding(16.dp),
+            icon = { Icon(painterResource(R.drawable.ic_fingerprint), contentDescription = null, modifier = Modifier.size(24.dp)) },
+        )
     }
 }
 
@@ -236,14 +226,7 @@ fun KeyLostScreen(onWipe: () -> Unit) {
                 modifier = Modifier.padding(top = 18.dp),
             )
         }
-        Button(
-            onClick = { confirm = true },
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.warn, contentColor = if (colors.isDark) colors.background else Color.White),
-            modifier = Modifier.padding(16.dp).fillMaxWidth().height(56.dp),
-        ) {
-            Text(stringResource(R.string.key_lost_wipe), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        }
+        PrimaryButton(stringResource(R.string.key_lost_wipe), onClick = { confirm = true }, modifier = Modifier.padding(16.dp), danger = true)
     }
     if (confirm) {
         AlertDialog(
@@ -288,46 +271,6 @@ fun DatabaseErrorScreen(onRetry: () -> Unit) {
                 modifier = Modifier.padding(top = 10.dp, start = 12.dp, end = 12.dp),
             )
         }
-        Button(
-            onClick = onRetry,
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-            modifier = Modifier.padding(16.dp).fillMaxWidth().height(56.dp),
-        ) {
-            Text(stringResource(R.string.db_error_retry), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-/** Круглая подложка с иконкой, как на шагах онбординга. */
-@Composable
-fun Badge(icon: Painter, container: Color, content: Color) {
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(120.dp).background(BudgetTheme.colors.card, CircleShape)) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(64.dp).background(container, RoundedCornerShape(20.dp))) {
-            Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(34.dp))
-        }
-    }
-}
-
-/** Карточка с пунктами: иконка в плитке и текст, строки не ниже 48 dp. */
-@Composable
-fun PointsCard(points: List<Pair<Int, String>>, tileContainer: Color, tileContent: Color, modifier: Modifier = Modifier) {
-    val colors = BudgetTheme.colors
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.card, RoundedCornerShape(22.dp))
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-    ) {
-        points.forEachIndexed { index, (icon, text) ->
-            if (index > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(colors.line))
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 52.dp).padding(vertical = 8.dp)) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp).background(tileContainer, RoundedCornerShape(10.dp))) {
-                    Icon(painterResource(icon), contentDescription = null, tint = tileContent, modifier = Modifier.size(18.dp))
-                }
-                Spacer(Modifier.width(12.dp))
-                Text(text, fontSize = 14.sp, lineHeight = 19.sp, color = colors.ink)
-            }
-        }
+        PrimaryButton(stringResource(R.string.db_error_retry), onClick = onRetry, modifier = Modifier.padding(16.dp))
     }
 }

@@ -1,18 +1,13 @@
 package ru.hznik.budget.ui.onboarding
 
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -27,7 +22,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,12 +30,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.launch
 import ru.hznik.budget.R
+import ru.hznik.budget.ui.components.Badge
+import ru.hznik.budget.ui.components.PointsCard
+import ru.hznik.budget.ui.components.PrimaryButton
+import ru.hznik.budget.ui.components.SecondaryButton
 import ru.hznik.budget.ui.lock.AuthAvailability
 import ru.hznik.budget.ui.lock.AuthResult
-import ru.hznik.budget.ui.lock.Badge
 import ru.hznik.budget.ui.lock.DeviceAuthenticator
 import ru.hznik.budget.ui.lock.LocalDeviceAuthenticator
-import ru.hznik.budget.ui.lock.PointsCard
 import ru.hznik.budget.ui.settings.openScreenLockSettings
 import ru.hznik.budget.ui.theme.BudgetTheme
 
@@ -107,16 +103,16 @@ fun ProtectionStep(state: ProtectionStepState) {
 /** «Включить» (или «Настроить блокировку экрана», если её нет) и «Не сейчас» внизу под пальцем. */
 @Composable
 fun ProtectionButtons(state: ProtectionStepState, busy: Boolean, onEnabled: () -> Unit, onLater: () -> Unit) {
-    val colors = BudgetTheme.colors
     val activity = LocalActivity.current
     val scope = rememberCoroutineScope()
     val title = stringResource(R.string.auth_title)
     val subtitle = stringResource(R.string.auth_enable_subtitle)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(16.dp)) {
         when (state.availability) {
-            AuthAvailability.AVAILABLE -> Button(
+            AuthAvailability.AVAILABLE -> PrimaryButton(
+                text = stringResource(R.string.onboarding_protection_enable),
                 onClick = {
-                    val host = activity as? FragmentActivity ?: return@Button
+                    val host = activity as? FragmentActivity ?: return@PrimaryButton
                     scope.launch {
                         when (val result = state.authenticator.authenticate(host, title, subtitle)) {
                             AuthResult.Success -> {
@@ -129,31 +125,10 @@ fun ProtectionButtons(state: ProtectionStepState, busy: Boolean, onEnabled: () -
                     }
                 },
                 enabled = !busy,
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-            ) {
-                Text(stringResource(R.string.onboarding_protection_enable), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            }
-            AuthAvailability.NO_SCREEN_LOCK -> Button(
-                onClick = { activity?.openScreenLockSettings() },
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-            ) {
-                Text(stringResource(R.string.onboarding_protection_setup), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            }
+            )
+            AuthAvailability.NO_SCREEN_LOCK -> PrimaryButton(stringResource(R.string.onboarding_protection_setup), onClick = { activity?.openScreenLockSettings() })
             AuthAvailability.UNAVAILABLE -> Unit
         }
-        OutlinedButton(
-            onClick = onLater,
-            enabled = !busy,
-            shape = RoundedCornerShape(18.dp),
-            border = BorderStroke(1.dp, colors.chipBorder),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.ink),
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-        ) {
-            Text(stringResource(R.string.onboarding_protection_later), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        }
+        SecondaryButton(stringResource(R.string.onboarding_protection_later), onClick = onLater, enabled = !busy)
     }
 }

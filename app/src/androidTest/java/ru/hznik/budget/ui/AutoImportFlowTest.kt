@@ -30,12 +30,13 @@ class AutoImportFlowTest : FlowTestBase() {
         waitForHero("Можно потратить сегодня")
         runBlocking { settings.setWasEnabled() }
         rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(AUTO_IMPORT_STOPPED_TAG)).fetchSemanticsNodes().isNotEmpty() }
-        rule.onNode(hasText("Автоимпорт остановлен")).assertIsDisplayed()
+        // Плашка озвучивается целиком: заголовок, пояснение и действие.
+        rule.onNode(hasTestTag(AUTO_IMPORT_STOPPED_TAG) and hasContentDescription("Автоимпорт остановлен", substring = true)).assertIsDisplayed()
     }
 
     @Test
     fun settingsShowNoAccessAndNextStep() {
-        rule.onNode(hasContentDescription("Настройки") and hasClickAction()).performClick()
+        openSettings()
         waitForText("Нет доступа к уведомлениям")
         rule.onNode(hasText("Разрешить доступ к уведомлениям") and hasClickAction()).assertIsDisplayed()
     }

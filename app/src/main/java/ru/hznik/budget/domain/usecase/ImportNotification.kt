@@ -26,8 +26,10 @@ import java.time.Duration
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlin.math.abs
+import ru.hznik.budget.domain.model.byDefaultKey
 
-enum class ImportResult { IMPORTED, DUPLICATE, IGNORED }
+/** [EXPIRED] — уведомление старше срока, пока помнятся обработанные ключи ([ImportNotification.KEY_LIFETIME]). */
+enum class ImportResult { IMPORTED, DUPLICATE, IGNORED, EXPIRED }
 
 /**
  * Операция из разобранного уведомления банка (design.md add-notification-import, решения 4–7): черновик с
@@ -46,6 +48,9 @@ class ImportNotification @Inject constructor(
     suspend operator fun invoke(notification: BankNotification, parsed: ParsedNotification): ImportResult {
         val now = clock.instant()
         notifications.deleteKeysBefore(now.minus(KEY_LIFETIME))
+        // Ключ такого уведомления уже забыт: висящее в шторке больше недели уведомление после перезагрузки
+        // вернуло бы удалённую пользователем операцию, поэтому оно не импортируется.
+        if (notification.postedAt.isBefore(now.minus(KEY_LIFETIME))) return ImportResult.EXPIRED
         if (notifications.isSeen(notification.key)) return ImportResult.DUPLICATE
         val result = importNew(notification, parsed)
         // Ключ отмечается после обработки: если запись сорвалась, повторная доставка уведомления её восстановит,
@@ -63,10 +68,10 @@ class ImportNotification @Inject constructor(
 
     private suspend fun importNew(notification: BankNotification, parsed: ParsedNotification): ImportResult {
         val (type, categoryKey) = when (parsed.kind) {
-            NotificationKind.PURCHASE -> OperationType.EXPENSE to OTHER_EXPENSE
+            NotificationKind.PURCHASE -> OperationType.EXPENSE to DefaultCategories.OTHER_EXPENSE
             NotificationKind.TRANSFER_OUT -> OperationType.TRANSFER to DefaultCategories.TRANSFERS
-            NotificationKind.INCOME -> OperationType.INCOME to OTHER_INCOME
-            NotificationKind.REFUND -> OperationType.REFUND to OTHER_EXPENSE
+            NotificationKind.INCOME -> OperationType.INCOME to DefaultCategories.OTHER_INCOME
+            NotificationKind.REFUND -> OperationType.REFUND to DefaultCategories.OTHER_EXPENSE
             NotificationKind.OWN_TRANSFER -> return ImportResult.IGNORED
         }
         if (operations.existsByNotificationKey(notification.key)) return ImportResult.DUPLICATE
@@ -74,7 +79,7 @@ class ImportNotification @Inject constructor(
         val to = parsed.occurredAt.plus(DUPLICATE_WINDOW)
         if (operations.existsSimilarImport(parsed.bankId, type, parsed.amount, parsed.merchant, from, to)) return ImportResult.DUPLICATE
         val all = categories.observeAll().first()
-        val transfers = all.firstOrNull { it.defaultKey == DefaultCategories.TRANSFERS } ?: error("Нет категории «Переводы»")
+        val transfers = all.byDefaultKey(DefaultCategories.TRANSFERS) ?: error("Нет категории «Переводы»")
         if (type == OperationType.TRANSFER || type == OperationType.INCOME) {
             // Вторая сторона уже пришла из другого банка: склеить в один перевод себе (design.md, решение 11).
             // Проверяется раньше запомненного имени, иначе вторая сторона осталась бы тратой или доходом.
@@ -109,7 +114,7 @@ class ImportNotification @Inject constructor(
                 return ImportResult.IMPORTED
             }
         }
-        val provisional = all.firstOrNull { it.defaultKey == categoryKey } ?: error("Нет категории по умолчанию $categoryKey")
+        val provisional = all.byDefaultKey(categoryKey) ?: error("Нет категории по умолчанию $categoryKey")
         // Правило пользователя или подсказка словаря — после переводов себе (add-auto-categorization, решение 3).
         val categorized = autoCategorize(type, parsed.merchant, provisional, all)
         operations.insert(
@@ -164,8 +169,6 @@ class ImportNotification @Inject constructor(
     companion object {
         /** Окно, в котором «ушло» из одного банка и «пришло» в другой считаются одним переводом себе. */
         val PAIR_WINDOW: Duration = Duration.ofMinutes(10)
-        const val OTHER_EXPENSE = "other_expense"
-        const val OTHER_INCOME = "other_income"
         val DUPLICATE_WINDOW: Duration = Duration.ofMinutes(2)
         val KEY_LIFETIME: Duration = Duration.ofDays(7)
         const val NEAR_INCOME_DAYS = 3L
@@ -242,7 +245,7 @@ class MarkOwnTransfer @Inject constructor(
     suspend operator fun invoke(operationId: Long, rememberName: Boolean) {
         val op = operations.get(operationId) ?: return
         if (op.type == OperationType.OWN_TRANSFER) return
-        val transfers = categories.observeAll().first().firstOrNull { it.defaultKey == DefaultCategories.TRANSFERS } ?: return
+        val transfers = categories.observeAll().first().byDefaultKey(DefaultCategories.TRANSFERS) ?: return
         // Сначала имя: следующее уведомление от него, пришедшее сразу после, уже станет переводом себе.
         if (rememberName) op.merchant?.let { autoImport.addOwnName(normalizeForSearch(it)) }
         operations.update(op.copy(type = OperationType.OWN_TRANSFER, originalType = op.type, categoryId = transfers.id, isDraft = false, suggestsNewPeriod = false))
@@ -259,22 +262,19 @@ class SplitOwnTransfer @Inject constructor(
         val original = op.originalType ?: return
         if (op.type != OperationType.OWN_TRANSFER) return
         val all = categories.observeAll().first()
-        fun provisional(type: OperationType) = all.firstOrNull {
-            it.defaultKey == when (type) {
+        fun provisional(type: OperationType) = all.byDefaultKey(
+            when (type) {
                 OperationType.TRANSFER -> DefaultCategories.TRANSFERS
-                OperationType.INCOME -> ImportNotification.OTHER_INCOME
-                else -> ImportNotification.OTHER_EXPENSE
-            }
-        }?.id ?: op.categoryId
-        operations.update(
-            op.copy(
-                type = original, originalType = null, categoryId = provisional(original), isDraft = true,
-                counterBankId = null, counterCardLast4 = null, counterNotificationKey = null, counterMerchant = null, counterOccurredAt = null,
-            ),
+                OperationType.INCOME -> DefaultCategories.OTHER_INCOME
+                else -> DefaultCategories.OTHER_EXPENSE
+            },
+        )?.id ?: op.categoryId
+        val updated = op.copy(
+            type = original, originalType = null, categoryId = provisional(original), isDraft = true,
+            counterBankId = null, counterCardLast4 = null, counterNotificationKey = null, counterMerchant = null, counterOccurredAt = null,
         )
-        val counterBank = op.counterBankId ?: return
-        val counterType = if (original == OperationType.TRANSFER) OperationType.INCOME else OperationType.TRANSFER
-        operations.insert(
+        val counterpart = op.counterBankId?.let { counterBank ->
+            val counterType = if (original == OperationType.TRANSFER) OperationType.INCOME else OperationType.TRANSFER
             Operation(
                 type = counterType,
                 amount = op.amount,
@@ -287,8 +287,10 @@ class SplitOwnTransfer @Inject constructor(
                 bankId = counterBank,
                 cardLast4 = op.counterCardLast4,
                 notificationKey = op.counterNotificationKey,
-            ),
-        )
+            )
+        }
+        // Одной транзакцией: у обновлённой операции поля второй стороны уже очищены.
+        operations.updateAndInsert(updated, counterpart)
     }
 }
 

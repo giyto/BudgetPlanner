@@ -1,7 +1,6 @@
 package ru.hznik.budget.ui
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.hasClickAction
@@ -18,21 +17,16 @@ import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
-import ru.hznik.budget.TEST_ZONE
 import ru.hznik.budget.TestLlmProvider
 import ru.hznik.budget.TestStart
 import ru.hznik.budget.domain.ai.AiSettings
 import ru.hznik.budget.domain.ai.LlmResult
 import ru.hznik.budget.domain.ai.TokenUsage
 import ru.hznik.budget.domain.model.OperationSource
-import ru.hznik.budget.domain.notifications.BankNotification
-import ru.hznik.budget.notifications.NotificationIntake
 import ru.hznik.budget.ui.assistant.ASSISTANT_INPUT_TAG
 import ru.hznik.budget.ui.assistant.ASSISTANT_SEND_TAG
 import ru.hznik.budget.ui.components.AmountInput
-import ru.hznik.budget.ui.drafts.DRAFTS_LIST_TAG
 import ru.hznik.budget.ui.home.DRAFTS_BANNER_TAG
-import ru.hznik.budget.ui.home.HOME_HERO_TAG
 import ru.hznik.budget.ui.stats.STATS_DONUT_TAG
 import ru.hznik.budget.ui.theme.Motion
 import java.time.LocalDate
@@ -42,7 +36,8 @@ import kotlin.math.sin
 
 /**
  * Анимации включены (spec ui-motion, задачи 2.2–2.5, 3.1, 3.3, 4.2, 5.1): изменения доезжают до итоговых значений, TalkBack слышит
- * только итог. Период 1–25 октября на 18 000 ₽, сегодня 13 октября: без трат «можно сегодня» 1 500 ₽.
+ * только итог. Прокрутку цифр суммы с итоговым текстом для TalkBack проверяет [ru.hznik.budget.ui.components.RollingAmountTest].
+ * Период 1–25 октября на 18 000 ₽, сегодня 13 октября: без трат «можно сегодня» 1 500 ₽.
  */
 @HiltAndroidTest
 class MotionFlowTest : FlowTestBase() {
@@ -50,35 +45,7 @@ class MotionFlowTest : FlowTestBase() {
         TestStart.animations = true
     }
 
-    @Inject lateinit var intake: NotificationIntake
-
     @Inject lateinit var aiSettings: AiSettings
-
-    private fun sber(text: String) = runBlocking {
-        intake.accept(BankNotification("ru.sberbankmobile", "0|ru.sberbankmobile|1|null|10001", TestStart.now.atZone(TEST_ZONE).toInstant(), "СберБанк", text))
-    }
-
-    private fun heroSays(text: String) =
-        rule.onAllNodes(hasTestTag(HOME_HERO_TAG) and hasContentDescription(text, substring = true)).fetchSemanticsNodes().isNotEmpty()
-
-    @Test
-    fun purchaseRollsDigitsAndTalkBackHearsOnlyTheResult() {
-        waitForHero("Можно потратить сегодня 1500 рублей")
-        rule.mainClock.autoAdvance = false
-        sber("Покупка 450 ₽ Пятёрочка. Карта *1234. Баланс 12 300 ₽")
-        rule.waitUntil(5_000) {
-            rule.mainClock.advanceTimeByFrame()
-            heroSays("1050 рублей")
-        }
-
-        // Цифры ещё крутятся, а описание карточки уже итоговое, без промежуточных сумм.
-        rule.mainClock.advanceTimeBy(Motion.DIGITS / 2L)
-        rule.onNodeWithTag(HOME_HERO_TAG).assert(hasContentDescription("Можно потратить сегодня 1050 рублей", substring = true))
-
-        rule.mainClock.advanceTimeBy(Motion.DIGITS.toLong() + Motion.BAR)
-        rule.mainClock.autoAdvance = true
-        waitForHero("Можно потратить сегодня 1050 рублей")
-    }
 
     @Test
     fun keypadAmountChangesInstantly() {
@@ -163,9 +130,7 @@ class MotionFlowTest : FlowTestBase() {
             insert("Другое", 100L + i * 100, hour = 9 + i, merchant = store, source = OperationSource.NOTIFICATION, draft = true)
         }
         waitForHero("Можно потратить сегодня")
-        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(DRAFTS_BANNER_TAG)).fetchSemanticsNodes().isNotEmpty() }
-        rule.onNodeWithTag(DRAFTS_BANNER_TAG).performClick()
-        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(DRAFTS_LIST_TAG)).fetchSemanticsNodes().isNotEmpty() }
+        openDrafts()
         val stores = hasText("Пятёрочка") or hasText("Магнит") or hasText("Лента")
         rule.waitUntil(5_000) { rule.onAllNodes(stores).fetchSemanticsNodes().size == 3 }
 
@@ -213,10 +178,7 @@ class MotionFlowTest : FlowTestBase() {
     fun draftsBannerCollapsesAfterConfirmation() {
         waitForHero("Можно потратить сегодня 1500 рублей")
         sber("Покупка 450 ₽ Пятёрочка. Карта *1234. Баланс 12 300 ₽")
-        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(DRAFTS_BANNER_TAG)).fetchSemanticsNodes().isNotEmpty() }
-
-        rule.onNodeWithTag(DRAFTS_BANNER_TAG).performClick()
-        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag(DRAFTS_LIST_TAG)).fetchSemanticsNodes().isNotEmpty() }
+        openDrafts()
         rule.onNode(hasText("Продукты") and hasClickAction()).performClick()
         rule.onNode(hasText("Сохранить 1 операцию") and hasClickAction()).performClick()
 

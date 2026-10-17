@@ -25,6 +25,8 @@ import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
+import ru.hznik.budget.domain.model.byDefaultKey
+import ru.hznik.budget.domain.model.DefaultCategories
 
 /**
  * Один замок на все сценарии, которые читают и записывают состояние сверки: импорт уведомления, решение пользователя,
@@ -89,14 +91,14 @@ class ReconcileBalance @Inject constructor(
             repo.save(ReconState(target, bankKopecks, at))
             return@withLock
         }
+        // Остаток, пришедший позже, но описывающий более ранний момент, не сравнивается и не сдвигает точку отсчёта назад.
+        if (!at.isAfter(state.anchorAt)) return@withLock
         if (rebase) {
             val pending = state.pending?.let { Mismatch(bankKopecks, bankKopecks - it.diffKopecks, at) }
             repo.save(state.copy(anchorKopecks = bankKopecks, anchorAt = at, pending = pending))
             return@withLock
         }
         if (!settings.enabled.first()) return@withLock
-        // Остаток, пришедший позже, но описывающий более ранний момент, не сравнивается: точка отсчёта новее.
-        if (!at.isAfter(state.anchorAt)) return@withLock
         repo.save(expected.compare(state, bankKopecks, at))
     }
 }
@@ -136,8 +138,8 @@ class ResolveMismatch @Inject constructor(
             return@withLock
         }
         val type = if (pending.diffKopecks < 0) OperationType.EXPENSE else OperationType.INCOME
-        val key = if (type == OperationType.EXPENSE) ImportNotification.OTHER_EXPENSE else ImportNotification.OTHER_INCOME
-        val category = categories.observeAll().first().firstOrNull { it.defaultKey == key } ?: error("Нет категории по умолчанию $key")
+        val key = if (type == OperationType.EXPENSE) DefaultCategories.OTHER_EXPENSE else DefaultCategories.OTHER_INCOME
+        val category = categories.observeAll().first().byDefaultKey(key) ?: error("Нет категории по умолчанию $key")
         val adjustment = Operation(
             type = type,
             amount = amount,

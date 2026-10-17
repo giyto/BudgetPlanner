@@ -131,6 +131,7 @@ fun BudgetApp(
     val snackbarHostState = remember { SnackbarHostState() }
     UndoDeletionSnackbar(appViewModel, snackbarHostState)
     ScreenLockRemovedSnackbar(appViewModel, snackbarHostState)
+    SaveFailedSnackbar(snackbarHostState)
 
     // Пока неизвестно, пройден ли онбординг, виден только фон окна: вернувшийся пользователь не увидит мигания онбординга.
     val onboardingDone by appViewModel.onboardingDone.collectAsStateWithLifecycle()
@@ -381,6 +382,15 @@ private fun ScreenLockRemovedSnackbar(viewModel: AppViewModel, hostState: Snackb
         if (!notice) return@LaunchedEffect
         viewModel.consumeScreenLockNotice()
         scope.launch { hostState.showSnackbar(message, duration = SnackbarDuration.Long) }
+    }
+}
+
+/** «Не удалось сохранить…», если запись из экрана сорвалась (SaveFailures). */
+@Composable
+private fun SaveFailedSnackbar(hostState: SnackbarHostState) {
+    val message = stringResource(R.string.save_failed)
+    LaunchedEffect(Unit) {
+        SaveFailures.events.collect { hostState.showSnackbar(message) }
     }
 }
 

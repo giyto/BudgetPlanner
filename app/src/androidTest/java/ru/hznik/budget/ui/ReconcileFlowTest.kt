@@ -129,7 +129,7 @@ class ReconcileFlowTest : FlowTestBase() {
     fun turningAutoReconciliationOffHidesTheBannerButKeepsManual() {
         mismatch(alfa, bankRub = 12_300, expectedRub = 12_750)
         waitForBanner("Расхождение с банком 450 рублей")
-        rule.onNodeWithContentDescription("Настройки").performClick()
+        openSettings()
         rule.onNodeWithTag(AUTO_RECONCILE_SWITCH_TAG).performScrollTo().performClick()
         rule.onNodeWithContentDescription("Назад").performClick()
         rule.waitUntil(5_000) { !bannerShown() }

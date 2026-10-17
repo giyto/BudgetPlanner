@@ -3,7 +3,6 @@ package ru.hznik.budget.ui.reconcile
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,13 +20,10 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
@@ -53,6 +49,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.hznik.budget.R
+import ru.hznik.budget.domain.budget.BalanceReconciler
 import ru.hznik.budget.domain.reconcile.Mismatch
 import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.domain.reconcile.ReconState
@@ -61,12 +58,15 @@ import ru.hznik.budget.ui.components.AmountInput
 import ru.hznik.budget.ui.components.AmountKey
 import ru.hznik.budget.ui.components.AmountKeypad
 import ru.hznik.budget.ui.components.NavigationHeader
+import ru.hznik.budget.ui.components.PrimaryButton
+import ru.hznik.budget.ui.components.SecondaryButton
 import ru.hznik.budget.ui.components.RollingAmount
 import ru.hznik.budget.ui.components.formatDayMonth
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.format.accountLabel
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.TextRoles
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -191,7 +191,7 @@ private fun SingleCardContent(
             ReconcileOption.FIND -> R.string.reconcile_find
             ReconcileOption.SKIP -> R.string.reconcile_option_skip
         }
-        PrimaryButton(stringResource(applyLabel), onApply, Modifier.testTag(RECONCILE_APPLY_TAG))
+        PrimaryButton(stringResource(applyLabel), onApply, Modifier.testTag(RECONCILE_APPLY_TAG).bottomButtonPadding())
     }
 }
 
@@ -208,7 +208,7 @@ private fun ComparisonCard(pending: Mismatch, zone: ZoneId) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp).clearAndSetSemantics { contentDescription = "$diffLabel: ${spokenDiff(pending.diffKopecks)}" },
         ) {
-            Text(diffLabel, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink, modifier = Modifier.weight(1f))
+            Text(diffLabel, style = TextRoles.itemTitle, color = colors.ink, modifier = Modifier.weight(1f))
             RollingAmount(
                 signedDiff(pending.diffKopecks), pending.diffKopecks, LocalTextStyle.current.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold), colors.warn,
                 modifier = Modifier.background(colors.warnSoft, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
@@ -249,7 +249,7 @@ private fun OptionCard(selected: Boolean, title: String, subtitle: String, onCli
         RadioButton(selected = selected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = colors.primary, unselectedColor = colors.chipBorder))
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
+            Text(title, style = TextRoles.itemTitle, color = colors.ink)
             Text(subtitle, fontSize = 14.sp, color = colors.muted)
         }
     }
@@ -287,15 +287,12 @@ private fun CardsContent(
         }
         Text(stringResource(R.string.reconcile_cards_question, label), fontSize = 14.sp, color = colors.muted, modifier = Modifier.padding(start = 6.dp, top = 6.dp))
         val amount = MoneyFormat.amount(pending.diffKopecks)
-        Button(
+        PrimaryButton(
+            text = stringResource(if (pending.diffKopecks < 0) R.string.reconcile_cards_expense else R.string.reconcile_cards_income, amount),
             onClick = onAdjust,
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag(RECONCILE_APPLY_TAG),
-        ) { Text(stringResource(if (pending.diffKopecks < 0) R.string.reconcile_cards_expense else R.string.reconcile_cards_income, amount), fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
-        OutlinedButton(onClick = onFind, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-            Text(stringResource(R.string.reconcile_option_find), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
-        }
+            modifier = Modifier.testTag(RECONCILE_APPLY_TAG),
+        )
+        SecondaryButton(stringResource(R.string.reconcile_option_find), onClick = onFind)
         TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
             Text(stringResource(R.string.reconcile_option_skip), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.muted)
         }
@@ -355,9 +352,7 @@ private fun NoMismatchContent(rows: List<ReconState>, onManual: () -> Unit) {
                 }
             }
         }
-        OutlinedButton(onClick = onManual, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-            Text(stringResource(R.string.reconcile_enter_manually), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
-        }
+        SecondaryButton(stringResource(R.string.reconcile_enter_manually), onClick = onManual)
     }
 }
 
@@ -407,7 +402,7 @@ private fun ManualContent(
             if (expected != null && manual.input.isNotEmpty()) {
                 val diff = manual.inputKopecks - expected
                 val (text, soft, ink) = when {
-                    abs(diff) <= 100 -> Triple(stringResource(R.string.reconcile_manual_same), colors.positiveSoft, colors.positive)
+                    abs(diff) <= BalanceReconciler.THRESHOLD_KOPECKS -> Triple(stringResource(R.string.reconcile_manual_same), colors.positiveSoft, colors.positive)
                     diff < 0 -> Triple(stringResource(R.string.reconcile_manual_less, MoneyFormat.amount(diff)), colors.warnSoft, colors.warn)
                     else -> Triple(stringResource(R.string.reconcile_manual_more, MoneyFormat.amount(diff)), colors.warnSoft, colors.warn)
                 }
@@ -417,18 +412,14 @@ private fun ManualContent(
             }
         }
         AmountKeypad(onKey, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-        PrimaryButton(stringResource(R.string.reconcile_manual_submit), onSubmit, Modifier.testTag(RECONCILE_MANUAL_SUBMIT_TAG), enabled = manual.selected != null && manual.input.isNotEmpty())
+        PrimaryButton(
+            text = stringResource(R.string.reconcile_manual_submit),
+            onClick = onSubmit,
+            modifier = Modifier.testTag(RECONCILE_MANUAL_SUBMIT_TAG).bottomButtonPadding(),
+            enabled = manual.selected != null && manual.input.isNotEmpty(),
+        )
     }
 }
 
-@Composable
-private fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    val colors = BudgetTheme.colors
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(18.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-        modifier = modifier.fillMaxWidth().navigationBarsPadding().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp).heightIn(min = 56.dp),
-    ) { Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
-}
+/** Отступы главной кнопки внизу экрана сверки: над системной панелью навигации. */
+private fun Modifier.bottomButtonPadding(): Modifier = navigationBarsPadding().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp)

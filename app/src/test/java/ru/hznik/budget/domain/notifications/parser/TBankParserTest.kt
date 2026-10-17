@@ -38,16 +38,22 @@ class TBankParserTest {
     fun `outgoing and incoming transfers`() {
         val out = parse("Перевод. Счет RUB. 500 ₽. Олег К. Доступно 7 500 ₽")!!
         assertEquals(NotificationKind.TRANSFER_OUT, out.kind)
+        assertEquals(Money(500_00), out.amount)
         assertEquals("Олег К", out.merchant)
+        assertEquals(Money(7_500_00), out.balance)
 
         val incoming = parse("Входящий перевод 500 ₽ от Мама М.")!!
         assertEquals(NotificationKind.INCOME, incoming.kind)
+        assertEquals(Money(500_00), incoming.amount)
         assertEquals("Мама М", incoming.merchant)
     }
 
     @Test
     fun `cancelled purchase is a refund and codes are skipped`() {
-        assertEquals(NotificationKind.REFUND, parse("Отмена покупки 450 ₽. PYATEROCHKA")!!.kind)
+        val refund = parse("Отмена покупки 450 ₽. PYATEROCHKA")!!
+        assertEquals(NotificationKind.REFUND, refund.kind)
+        assertEquals(Money(450_00), refund.amount)
+        assertEquals("PYATEROCHKA", refund.merchant)
         assertNull(parse("Код подтверждения: XXXX. Никому не сообщайте"))
     }
 }

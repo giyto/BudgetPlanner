@@ -5,7 +5,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
@@ -17,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.hznik.budget.CountingWidgetRefresher
@@ -31,6 +31,7 @@ import ru.hznik.budget.domain.reminders.NotificationSettings
 import ru.hznik.budget.domain.reminders.NotificationType
 import ru.hznik.budget.domain.reminders.WidgetRefresher
 import ru.hznik.budget.reminders.AppAction
+import ru.hznik.budget.reminders.AppActionBus
 import ru.hznik.budget.reminders.AppActionIntents
 import ru.hznik.budget.reminders.PendingAction
 import ru.hznik.budget.ui.lock.AuthResult
@@ -39,13 +40,9 @@ import ru.hznik.budget.ui.settings.NOTIFICATIONS_DENIED_TAG
 import ru.hznik.budget.ui.settings.notificationSwitchTag
 import javax.inject.Inject
 
-private fun FlowTestBase.tapNode(text: String) = rule.onNode(hasText(text) and hasClickAction()).performClick()
-
 /** Экран ввода операции: его заголовок — только название окна для TalkBack, поэтому ждём кнопку «Сохранить». */
 private fun FlowTestBase.waitForEditor() =
     rule.waitUntil(5_000) { rule.onAllNodes(hasText("Сохранить") and hasClickAction()).fetchSemanticsNodes().isNotEmpty() }
-
-private fun FlowTestBase.openSettingsScreen() = rule.onNode(hasContentDescription("Настройки") and hasClickAction()).performClick()
 
 /** Шаг онбординга «Подсказки вовремя» (spec onboarding, задача 5.1). */
 @HiltAndroidTest
@@ -58,20 +55,14 @@ class OnboardingNotificationsFlowTest : FlowTestBase() {
     @Test
     fun stepComesAfterAutoImportAndLeadsToProtection() {
         rule.onNodeWithText("Шаг 1 из 6").assertIsDisplayed()
-        tapNode("Дальше")
-        typeAmount("18000")
-        tapNode("Выберите число")
-        tapNode("25")
-        tapNode("Дальше")
-        tapNode("Пропустить")
-        tapNode("Вводить вручную")
+        walkOnboardingPastAutoImport()
 
         rule.onNodeWithText("Шаг 5 из 6").assertIsDisplayed()
         rule.onNodeWithText("Подсказки вовремя").assertIsDisplayed()
         rule.onNode(hasText("Разрешить уведомления") and hasClickAction()).assertIsDisplayed()
         rule.assertTouchTargets()
 
-        tapNode("Не сейчас")
+        tapText("Не сейчас")
         rule.onNodeWithText("Шаг 6 из 6").assertIsDisplayed()
         rule.onNodeWithText("Защитить вход?").assertIsDisplayed()
     }
@@ -85,7 +76,7 @@ class NotificationsSettingsFlowTest : FlowTestBase() {
     @Test
     fun switchesTurnTypesOffAndOn() {
         waitForHero("Можно потратить сегодня")
-        openSettingsScreen()
+        openSettings()
         val overspend = rule.onNodeWithTag(notificationSwitchTag(NotificationType.OVERSPEND))
         overspend.performScrollTo().assertIsOn()
         rule.onNodeWithTag(NOTIFICATIONS_DENIED_TAG).assertDoesNotExist()
@@ -115,7 +106,7 @@ class NotificationsDeniedFlowTest : FlowTestBase() {
     @Test
     fun deniedRowWithAllowButton() {
         waitForHero("Можно потратить сегодня")
-        openSettingsScreen()
+        openSettings()
         rule.onNodeWithTag(NOTIFICATIONS_DENIED_TAG).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("Уведомления запрещены в системе").assertIsDisplayed()
         rule.onNode(hasText("Разрешить") and hasClickAction()).assertIsDisplayed()
@@ -160,10 +151,22 @@ private fun FlowTestBase.send(intent: Intent) = rule.runOnUiThread { rule.activi
 /** Переходы из виджета и уведомлений (design.md, решение 6; задача 3.3). */
 @HiltAndroidTest
 class AppActionFlowTest : FlowTestBase() {
+    @Inject lateinit var actions: AppActionBus
+
+    /**
+     * Передаёт [intent] активности и в том же проходе главного потока читает отложенный переход. Навигация снимает его
+     * с шины в своей корутине уже после этого прохода, поэтому `null` здесь значит, что переход не был принят вовсе.
+     */
+    private fun sendAndReadPending(intent: Intent): PendingAction? = rule.runOnUiThread {
+        rule.activity.handleAction(intent)
+        actions.pending.value
+    }
+
     @Test
     fun addExpenseActionOpensEditor() {
         waitForHero("Можно потратить сегодня")
-        send(AppActionIntents.intent(rule.activity, PendingAction(AppAction.ADD_EXPENSE)))
+        // Принятый переход виден на шине: так проверка `null` в тестах ниже не может пройти впустую.
+        assertEquals(PendingAction(AppAction.ADD_EXPENSE), sendAndReadPending(AppActionIntents.intent(rule.activity, PendingAction(AppAction.ADD_EXPENSE))))
         waitForEditor()
     }
 
@@ -179,7 +182,7 @@ class AppActionFlowTest : FlowTestBase() {
         waitForHero("Можно потратить сегодня")
         val fromHistory = AppActionIntents.intent(rule.activity, PendingAction(AppAction.ADD_EXPENSE))
             .addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY)
-        send(fromHistory)
+        assertNull(sendAndReadPending(fromHistory))
         rule.waitForIdle()
         rule.onNode(hasText("Сохранить") and hasClickAction()).assertDoesNotExist()
     }
@@ -189,9 +192,7 @@ class AppActionFlowTest : FlowTestBase() {
         waitForHero("Можно потратить сегодня")
         val direct = Intent(AppActionIntents.intent(rule.activity, PendingAction(AppAction.ADD_EXPENSE)))
             .setClass(rule.activity, MainActivity::class.java)
-        send(direct)
-        rule.waitForIdle()
-        Thread.sleep(500)
+        assertNull(sendAndReadPending(direct))
         rule.waitForIdle()
         rule.onNode(hasText("Сохранить") and hasClickAction()).assertDoesNotExist()
         waitForHero("Можно потратить сегодня")
@@ -215,7 +216,7 @@ class AppActionLockedFlowTest : FlowTestBase() {
         rule.onNode(hasText("Сохранить") and hasClickAction()).assertDoesNotExist()
 
         TestAuth.result = AuthResult.Success
-        tapNode("Разблокировать")
+        tapText("Разблокировать")
         waitForEditor()
     }
 }
@@ -229,14 +230,8 @@ class AppActionAfterOnboardingFlowTest : FlowTestBase() {
 
     @Test
     fun addExpenseWorksRightAfterOnboarding() {
-        tapNode("Дальше")
-        typeAmount("18000")
-        tapNode("Выберите число")
-        tapNode("25")
-        tapNode("Дальше")
-        tapNode("Пропустить")
-        tapNode("Вводить вручную")
-        tapNode("Не сейчас")
+        walkOnboardingPastAutoImport()
+        tapText("Не сейчас")
         waitForHero("Можно потратить сегодня")
 
         send(AppActionIntents.intent(rule.activity, PendingAction(AppAction.ADD_EXPENSE)))

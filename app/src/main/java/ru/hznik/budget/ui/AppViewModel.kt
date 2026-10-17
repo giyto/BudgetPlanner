@@ -65,7 +65,7 @@ class AppViewModel @Inject constructor(
     fun undo() {
         val event = _pendingUndo.value ?: return
         _pendingUndo.value = null
-        viewModelScope.launch { restore(event.token) }
+        launchSave { restore(event.token) }
     }
 
     /** Отказ от отмены: истёк срок или сообщение смахнули. */

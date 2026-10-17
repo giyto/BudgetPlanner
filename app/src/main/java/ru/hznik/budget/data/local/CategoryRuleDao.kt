@@ -6,6 +6,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import androidx.room.OnConflictStrategy
 
 /** Правила категорий (design.md add-auto-categorization, решение 2). */
 @Dao
@@ -28,6 +29,10 @@ interface CategoryRuleDao {
 
     @Insert
     suspend fun insert(rule: CategoryRuleEntity): Long
+
+    /** Возврат удалённого правила: если такой магазин уже появился снова, оставляется новое правило. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(rule: CategoryRuleEntity): Long
 
     @Update
     suspend fun update(rule: CategoryRuleEntity)

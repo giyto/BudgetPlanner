@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,9 +38,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -75,10 +72,13 @@ import ru.hznik.budget.ui.AppViewModel
 import ru.hznik.budget.ui.components.CategoryPickerSheet
 import ru.hznik.budget.ui.components.CategoryTile
 import ru.hznik.budget.ui.components.NavigationHeader
+import ru.hznik.budget.ui.components.SectionHeader
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.settings.SettingsItem
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.TextRoles
 import javax.inject.Inject
+import ru.hznik.budget.ui.launchSave
 
 const val RULES_LIST_TAG = "rules_list"
 
@@ -107,7 +107,7 @@ class CategoryRulesViewModel @Inject constructor(
         RulesUiState(loaded = true, rules = rules, categories = cats.sortedBy { it.sortOrder })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RulesUiState())
 
-    fun change(rule: CategoryRule, categoryId: Long) = viewModelScope.launch { changeCategory(rule, categoryId) }
+    fun change(rule: CategoryRule, categoryId: Long) = launchSave { changeCategory(rule, categoryId) }
 
     private val _lastDeleted = MutableStateFlow<CategoryRule?>(null)
 
@@ -117,7 +117,7 @@ class CategoryRulesViewModel @Inject constructor(
 
     fun delete(rule: CategoryRule) {
         undoJob?.cancel()
-        undoJob = viewModelScope.launch {
+        undoJob = launchSave {
             _lastDeleted.value = deleteRule(rule)
             delay(AppViewModel.UNDO_WINDOW_MS)
             _lastDeleted.value = null
@@ -128,8 +128,8 @@ class CategoryRulesViewModel @Inject constructor(
         val rule = _lastDeleted.value ?: return
         undoJob?.cancel()
         _lastDeleted.value = null
-        // Пока шла отмена, мог появиться такой же магазин: тогда возвращать нечего.
-        viewModelScope.launch { runCatching { restoreRule(rule) } }
+        // Пока шла отмена, мог появиться такой же магазин: тогда правило не возвращается (RestoreRule).
+        launchSave { restoreRule(rule) }
     }
 }
 
@@ -174,7 +174,7 @@ fun CategoryRulesRoute(onBack: () -> Unit, viewModel: CategoryRulesViewModel = h
                 ruleGroup(R.string.rules_expenses, state.expenses, onOpen = { editingId = it.id }, onDelete = onDelete)
                 ruleGroup(R.string.rules_incomes, state.incomes, onOpen = { editingId = it.id }, onDelete = onDelete)
                 if (state.rules.isNotEmpty()) {
-                    item { Text(stringResource(R.string.rules_note), fontSize = 13.sp, color = colors.muted, modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp)) }
+                    item { Text(stringResource(R.string.rules_note), style = TextRoles.hint, color = colors.muted, modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp)) }
                 }
             }
         }
@@ -203,12 +203,8 @@ private fun LazyListScope.ruleGroup(
     onDelete: (CategoryRule) -> Unit,
 ) {
     if (rules.isEmpty()) return
-    item(key = "header_$title") {
-        Text(
-            stringResource(title), fontSize = 14.sp, color = BudgetTheme.colors.muted,
-            modifier = Modifier.padding(start = 22.dp, top = 14.dp, bottom = 8.dp).semantics { heading() },
-        )
-    }
+    // Вместе с отступом подписи «N правил» над списком первый заголовок отстоит на 18 dp, как в макете SettingsRules.
+    item(key = "header_$title") { SectionHeader(stringResource(title), Modifier.padding(top = 14.dp)) }
     item(key = "group_$title") {
         Column(modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(BudgetTheme.colors.card, RoundedCornerShape(22.dp)).padding(horizontal = 16.dp, vertical = 4.dp)) {
             rules.forEachIndexed { index, item ->

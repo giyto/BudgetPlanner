@@ -42,6 +42,16 @@ class AlfaParserTest {
         assertEquals(Money(1_249_00), p.amount)
         assertEquals(Money(8_000_00), p.balance)
         assertEquals("5678", p.cardLast4)
+        assertEquals("OZON", p.merchant)
+    }
+
+    /** Текст из сценария «Списание переводом» (spec notification-import): в заголовке знак «−» (U+2212), а не дефис. */
+    @Test
+    fun `spec sample with minus sign in title`() {
+        val p = parse("${Char(0x2212)}5 000 ₽", "Списание со счета 4*1234; Перевод на сумму 5 000,00 RUB; Получатель: 796*1234")!!
+        assertEquals(NotificationKind.TRANSFER_OUT, p.kind)
+        assertEquals(Money(5_000_00), p.amount)
+        assertEquals("1234", p.cardLast4)
     }
 
     @Test

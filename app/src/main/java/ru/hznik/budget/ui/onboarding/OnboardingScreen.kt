@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -33,8 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -76,9 +73,12 @@ import ru.hznik.budget.ui.components.AmountInput
 import ru.hznik.budget.ui.components.AmountKey
 import ru.hznik.budget.ui.components.AmountKeypad
 import ru.hznik.budget.ui.components.BudgetDatePicker
+import ru.hznik.budget.ui.components.ButtonSize
 import ru.hznik.budget.ui.components.ChoiceChip
 import ru.hznik.budget.ui.components.PaymentForm
 import ru.hznik.budget.ui.components.PaymentFormState
+import ru.hznik.budget.ui.components.PointsCard
+import ru.hznik.budget.ui.components.PrimaryButton
 import ru.hznik.budget.ui.components.SegmentedChoice
 import ru.hznik.budget.ui.components.formatDayMonth
 import ru.hznik.budget.ui.format.MoneyFormat
@@ -203,19 +203,12 @@ fun OnboardingScreen(
         } else if (state.step == OnboardingStep.PROTECTION) {
             ProtectionButtons(protection, busy = state.busy, onEnabled = onProtectionEnabled, onLater = onNext)
         } else {
-            Button(
+            PrimaryButton(
+                text = stringResource(if (state.step == OnboardingStep.PAYMENTS) R.string.onboarding_done else R.string.onboarding_next),
                 onClick = onNext,
+                modifier = Modifier.padding(16.dp),
                 enabled = state.canContinue,
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-                modifier = Modifier.padding(16.dp).fillMaxWidth().height(56.dp),
-            ) {
-                Text(
-                    stringResource(if (state.step == OnboardingStep.PAYMENTS) R.string.onboarding_done else R.string.onboarding_next),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
+            )
         }
     }
 
@@ -258,23 +251,14 @@ private fun IntroStep() {
     val colors = BudgetTheme.colors
     StepTitle(stringResource(R.string.onboarding_intro_title))
     Text(stringResource(R.string.onboarding_intro_text), style = MaterialTheme.typography.bodyLarge, color = colors.sub)
-    Column(
-        modifier = Modifier
-            .padding(top = 18.dp)
-            .fillMaxWidth()
-            .background(colors.card, RoundedCornerShape(22.dp))
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-    ) {
-        listOf(R.string.onboarding_intro_point_bank, R.string.onboarding_intro_point_phone, R.string.onboarding_intro_point_input).forEach { text ->
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 52.dp).padding(vertical = 8.dp)) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp).background(colors.positiveSoft, RoundedCornerShape(10.dp))) {
-                    Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = colors.positive, modifier = Modifier.size(18.dp))
-                }
-                Spacer(Modifier.width(12.dp))
-                Text(stringResource(text), fontSize = 14.sp, color = colors.ink)
-            }
-        }
-    }
+    PointsCard(
+        listOf(R.string.onboarding_intro_point_bank, R.string.onboarding_intro_point_phone, R.string.onboarding_intro_point_input)
+            .map { R.drawable.ic_check to stringResource(it) },
+        tileContainer = colors.positiveSoft,
+        tileContent = colors.positive,
+        modifier = Modifier.padding(top = 18.dp),
+        dividers = false,
+    )
 }
 
 @Composable
@@ -343,18 +327,22 @@ private fun DayOfMonthDialog(selected: Int?, onDismiss: () -> Unit, onSelect: (I
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.onboarding_day_dialog)) },
         text = {
-            LazyVerticalGrid(columns = GridCells.Fixed(7), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            // Столбцов столько, сколько помещается кругов по 44 dp: семь со всеми промежутками шире диалога на телефоне,
+            // и в сетке на 7 столбцов круги сжимались бы в овалы уже 44 dp.
+            LazyVerticalGrid(columns = GridCells.Adaptive(44.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 items((1..31).toList()) { day ->
                     val isSelected = day == selected
-                    Surface(
-                        selected = isSelected,
-                        onClick = { onSelect(day) },
-                        shape = CircleShape,
-                        color = if (isSelected) colors.primary else colors.card,
-                        contentColor = if (isSelected) colors.onPrimary else colors.ink,
-                        modifier = Modifier.size(44.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) { Text(day.toString(), fontSize = 15.sp) }
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            selected = isSelected,
+                            onClick = { onSelect(day) },
+                            shape = CircleShape,
+                            color = if (isSelected) colors.primary else colors.card,
+                            contentColor = if (isSelected) colors.onPrimary else colors.ink,
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) { Text(day.toString(), fontSize = 15.sp) }
+                        }
                     }
                 }
             }
@@ -407,14 +395,7 @@ private fun PaymentSheet(
         Column(modifier = Modifier.padding(horizontal = 16.dp).navigationBarsPadding().imePadding().padding(bottom = 16.dp)) {
             Text(stringResource(R.string.payment_new_title), style = MaterialTheme.typography.titleLarge, color = colors.ink, modifier = Modifier.padding(bottom = 12.dp))
             PaymentForm(formState, state.categories, state.defaultCategoryId, onChange)
-            Button(
-                onClick = onAdd,
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-                modifier = Modifier.padding(top = 16.dp).fillMaxWidth().height(52.dp),
-            ) {
-                Text(stringResource(R.string.payment_add), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            }
+            PrimaryButton(stringResource(R.string.payment_add), onClick = onAdd, modifier = Modifier.padding(top = 16.dp), size = ButtonSize.Medium)
         }
     }
 }

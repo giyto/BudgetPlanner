@@ -25,8 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -64,6 +62,7 @@ import ru.hznik.budget.domain.model.CategoryKind
 import ru.hznik.budget.ui.components.CategoryIcons
 import ru.hznik.budget.ui.components.CategoryTile
 import ru.hznik.budget.ui.components.NavigationHeader
+import ru.hznik.budget.ui.components.PrimaryButton
 import ru.hznik.budget.ui.theme.BudgetTheme
 import ru.hznik.budget.ui.theme.CategoryColorKeys
 import ru.hznik.budget.ui.theme.categoryColors
@@ -92,14 +91,7 @@ fun CategoriesRoute(
                 CategoryRow(category, onClick = { onEdit(category) }, onToggleHidden = { viewModel.setHidden(category.id, !category.hidden) })
             }
         }
-        Button(
-            onClick = { onAdd(kind) },
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-            modifier = Modifier.padding(16.dp).fillMaxWidth().height(56.dp),
-        ) {
-            Text(stringResource(R.string.categories_add), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        }
+        PrimaryButton(stringResource(R.string.categories_add), onClick = { onAdd(kind) }, modifier = Modifier.padding(16.dp))
     }
 }
 
@@ -145,14 +137,12 @@ fun CategoryEditorRoute(onClose: () -> Unit, viewModel: CategoryEditorViewModel 
     val colors = BudgetTheme.colors
 
     Column(modifier = Modifier.fillMaxSize().background(colors.background).imePadding()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            NavigationHeader(
-                title = stringResource(if (state.isEdit) R.string.category_edit_title else R.string.category_new_title),
-                navigationIcon = R.drawable.ic_back,
-                navigationLabel = stringResource(R.string.action_back),
-                onNavigate = onClose,
-                modifier = Modifier.weight(1f),
-            )
+        NavigationHeader(
+            title = stringResource(if (state.isEdit) R.string.category_edit_title else R.string.category_new_title),
+            navigationIcon = R.drawable.ic_back,
+            navigationLabel = stringResource(R.string.action_back),
+            onNavigate = onClose,
+        ) {
             if (state.isEdit) {
                 IconButton(onClick = viewModel::delete, modifier = Modifier.padding(end = 4.dp)) {
                     Icon(painterResource(R.drawable.ic_delete), stringResource(R.string.category_delete), tint = colors.ink)
@@ -194,15 +184,7 @@ fun CategoryEditorRoute(onClose: () -> Unit, viewModel: CategoryEditorViewModel 
             SectionTitle(stringResource(R.string.category_color))
             ColorPicker(state.color, viewModel::onColorSelected)
         }
-        Button(
-            onClick = viewModel::save,
-            enabled = state.loaded,
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-            modifier = Modifier.padding(16.dp).fillMaxWidth().height(56.dp),
-        ) {
-            Text(stringResource(R.string.action_save), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        }
+        PrimaryButton(stringResource(R.string.action_save), onClick = viewModel::save, modifier = Modifier.padding(16.dp), enabled = state.loaded)
     }
 
     if (state.showMustHide) {
@@ -248,6 +230,10 @@ private fun IconPicker(selected: String, color: String, onSelect: (String) -> Un
     }
 }
 
+/**
+ * Палитра цвета категории: два ряда по четыре круга 44 dp. Восемь кругов в один ряд на телефоне не помещаются:
+ * при делении ширины поровну они сжимались до 34–40 dp и выглядели овалами.
+ */
 @Composable
 private fun ColorPicker(selected: String, onSelect: (String) -> Unit) {
     val colors = BudgetTheme.colors
@@ -257,24 +243,27 @@ private fun ColorPicker(selected: String, onSelect: (String) -> Unit) {
         "pink" to R.string.category_color_pink, "teal" to R.string.category_color_teal,
         "amber" to R.string.category_color_amber, "gray" to R.string.category_color_gray,
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        CategoryColorKeys.forEach { key ->
-            val isSelected = key == selected
-            val label = stringResource(names.getValue(key))
-            Surface(
-                selected = isSelected,
-                onClick = { onSelect(key) },
-                shape = CircleShape,
-                color = colors.categoryColors(key).content,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 44.dp)
-                    .border(if (isSelected) 3.dp else 0.dp, if (isSelected) colors.ink else colors.background, CircleShape)
-                    .semantics { contentDescription = label },
-            ) {
-                if (isSelected) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = colors.background, modifier = Modifier.size(20.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        CategoryColorKeys.chunked(4).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                row.forEach { key ->
+                    val isSelected = key == selected
+                    val label = stringResource(names.getValue(key))
+                    Surface(
+                        selected = isSelected,
+                        onClick = { onSelect(key) },
+                        shape = CircleShape,
+                        color = colors.categoryColors(key).content,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .border(if (isSelected) 3.dp else 0.dp, if (isSelected) colors.ink else colors.background, CircleShape)
+                            .semantics { contentDescription = label },
+                    ) {
+                        if (isSelected) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = colors.background, modifier = Modifier.size(20.dp))
+                            }
+                        }
                     }
                 }
             }

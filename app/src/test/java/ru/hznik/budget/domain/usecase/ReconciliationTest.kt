@@ -333,6 +333,17 @@ class ReconciliationTest {
     }
 
     @Test
+    fun `late transfer inside the bank does not move the anchor back in time`() = runTest {
+        // Перевод между своими счетами, о котором уведомление пришло позже следующей покупки.
+        repo.save(ReconState(alfa, rub(9_300), now))
+        reconcile(alfa, rub(12_750), now.minus(Duration.ofMinutes(5)), rebase = true)
+        val state = repo.get(alfa)!!
+        assertEquals(rub(9_300), state.anchorKopecks)
+        assertEquals(now, state.anchorAt)
+        assertNull(state.pending)
+    }
+
+    @Test
     fun `turning auto back on also clears mismatches of manual reconciliation`() = runTest {
         settings.state.value = false
         repo.save(ReconState(ReconAccount.MANUAL, rub(15_000), now.minus(Duration.ofHours(2)), Mismatch(rub(12_500), rub(13_000), now)))

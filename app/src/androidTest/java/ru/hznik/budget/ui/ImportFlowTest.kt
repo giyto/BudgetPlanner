@@ -21,12 +21,10 @@ import ru.hznik.budget.TEST_ZONE
 import ru.hznik.budget.TestStart
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.notifications.BankNotification
-import ru.hznik.budget.notifications.NotificationIntake
 import ru.hznik.budget.notifications.toBankNotification
 import ru.hznik.budget.ui.drafts.DRAFTS_LIST_TAG
 import ru.hznik.budget.ui.home.DRAFTS_BANNER_TAG
 import ru.hznik.budget.ui.home.INCOME_SUGGESTION_TAG
-import javax.inject.Inject
 
 /**
  * Уведомление Сбера → черновик → «можно сегодня» → подтверждение (spec notification-import, drafts, задачи 7.4 и 8.5).
@@ -34,12 +32,6 @@ import javax.inject.Inject
  */
 @HiltAndroidTest
 class ImportFlowTest : FlowTestBase() {
-    @Inject lateinit var intake: NotificationIntake
-
-    private fun sber(text: String, key: String = "0|ru.sberbankmobile|1|null|10001") = runBlocking {
-        intake.accept(BankNotification("ru.sberbankmobile", key, TestStart.now.atZone(TEST_ZONE).toInstant(), "СберБанк", text))
-    }
-
     @Test
     fun purchaseBecomesDraftLowersLimitAndIsConfirmed() {
         waitForHero("Можно потратить сегодня 1500 рублей")
@@ -150,9 +142,11 @@ class ImportFlowTest : FlowTestBase() {
     @Test
     fun duplicateDeliveryKeepsOneOperation() {
         waitForHero("Можно потратить сегодня 1500 рублей")
-        sber("Покупка 450 ₽ Пятёрочка")
-        sber("Покупка 450 ₽ Пятёрочка")
-        sber("Покупка 450 ₽ ПЯТЁРОЧКА", key = "0|ru.sberbankmobile|2|null|10001")
+        // Одно уведомление доставлено дважды с тем же ключом, а третье — другое уведомление о той же покупке.
+        val key = nextSberKey()
+        sber("Покупка 450 ₽ Пятёрочка", key = key)
+        sber("Покупка 450 ₽ Пятёрочка", key = key)
+        sber("Покупка 450 ₽ ПЯТЁРОЧКА")
         waitForHero("Можно потратить сегодня 1050 рублей")
         assertEquals(1, allOperations().size)
     }

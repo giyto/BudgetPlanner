@@ -14,21 +14,13 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,10 +43,15 @@ import ru.hznik.budget.domain.notifications.SampleSettings
 import ru.hznik.budget.domain.notifications.SupportedBanks
 import ru.hznik.budget.notifications.NotificationIntake
 import ru.hznik.budget.ui.components.NavigationHeader
+import ru.hznik.budget.ui.components.PrimaryButton
+import ru.hznik.budget.ui.components.SecondaryButton
+import ru.hznik.budget.ui.components.SettingsSwitchRow
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.TextRoles
 import java.time.Clock
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import ru.hznik.budget.ui.launchSave
 
 @HiltViewModel
 class NotificationSamplesViewModel @Inject constructor(
@@ -79,10 +76,10 @@ class NotificationSamplesViewModel @Inject constructor(
         viewModelScope.launch { repository.deleteSamplesBefore(clock.instant().minus(NotificationIntake.SAMPLE_LIFETIME)) }
     }
 
-    fun setEnabled(enabled: Boolean) = viewModelScope.launch { settings.setEnabled(enabled) }
+    fun setEnabled(enabled: Boolean) = launchSave { settings.setEnabled(enabled) }
 
     /** Удаляет образцы из базы и файл в «Загрузках». */
-    fun deleteAll() = viewModelScope.launch {
+    fun deleteAll() = launchSave {
         repository.deleteAllSamples()
         runCatching { file.delete() }
         _message.value = R.string.samples_deleted
@@ -121,25 +118,13 @@ fun NotificationSamplesItems(onOpen: () -> Unit, viewModel: NotificationSamplesV
     Column(
         modifier = Modifier.fillMaxWidth().background(colors.card, RoundedCornerShape(22.dp)).padding(horizontal = 18.dp, vertical = 4.dp),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 64.dp)
-                .toggleable(value = enabled, role = Role.Switch, onValueChange = viewModel::setEnabled)
-                .padding(vertical = 10.dp),
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.samples_toggle), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
-                Text(stringResource(R.string.samples_toggle_hint), fontSize = 13.sp, lineHeight = 18.sp, color = colors.muted)
-            }
-            Spacer(Modifier.padding(start = 12.dp))
-            Switch(
-                checked = enabled,
-                onCheckedChange = null,
-                colors = SwitchDefaults.colors(checkedTrackColor = colors.primary, checkedThumbColor = colors.onPrimary),
-            )
-        }
+        SettingsSwitchRow(
+            title = stringResource(R.string.samples_toggle),
+            subtitle = stringResource(R.string.samples_toggle_hint),
+            checked = enabled,
+            onCheckedChange = viewModel::setEnabled,
+            verticalPadding = 10.dp,
+        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -147,7 +132,7 @@ fun NotificationSamplesItems(onOpen: () -> Unit, viewModel: NotificationSamplesV
                 .heightIn(min = 56.dp)
                 .clickable(onClick = onOpen),
         ) {
-            Text(stringResource(R.string.samples_open), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.samples_open), style = TextRoles.itemTitle, color = colors.ink, modifier = Modifier.weight(1f))
             Text(samples.size.toString(), fontSize = 15.sp, color = colors.muted)
         }
     }
@@ -177,25 +162,10 @@ fun NotificationSamplesRoute(onBack: () -> Unit, viewModel: NotificationSamplesV
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(16.dp).navigationBarsPadding()) {
-            message?.let { Text(stringResource(it), fontSize = 13.sp, lineHeight = 18.sp, color = colors.sub) }
-            Button(
-                onClick = { viewModel.saveToFile(samples) },
-                enabled = samples.isNotEmpty(),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-            ) { Text(stringResource(R.string.samples_save), fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
-            OutlinedButton(
-                onClick = { viewModel.copy(samples) },
-                enabled = samples.isNotEmpty(),
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-            ) { Text(stringResource(R.string.samples_copy), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink) }
-            OutlinedButton(
-                onClick = viewModel::deleteAll,
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-            ) { Text(stringResource(R.string.samples_delete), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink) }
+            message?.let { Text(stringResource(it), style = TextRoles.hint, color = colors.sub) }
+            PrimaryButton(stringResource(R.string.samples_save), onClick = { viewModel.saveToFile(samples) }, enabled = samples.isNotEmpty())
+            SecondaryButton(stringResource(R.string.samples_copy), onClick = { viewModel.copy(samples) }, enabled = samples.isNotEmpty())
+            SecondaryButton(stringResource(R.string.samples_delete), onClick = viewModel::deleteAll)
         }
     }
 }

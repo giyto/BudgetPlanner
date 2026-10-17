@@ -18,7 +18,6 @@
     <string name="action_reset">Сбросить</string>
 
     <string name="home_title">Бюджет</string>
-    <string name="home_placeholder">Здесь будет сумма «можно сегодня» и прогресс периода.</string>
     <string name="stats_title">Статистика</string>
     <string name="stats_mode_period">Период</string>
     <string name="stats_mode_month">Месяц</string>
@@ -90,6 +89,7 @@
     <string name="operations_refund">Возврат</string>
     <string name="operations_open">Изменить</string>
     <string name="operation_deleted">Операция удалена</string>
+    <string name="save_failed">Не удалось сохранить. Попробуйте ещё раз</string>
 
     <!-- Категории -->
     <string name="categories_title">Категории</string>
@@ -364,7 +364,6 @@
     <string name="reconcile_manual_submit">Сверить</string>
     <string name="reconcile_account_manual">Счёт без автоимпорта</string>
     <string name="reconcile_account_manual_sub">операции, введённые вручную</string>
-    <string name="reconcile_adjustment">Корректировка</string>
     <string name="period_reconcile_header">Сверка с банком</string>
     <string name="period_reconcile_last">Последняя сверка</string>
     <string name="period_reconcile_never">Сверок ещё не было</string>

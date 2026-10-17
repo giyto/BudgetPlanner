@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,10 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -56,7 +52,10 @@ import ru.hznik.budget.ui.autoimport.AutoImportStoppedBanner
 import ru.hznik.budget.ui.autoimport.AutoImportViewModel
 import ru.hznik.budget.ui.autoimport.RefreshOnResume
 import ru.hznik.budget.ui.autoimport.rememberStepOpener
+import ru.hznik.budget.ui.components.AddOperationFab
 import ru.hznik.budget.ui.components.AnimatedBanner
+import ru.hznik.budget.ui.components.ButtonSize
+import ru.hznik.budget.ui.components.PrimaryButton
 import ru.hznik.budget.ui.components.RollingAmount
 import ru.hznik.budget.ui.components.animateFloatSaved
 import ru.hznik.budget.ui.components.formatDayMonth
@@ -158,15 +157,7 @@ fun HomeScreen(
                 }
             }
         }
-        FloatingActionButton(
-            onClick = onAddOperation,
-            shape = RoundedCornerShape(20.dp),
-            containerColor = colors.primary,
-            contentColor = colors.onPrimary,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 20.dp).size(60.dp),
-        ) {
-            Icon(painterResource(R.drawable.ic_add), stringResource(R.string.action_add_operation), Modifier.size(26.dp))
-        }
+        AddOperationFab(onAddOperation, Modifier.align(Alignment.BottomEnd))
     }
 }
 
@@ -208,14 +199,7 @@ private fun IncomeDayBanner(onStartNewPeriod: () -> Unit) {
     ) {
         Text(stringResource(R.string.home_income_day), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
         Text(stringResource(R.string.home_income_day_text), fontSize = 13.sp, color = colors.muted)
-        Button(
-            onClick = onStartNewPeriod,
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-        ) {
-            Text(stringResource(R.string.home_start_new_period))
-        }
+        PrimaryButton(stringResource(R.string.home_start_new_period), onStartNewPeriod, size = ButtonSize.Compact)
     }
 }
 

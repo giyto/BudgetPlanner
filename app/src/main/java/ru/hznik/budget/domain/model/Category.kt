@@ -28,4 +28,13 @@ data class Category(
 /** Ключи категорий по умолчанию, на которые опирается логика. */
 object DefaultCategories {
     const val TRANSFERS = "transfers"
+
+    /** «Другое» среди трат: предварительная категория черновиков и корректировок. */
+    const val OTHER_EXPENSE = "other_expense"
+
+    /** «Другое» среди доходов. */
+    const val OTHER_INCOME = "other_income"
 }
+
+/** Категория по умолчанию с ключом [key] из списка или `null`. */
+fun List<Category>.byDefaultKey(key: String): Category? = firstOrNull { it.defaultKey == key }

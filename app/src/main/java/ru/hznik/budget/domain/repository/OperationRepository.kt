@@ -59,6 +59,12 @@ interface OperationRepository {
     /** Подтверждает категории черновиков одной транзакцией. */
     suspend fun confirmDrafts(confirmations: List<DraftConfirmation>)
 
+    /**
+     * Обновляет операцию и добавляет вторую ([counterpart], если есть) одной транзакцией: при сбое между записями
+     * данные второй стороны склеенного перевода не теряются.
+     */
+    suspend fun updateAndInsert(updated: Operation, counterpart: Operation?)
+
     /** Операция с тем же ключом уведомления уже есть. */
     suspend fun existsByNotificationKey(key: String): Boolean
 

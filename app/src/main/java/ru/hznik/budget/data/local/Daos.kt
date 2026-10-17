@@ -96,9 +96,6 @@ interface OperationDao {
     @Query("SELECT * FROM operations WHERE local_date >= :fromEpochDay AND local_date < :toEpochDay ORDER BY occurred_at")
     fun observeBetween(fromEpochDay: Long, toEpochDay: Long): Flow<List<OperationEntity>>
 
-    @Query("SELECT * FROM operations WHERE local_date >= :fromEpochDay AND local_date < :toEpochDay")
-    suspend fun getBetween(fromEpochDay: Long, toEpochDay: Long): List<OperationEntity>
-
     @Query(
         """
         SELECT o.*,
@@ -148,6 +145,12 @@ interface OperationDao {
     @Transaction
     suspend fun confirmDrafts(items: List<Triple<Long, Long, String>>) {
         items.forEach { (id, categoryId, type) -> confirmDraft(id, categoryId, type) }
+    }
+
+    @Transaction
+    suspend fun updateAndInsert(updated: OperationEntity, counterpart: OperationEntity?) {
+        update(updated)
+        counterpart?.let { insert(it) }
     }
 
     /** Ключ любой из сторон, в том числе второй стороны склеенного перевода себе. */

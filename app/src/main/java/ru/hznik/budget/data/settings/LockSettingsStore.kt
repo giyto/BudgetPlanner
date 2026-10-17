@@ -3,6 +3,7 @@ package ru.hznik.budget.data.settings
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
@@ -41,7 +42,13 @@ class DataStoreLockSettingsRepository @Inject constructor(
         dataStore.edit { it[HIDE_WIDGET_AMOUNT] = hide }
     }
 
-    private companion object {
+    internal companion object {
+        /**
+         * Настройки после повреждения файла: всё по умолчанию, но защита входа включена — сбой не должен снимать
+         * защиту. Без блокировки экрана телефона она выключится сама, с сообщением (AppRootViewModel).
+         */
+        fun afterCorruption(): Preferences = mutablePreferencesOf(ENABLED to true)
+
         val ENABLED = booleanPreferencesKey("lock_enabled")
         val TIMEOUT = stringPreferencesKey("lock_timeout")
         val HIDE_IN_RECENTS = booleanPreferencesKey("lock_hide_in_recents")

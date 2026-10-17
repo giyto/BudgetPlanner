@@ -17,6 +17,7 @@ import ru.hznik.budget.domain.ai.LlmError
 import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
+import ru.hznik.budget.common.runLogged
 
 /**
  * Вопросы к помощнику на уровне приложения (design.md add-ai-assistant, решение 7): ответ сохраняется в историю,
@@ -88,7 +89,7 @@ class ChatSession internal constructor(
 
     /** «Новый диалог»: история удаляется с телефона. */
     fun newDialog() {
-        scope.launch { chat.clear() }
+        scope.launch { runLogged(TAG, "Очистка истории не удалась") { chat.clear() } }
     }
 
     private fun start(): Boolean = _sending.compareAndSet(expect = false, update = true)
@@ -109,3 +110,5 @@ class ChatSession internal constructor(
         const val TOO_MANY_CALLS = "TOO_MANY_CALLS"
     }
 }
+
+private const val TAG = "ChatSession"

@@ -52,9 +52,14 @@ class StatsFlowTest : FlowTestBase() {
             .forEachIndexed { i, name -> insert(name, 700L - i * 100) }
         openStats()
         scrollToStats(described("Остальное: 22 процента, 600 рублей"))
-        // В списке сначала пять категорий, «Показать все (7)» открывает остальные.
-        rule.onAllNodes(described("Здоровье: 100 рублей")).assertCountEquals(0)
+        // В списке сначала пять категорий, «Показать все (7)» открывает остальные. Кнопка стоит сразу под списком
+        // в той же карточке, поэтому, когда она видна, пять строк на месте, а шестой и седьмой нет совсем, а не только на экране.
         scrollToStats(hasText("Показать все (7)"))
+        listOf("Продукты: 700", "Кафе и рестораны: 600", "Транспорт: 500", "Связь и интернет: 400", "Развлечения: 300").forEach { row ->
+            rule.onAllNodes(described("$row рублей") and hasClickAction()).assertCountEquals(1)
+        }
+        rule.onAllNodes(described("Одежда: 200 рублей")).assertCountEquals(0)
+        rule.onAllNodes(described("Здоровье: 100 рублей")).assertCountEquals(0)
         rule.onNode(hasText("Показать все (7)")).performClick()
         scrollToStats(described("Здоровье: 100 рублей, 4 процента"))
     }

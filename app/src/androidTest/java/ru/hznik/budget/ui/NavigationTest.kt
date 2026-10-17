@@ -7,7 +7,6 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.isSelectable
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -15,28 +14,15 @@ import androidx.compose.ui.test.performClick
 import androidx.lifecycle.Lifecycle
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Assert.assertEquals
-import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.hznik.budget.MainActivity
 
 /** Сценарии spec app-navigation и требования к размеру и подписям кнопок из app-theme. */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
-class NavigationTest {
-    @get:Rule(order = 0)
-    val hiltRule = HiltAndroidRule(this)
-
-    @get:Rule(order = 1)
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    @Before
-    fun waitForStart() = rule.waitForStartScreen()
-
+class NavigationTest : FlowTestBase() {
     private val tabs = listOf("Главная", "Операции", "Статистика", "Помощник")
     private val titles = mapOf("Главная" to "Бюджет", "Операции" to "Операции", "Статистика" to "Статистика", "Помощник" to "Помощник")
 

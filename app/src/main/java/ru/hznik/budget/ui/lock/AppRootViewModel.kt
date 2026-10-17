@@ -26,6 +26,7 @@ import ru.hznik.budget.domain.security.DatabaseState
 import ru.hznik.budget.domain.usecase.ObservePeriodStatus
 import ru.hznik.budget.notifications.NotificationIntake
 import javax.inject.Inject
+import ru.hznik.budget.common.runLogged
 
 /** Что показывает активность: фон, экран потери ключа, экран блокировки или приложение. */
 sealed interface RootState {
@@ -71,7 +72,7 @@ class AppRootViewModel @Inject constructor(
         viewModelScope.launch {
             databaseState.value = database.open()
             // Образцы старше суток удаляются и при запуске, даже если режим сбора выключен.
-            runCatching { notificationIntake.get().purgeExpired() }
+            runLogged(TAG, "Очистка образцов не удалась") { notificationIntake.get().purgeExpired() }
             watchStatusIfReady()
         }
         viewModelScope.launch {
@@ -113,14 +114,14 @@ class AppRootViewModel @Inject constructor(
     private fun watchStatusIfReady() {
         if (databaseState.value != DatabaseState.READY) {
             // Данные недоступны: виджет не должен показывать прежнюю сумму (spec home-widget).
-            viewModelScope.launch { runCatching { widget.refresh() } }
+            viewModelScope.launch { runLogged(TAG, "Обновление виджета не удалось") { widget.refresh() } }
             return
         }
         if (statusWatcher != null) return
         statusWatcher = viewModelScope.launch {
             combine(observeStatus.get()(), lockSettings.observe().map { it.widgetAmountHidden }.distinctUntilChanged()) { status, locked -> status to locked }
                 .conflate()
-                .collect { runCatching { checkNotifications.get().invoke() } }
+                .collect { runLogged(TAG, "Проверка уведомлений не удалась") { checkNotifications.get().invoke() } }
         }
     }
 
@@ -154,3 +155,5 @@ class TrackedAuthenticator(
         }
     }
 }
+
+private const val TAG = "AppRoot"

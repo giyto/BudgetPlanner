@@ -2,6 +2,7 @@ package ru.hznik.budget.data.settings
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -21,6 +22,10 @@ import ru.hznik.budget.domain.model.IncomeSchedule
 import ru.hznik.budget.domain.repository.IncomeScheduleRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.io.File
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 
 /** Расписание дохода в DataStore: это настройка, а не данные периода (design.md, решение 3). */
 class DataStoreIncomeScheduleRepository @Inject constructor(
@@ -63,8 +68,22 @@ object SettingsModule {
     @Provides
     @Singleton
     fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
-        PreferenceDataStoreFactory.create(produceFile = { context.preferencesDataStoreFile("settings") })
+        createSettingsDataStore { context.preferencesDataStoreFile("settings") }
 }
+
+/**
+ * DataStore `settings`. Повреждённый файл заменяется настройками по умолчанию с включённой защитой входа, иначе каждое
+ * чтение бросало бы исключение и приложение падало бы при каждом запуске. Общий для модуля и теста повреждённого файла.
+ */
+internal fun createSettingsDataStore(
+    scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    produceFile: () -> File,
+): DataStore<Preferences> =
+    PreferenceDataStoreFactory.create(
+        corruptionHandler = ReplaceFileCorruptionHandler { DataStoreLockSettingsRepository.afterCorruption() },
+        scope = scope,
+        produceFile = produceFile,
+    )
 
 @Module
 @InstallIn(SingletonComponent::class)

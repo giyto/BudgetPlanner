@@ -43,6 +43,7 @@ class SberParserTest {
     @Test
     fun `non-breaking spaces in amounts`() {
         val p = parse("Оплата 2 500 ₽ Кофейня Зерно")!!
+        assertEquals(NotificationKind.PURCHASE, p.kind)
         assertEquals(Money(2_500_00), p.amount)
         assertEquals("Кофейня Зерно", p.merchant)
         assertNull(p.balance)
@@ -71,8 +72,14 @@ class SberParserTest {
 
     @Test
     fun `refund and own transfer`() {
-        assertEquals(NotificationKind.REFUND, parse("Возврат покупки 450р PYATEROCHKA")!!.kind)
-        assertEquals(NotificationKind.OWN_TRANSFER, parse("Перевод между своими счетами 1 000 ₽")!!.kind)
+        val refund = parse("Возврат покупки 450р PYATEROCHKA")!!
+        assertEquals(NotificationKind.REFUND, refund.kind)
+        assertEquals(Money(450_00), refund.amount)
+        assertEquals("PYATEROCHKA", refund.merchant)
+
+        val own = parse("Перевод между своими счетами 1 000 ₽")!!
+        assertEquals(NotificationKind.OWN_TRANSFER, own.kind)
+        assertEquals(Money(1_000_00), own.amount)
     }
 
     @Test

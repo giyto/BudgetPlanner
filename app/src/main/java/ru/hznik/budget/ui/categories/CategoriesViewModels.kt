@@ -25,6 +25,7 @@ import ru.hznik.budget.domain.usecase.SaveCategory
 import ru.hznik.budget.domain.usecase.SetCategoryHidden
 import ru.hznik.budget.ui.theme.CategoryColorKeys
 import javax.inject.Inject
+import ru.hznik.budget.ui.launchSave
 
 @HiltViewModel
 class CategoriesViewModel @Inject constructor(
@@ -36,7 +37,7 @@ class CategoriesViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun setHidden(id: Long, hidden: Boolean) {
-        viewModelScope.launch { setHidden.invoke(id, hidden) }
+        launchSave { setHidden.invoke(id, hidden) }
     }
 }
 
@@ -95,7 +96,7 @@ class CategoryEditorViewModel @Inject constructor(
         // Проверка названия и вставка — два шага, второе нажатие наткнулось бы на уникальный индекс.
         if (!s.loaded || busy) return
         busy = true
-        viewModelScope.launch {
+        launchSave(onFailure = { busy = false }) {
             val result = saveCategory(
                 Category(id = categoryId ?: 0, kind = s.kind, name = s.name, icon = s.icon, color = s.color, sortOrder = 0, hidden = s.hidden),
             )
@@ -105,13 +106,14 @@ class CategoryEditorViewModel @Inject constructor(
                 CategorySaveResult.NameTooLong -> _state.update { it.copy(nameError = NameError.TOO_LONG) }
                 CategorySaveResult.DuplicateName -> _state.update { it.copy(nameError = NameError.DUPLICATE) }
             }
-            busy = false
+            // Экран закрывается — кнопка остаётся занятой до конца перехода; ошибка в названии — снова доступна.
+            busy = result is CategorySaveResult.Saved || result == CategorySaveResult.NotFound
         }
     }
 
     fun delete() {
         val id = categoryId ?: return
-        viewModelScope.launch {
+        launchSave {
             when (deleteCategory(id)) {
                 CategoryDeleteResult.DELETED, CategoryDeleteResult.NOT_FOUND -> _close.send(Unit)
                 CategoryDeleteResult.MUST_HIDE -> _state.update { it.copy(showMustHide = true) }
@@ -123,7 +125,7 @@ class CategoryEditorViewModel @Inject constructor(
 
     fun hideInstead() {
         val id = categoryId ?: return
-        viewModelScope.launch {
+        launchSave {
             setHidden(id, true)
             _close.send(Unit)
         }

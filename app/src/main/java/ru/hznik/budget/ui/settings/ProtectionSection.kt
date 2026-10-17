@@ -14,10 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,9 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,24 +46,28 @@ import ru.hznik.budget.domain.lock.LockSettings
 import ru.hznik.budget.domain.lock.LockSettingsRepository
 import ru.hznik.budget.domain.lock.LockTimeout
 import ru.hznik.budget.ui.components.SegmentedChoice
+import ru.hznik.budget.ui.components.SettingsSection
+import ru.hznik.budget.ui.components.SettingsSwitchRow
 import ru.hznik.budget.ui.lock.AuthAvailability
 import ru.hznik.budget.ui.lock.AuthResult
 import ru.hznik.budget.ui.lock.LocalDeviceAuthenticator
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.TextRoles
 import javax.inject.Inject
+import ru.hznik.budget.ui.launchSave
 
 @HiltViewModel
 class ProtectionViewModel @Inject constructor(private val repository: LockSettingsRepository) : ViewModel() {
     val settings: StateFlow<LockSettings?> = repository.observe().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** Вызывается только после успешной проверки разблокировкой. */
-    fun setEnabled(enabled: Boolean) = viewModelScope.launch { repository.setEnabled(enabled) }
+    fun setEnabled(enabled: Boolean) = launchSave { repository.setEnabled(enabled) }
 
-    fun setTimeout(timeout: LockTimeout) = viewModelScope.launch { repository.setTimeout(timeout) }
+    fun setTimeout(timeout: LockTimeout) = launchSave { repository.setTimeout(timeout) }
 
-    fun setHideInRecents(hide: Boolean) = viewModelScope.launch { repository.setHideInRecents(hide) }
+    fun setHideInRecents(hide: Boolean) = launchSave { repository.setHideInRecents(hide) }
 
-    fun setHideWidgetAmount(hide: Boolean) = viewModelScope.launch { repository.setHideWidgetAmount(hide) }
+    fun setHideWidgetAmount(hide: Boolean) = launchSave { repository.setHideWidgetAmount(hide) }
 }
 
 /** Раздел «Защита входа» в настройках (spec app-lock, design.md add-data-protection, решение 10). */
@@ -106,20 +104,15 @@ fun ProtectionSection(viewModel: ProtectionViewModel = hiltViewModel()) {
         }
     }
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(
-            stringResource(R.string.settings_group_protection),
-            fontSize = 14.sp,
-            color = colors.muted,
-            modifier = Modifier.padding(start = 6.dp, bottom = 8.dp).semantics { heading() },
-        )
-        Column(modifier = Modifier.fillMaxWidth().background(colors.card, RoundedCornerShape(22.dp)).padding(horizontal = 18.dp, vertical = 4.dp)) {
-            SwitchRow(
+    SettingsSection(stringResource(R.string.settings_group_protection)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(colors.card, RoundedCornerShape(22.dp)).padding(horizontal = 18.dp, vertical = 4.dp)) {
+            SettingsSwitchRow(
                 title = stringResource(R.string.protection_enabled),
-                hint = stringResource(R.string.protection_enabled_hint),
+                subtitle = stringResource(R.string.protection_enabled_hint),
                 checked = current.enabled,
-                enabled = canToggle,
                 onCheckedChange = toggle,
+                enabled = canToggle,
+                verticalPadding = 10.dp,
             )
             if (!current.enabled && availability != AuthAvailability.AVAILABLE) {
                 NoScreenLockHint(availability)
@@ -128,7 +121,7 @@ fun ProtectionSection(viewModel: ProtectionViewModel = hiltViewModel()) {
             if (current.enabled) {
                 Divider()
                 Column(modifier = Modifier.padding(top = 14.dp, bottom = 16.dp)) {
-                    Text(stringResource(R.string.protection_timeout), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
+                    Text(stringResource(R.string.protection_timeout), style = TextRoles.itemTitle, color = colors.ink)
                     Spacer(Modifier.height(10.dp))
                     SegmentedChoice(
                         options = listOf(
@@ -141,21 +134,21 @@ fun ProtectionSection(viewModel: ProtectionViewModel = hiltViewModel()) {
                     )
                 }
                 Divider()
-                SwitchRow(
+                SettingsSwitchRow(
                     title = stringResource(R.string.protection_hide_widget),
-                    hint = stringResource(R.string.protection_hide_widget_hint),
+                    subtitle = stringResource(R.string.protection_hide_widget_hint),
                     checked = current.hideWidgetAmount,
-                    enabled = true,
                     onCheckedChange = viewModel::setHideWidgetAmount,
+                    verticalPadding = 10.dp,
                 )
             }
             Divider()
-            SwitchRow(
+            SettingsSwitchRow(
                 title = stringResource(R.string.protection_hide),
-                hint = stringResource(R.string.protection_hide_hint),
+                subtitle = stringResource(R.string.protection_hide_hint),
                 checked = current.hideInRecents,
-                enabled = true,
                 onCheckedChange = viewModel::setHideInRecents,
+                verticalPadding = 10.dp,
             )
         }
     }
@@ -168,8 +161,7 @@ private fun NoScreenLockHint(availability: AuthAvailability) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 10.dp)) {
         Text(
             stringResource(if (availability == AuthAvailability.NO_SCREEN_LOCK) R.string.protection_no_screen_lock else R.string.protection_unavailable),
-            fontSize = 13.sp,
-            lineHeight = 18.sp,
+            style = TextRoles.hint,
             color = colors.muted,
             modifier = Modifier.weight(1f),
         )
@@ -188,37 +180,6 @@ fun android.app.Activity.openScreenLockSettings() {
         startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
     } catch (e: ActivityNotFoundException) {
         startActivity(Intent(Settings.ACTION_SETTINGS))
-    }
-}
-
-@Composable
-private fun SwitchRow(title: String, hint: String, checked: Boolean, enabled: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    val colors = BudgetTheme.colors
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange)
-            .padding(vertical = 10.dp),
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = if (enabled) colors.ink else colors.muted)
-            Text(hint, fontSize = 13.sp, lineHeight = 18.sp, color = colors.muted, modifier = Modifier.padding(top = 2.dp))
-        }
-        Spacer(Modifier.width(12.dp))
-        Switch(
-            checked = checked,
-            onCheckedChange = null,
-            enabled = enabled,
-            colors = SwitchDefaults.colors(
-                checkedTrackColor = colors.primary,
-                checkedThumbColor = colors.onPrimary,
-                uncheckedTrackColor = colors.chipBorder,
-                uncheckedThumbColor = if (colors.isDark) colors.muted else colors.card,
-                uncheckedBorderColor = colors.chipBorder,
-            ),
-        )
     }
 }
 

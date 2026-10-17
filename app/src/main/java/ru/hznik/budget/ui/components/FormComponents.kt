@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
@@ -68,8 +69,8 @@ private val DAY_MONTH = DateTimeFormatter.ofPattern("d MMMM", RU)
 fun formatDayMonth(date: LocalDate): String = DAY_MONTH.format(date)
 
 /**
- * Календарь Material 3 с ограничением дат: [isAllowed] решает, какие дни можно выбрать.
- * DatePicker работает с полуночью UTC выбранного дня.
+ * Календарь Material 3 с ограничением дат: [isAllowed] решает, какие дни можно выбрать, [isYearAllowed] — какие
+ * годы можно выбрать в списке лет. DatePicker работает с полуночью UTC выбранного дня.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,11 +79,13 @@ fun BudgetDatePicker(
     title: String,
     isAllowed: (LocalDate) -> Boolean,
     onDismiss: () -> Unit,
+    isYearAllowed: (Int) -> Boolean = { true },
     onSelect: (LocalDate) -> Unit,
 ) {
-    val selectable = remember(isAllowed) {
+    val selectable = remember(isAllowed, isYearAllowed) {
         object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long) = isAllowed(utcMillisToDate(utcTimeMillis))
+            override fun isSelectableYear(year: Int) = isYearAllowed(year)
         }
     }
     val state = rememberDatePickerState(
@@ -104,9 +107,12 @@ fun BudgetDatePicker(
 
 private fun utcMillisToDate(millis: Long): LocalDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
 
-/** Кнопка-чип с иконкой: дата, категория и подобный выбор (как чипы даты и комментария на экране ввода). */
+/**
+ * Кнопка-чип с иконкой: дата, категория и подобный выбор (как чипы даты и комментария на экране ввода).
+ * [horizontalPadding] — поля до краёв чипа: у чипов экрана ввода они уже, 10 dp.
+ */
 @Composable
-fun ChoiceChip(icon: Int?, text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ChoiceChip(icon: Int?, text: String, onClick: () -> Unit, modifier: Modifier = Modifier, horizontalPadding: Dp = 12.dp) {
     val colors = BudgetTheme.colors
     Surface(
         onClick = onClick,
@@ -116,7 +122,7 @@ fun ChoiceChip(icon: Int?, text: String, onClick: () -> Unit, modifier: Modifier
         border = BorderStroke(1.dp, colors.chipBorder),
         modifier = modifier.heightIn(min = 48.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.padding(horizontal = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.padding(horizontal = horizontalPadding)) {
             if (icon != null) {
                 Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
@@ -126,9 +132,22 @@ fun ChoiceChip(icon: Int?, text: String, onClick: () -> Unit, modifier: Modifier
     }
 }
 
-/** Переключатель из нескольких вариантов в стиле макета (как «Трата / Доход / Возврат»). */
+/**
+ * Переключатель из нескольких вариантов в стиле макета (как «Трата / Доход / Возврат»). [equalWidths] — варианты
+ * делят ширину поровну; `false` — каждый шириной по тексту с полями [segmentPadding], как переключатель типа
+ * операции в заголовке экрана ввода. [maxLines] — строк в подписи варианта.
+ */
 @Composable
-fun <T> SegmentedChoice(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
+fun <T> SegmentedChoice(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    equalWidths: Boolean = true,
+    segmentPadding: Dp = 10.dp,
+    segmentMinHeight: Dp = 44.dp,
+    maxLines: Int = 1,
+) {
     val colors = BudgetTheme.colors
     SlidingSelectionRow(
         selectedIndex = options.indexOfFirst { it.first == selected },
@@ -147,11 +166,11 @@ fun <T> SegmentedChoice(options: List<Pair<T, String>>, selected: T, onSelect: (
                 color = Color.Transparent,
                 contentColor = colors.ink,
                 modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 44.dp),
+                    .then(if (equalWidths) Modifier.weight(1f) else Modifier)
+                    .heightIn(min = segmentMinHeight),
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = segment(index).padding(horizontal = 10.dp)) {
-                    Text(label, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                Box(contentAlignment = Alignment.Center, modifier = segment(index).padding(horizontal = segmentPadding)) {
+                    Text(label, style = MaterialTheme.typography.titleSmall, maxLines = maxLines)
                 }
             }
         }
@@ -281,20 +300,29 @@ fun CategoryPickerSheet(
                 }
             }
             items(categories, key = { it.id }) { category ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 52.dp)
-                        .clickable { onSelect(category.id) }
-                        .padding(horizontal = 20.dp),
-                ) {
-                    CategoryTile(category, size = 32.dp)
-                    Spacer(Modifier.width(12.dp))
-                    Text(category.name, fontSize = 15.sp, color = colors.ink, modifier = Modifier.weight(1f))
-                    if (category.id == selectedId) Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = colors.primaryText)
-                }
+                CategorySheetRow(category.name, selected = category.id == selectedId, onClick = { onSelect(category.id) }, category = category)
             }
         }
+    }
+}
+
+/** Строка списка категорий в нижнем листе: плитка категории (если передана), название и галочка у выбранной. */
+@Composable
+fun CategorySheetRow(text: String, selected: Boolean, onClick: () -> Unit, category: Category? = null) {
+    val colors = BudgetTheme.colors
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp),
+    ) {
+        if (category != null) {
+            CategoryTile(category, size = 32.dp)
+            Spacer(Modifier.width(12.dp))
+        }
+        Text(text, fontSize = 15.sp, color = colors.ink, modifier = Modifier.weight(1f))
+        if (selected) Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = colors.primaryText)
     }
 }

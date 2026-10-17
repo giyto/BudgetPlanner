@@ -120,4 +120,16 @@ class CategoryRuleDatabaseTest {
         repo.restore(rule)
         assertEquals(rule, repo.find("ozon", CategoryKind.EXPENSE))
     }
+
+    @Test
+    fun restoreKeepsNewerRuleOfTheSameStore() = runTest {
+        repo.confirmAndRemember(emptyList(), listOf(CategoryRule(merchantKey = "ozon", kind = CategoryKind.EXPENSE, categoryId = categoryId("clothes"), merchantDisplay = "Ozon")))
+        val old = repo.find("ozon", CategoryKind.EXPENSE)!!
+        repo.delete(old.id)
+        // Пока шла отмена, тот же магазин запомнили снова — с другой категорией.
+        repo.confirmAndRemember(emptyList(), listOf(CategoryRule(merchantKey = "ozon", kind = CategoryKind.EXPENSE, categoryId = categoryId("products"), merchantDisplay = "OZON")))
+        repo.restore(old)
+        assertEquals(1, count("category_rules"))
+        assertEquals(categoryId("products"), repo.find("ozon", CategoryKind.EXPENSE)!!.categoryId)
+    }
 }

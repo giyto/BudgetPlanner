@@ -27,7 +27,7 @@ import org.junit.runner.RunWith
 class CategoriesFlowTest : FlowTestBase() {
 
     private fun openCategories() {
-        rule.onNode(hasContentDescription("Настройки") and hasClickAction()).performClick()
+        openSettings()
         // В настройках выше есть автоимпорт, сверка и защита входа: на невысоком экране пункт ниже края.
         rule.onNode(hasText("Категории") and hasClickAction()).performScrollTo().performClick()
     }

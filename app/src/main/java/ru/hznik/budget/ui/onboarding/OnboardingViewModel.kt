@@ -28,6 +28,9 @@ import ru.hznik.budget.ui.components.PaymentFormState
 import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
+import ru.hznik.budget.domain.model.byDefaultKey
+import ru.hznik.budget.domain.model.DefaultCategories
+import ru.hznik.budget.ui.launchSave
 
 /**
  * Шаги онбординга (сценарий 5.1): автоимпорт, затем уведомления и защита входа. Шаг уведомлений есть только
@@ -52,7 +55,7 @@ data class OnboardingUiState(
 ) {
     val steps: List<OnboardingStep> get() = OnboardingStep.entries.filter { it != OnboardingStep.NOTIFICATIONS || showNotifications }
 
-    val defaultCategoryId: Long? get() = categories.firstOrNull { it.defaultKey == "other_expense" }?.id ?: categories.lastOrNull()?.id
+    val defaultCategoryId: Long? get() = categories.byDefaultKey(DefaultCategories.OTHER_EXPENSE)?.id ?: categories.lastOrNull()?.id
 
     val stepNumber: Int get() = steps.indexOf(step) + 1
     val stepCount: Int get() = steps.size
@@ -167,7 +170,7 @@ class OnboardingViewModel @Inject constructor(
         val schedule = state.schedule ?: return
         if (state.busy) return
         form.update { it.copy(busy = true) }
-        viewModelScope.launch {
+        launchSave(onFailure = { form.update { it.copy(busy = false) } }) {
             val result = completeOnboarding(
                 amountKopecks = AmountInput.toKopecks(state.amountInput),
                 income = schedule,
