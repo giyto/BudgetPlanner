@@ -25,6 +25,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -60,6 +61,7 @@ import ru.hznik.budget.ui.components.AmountInput
 import ru.hznik.budget.ui.components.AmountKey
 import ru.hznik.budget.ui.components.AmountKeypad
 import ru.hznik.budget.ui.components.NavigationHeader
+import ru.hznik.budget.ui.components.RollingAmount
 import ru.hznik.budget.ui.components.formatDayMonth
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
@@ -197,9 +199,9 @@ private fun SingleCardContent(
 private fun ComparisonCard(pending: Mismatch, zone: ZoneId) {
     val colors = BudgetTheme.colors
     Column(modifier = Modifier.fillMaxWidth().background(colors.card, RoundedCornerShape(22.dp)).padding(horizontal = 18.dp, vertical = 6.dp)) {
-        ComparisonRow(stringResource(R.string.reconcile_in_bank), stringResource(R.string.reconcile_in_bank_at, TIME.format(pending.at.atZone(zone))), balance(pending.bankKopecks), SpokenMoney.amount(pending.bankKopecks))
+        ComparisonRow(stringResource(R.string.reconcile_in_bank), stringResource(R.string.reconcile_in_bank_at, TIME.format(pending.at.atZone(zone))), pending.bankKopecks)
         HorizontalDivider(color = colors.line)
-        ComparisonRow(stringResource(R.string.reconcile_in_app), stringResource(R.string.reconcile_in_app_sub), balance(pending.expectedKopecks), SpokenMoney.amount(pending.expectedKopecks))
+        ComparisonRow(stringResource(R.string.reconcile_in_app), stringResource(R.string.reconcile_in_app_sub), pending.expectedKopecks)
         HorizontalDivider(color = colors.line)
         val diffLabel = stringResource(R.string.reconcile_difference)
         Row(
@@ -207,8 +209,8 @@ private fun ComparisonCard(pending: Mismatch, zone: ZoneId) {
             modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp).clearAndSetSemantics { contentDescription = "$diffLabel: ${spokenDiff(pending.diffKopecks)}" },
         ) {
             Text(diffLabel, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.ink, modifier = Modifier.weight(1f))
-            Text(
-                signedDiff(pending.diffKopecks), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = colors.warn,
+            RollingAmount(
+                signedDiff(pending.diffKopecks), pending.diffKopecks, LocalTextStyle.current.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold), colors.warn,
                 modifier = Modifier.background(colors.warnSoft, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
@@ -216,8 +218,9 @@ private fun ComparisonCard(pending: Mismatch, zone: ZoneId) {
 }
 
 @Composable
-private fun ComparisonRow(title: String, subtitle: String, amount: String, spokenAmount: String) {
+private fun ComparisonRow(title: String, subtitle: String, kopecks: Long) {
     val colors = BudgetTheme.colors
+    val spokenAmount = SpokenMoney.amount(kopecks)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).clearAndSetSemantics { contentDescription = "$title, $subtitle: $spokenAmount" },
@@ -226,7 +229,7 @@ private fun ComparisonRow(title: String, subtitle: String, amount: String, spoke
             Text(title, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = colors.ink)
             Text(subtitle, fontSize = 13.sp, color = colors.muted)
         }
-        Text(amount, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
+        RollingAmount(balance(kopecks), kopecks, LocalTextStyle.current.copy(fontSize = 20.sp, fontWeight = FontWeight.SemiBold), colors.ink)
     }
 }
 

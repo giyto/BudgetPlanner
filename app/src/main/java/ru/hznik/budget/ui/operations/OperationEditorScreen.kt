@@ -1,5 +1,6 @@
 package ru.hznik.budget.ui.operations
 
+import ru.hznik.budget.ui.components.animatedColor
 import ru.hznik.budget.ui.components.AmountInput
 import ru.hznik.budget.ui.components.AmountKey
 import ru.hznik.budget.ui.components.AmountKeypad
@@ -60,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -77,6 +79,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.ui.format.accountLabel
+import ru.hznik.budget.ui.components.SlidingSelectionRow
 
 @Composable
 fun OperationEditorRoute(onClose: () -> Unit, viewModel: OperationEditorViewModel = hiltViewModel()) {
@@ -233,28 +236,31 @@ private fun EditorHeader(
 private fun TypeSegment(selected: InputType, onSelect: (InputType) -> Unit) {
     val colors = BudgetTheme.colors
     val label = stringResource(R.string.editor_type_group)
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    val types = listOf(
+        InputType.EXPENSE to R.string.editor_type_expense,
+        InputType.INCOME to R.string.editor_type_income,
+        InputType.REFUND to R.string.editor_type_refund,
+    )
+    SlidingSelectionRow(
+        selectedIndex = types.indexOfFirst { it.first == selected },
+        indicatorColor = colors.segmentOn,
+        indicatorShape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .background(colors.segmentTrack, RoundedCornerShape(24.dp))
             .padding(4.dp)
             .semantics { contentDescription = label },
-    ) {
-        listOf(
-            InputType.EXPENSE to R.string.editor_type_expense,
-            InputType.INCOME to R.string.editor_type_income,
-            InputType.REFUND to R.string.editor_type_refund,
-        ).forEach { (type, text) ->
+    ) { segment ->
+        types.forEachIndexed { index, (type, text) ->
             val isSelected = type == selected
             Surface(
                 selected = isSelected,
                 onClick = { onSelect(type) },
                 shape = RoundedCornerShape(20.dp),
-                color = if (isSelected) colors.segmentOn else colors.segmentTrack,
+                color = Color.Transparent,
                 contentColor = colors.ink,
                 modifier = Modifier.heightIn(min = 40.dp),
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp)) {
+                Box(contentAlignment = Alignment.Center, modifier = segment(index).padding(horizontal = 14.dp)) {
                     Text(stringResource(text), style = MaterialTheme.typography.titleSmall)
                 }
             }
@@ -319,9 +325,9 @@ private fun CategoryChoice(category: Category, selected: Boolean, onClick: () ->
         selected = selected,
         onClick = onClick,
         shape = RoundedCornerShape(14.dp),
-        color = if (selected) colors.primary else colors.card,
-        contentColor = if (selected) colors.onPrimary else colors.ink,
-        border = BorderStroke(1.dp, if (selected) colors.primary else colors.chipBorder),
+        color = animatedColor(if (selected) colors.primary else colors.card),
+        contentColor = animatedColor(if (selected) colors.onPrimary else colors.ink),
+        border = BorderStroke(1.dp, animatedColor(if (selected) colors.primary else colors.chipBorder)),
         modifier = modifier.heightIn(min = 48.dp),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
@@ -392,7 +398,7 @@ private fun AllCategoriesSheet(
                     selected = selected,
                     onClick = { onSelect(category.id) },
                     shape = RoundedCornerShape(14.dp),
-                    color = if (selected) colors.primarySoft else colors.card,
+                    color = animatedColor(if (selected) colors.primarySoft else colors.card),
                     contentColor = colors.ink,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp)) {

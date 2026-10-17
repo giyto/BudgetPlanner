@@ -1,5 +1,18 @@
 package ru.hznik.budget.ui.stats
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -34,6 +47,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +63,13 @@ import ru.hznik.budget.ui.theme.BudgetTheme
 import ru.hznik.budget.ui.theme.chartColor
 import kotlin.math.atan2
 import kotlin.math.hypot
+import ru.hznik.budget.ui.theme.motionTween
+import ru.hznik.budget.ui.theme.Motion
+import ru.hznik.budget.ui.theme.LocalReducedMotion
+import ru.hznik.budget.ui.components.animatedColor
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 
 private val DONUT_SIZE = 120.dp
 private val DONUT_STROKE = 18.dp
@@ -58,6 +79,10 @@ private val TOUCH_SLOP = 14.dp
 
 /** Зазор между долями кольца, в градусах. */
 private const val SLICE_GAP = 2f
+
+/** Невыбранные доли при выборе одной; выбранная толще на [SELECTED_EXTRA]. */
+private const val DIMMED_ALPHA = 0.25f
+private val SELECTED_EXTRA = 6.dp
 
 /** Сколько строк списка видно до «Показать все». */
 private const val COLLAPSED_ROWS = 5
@@ -92,6 +117,7 @@ fun CategoryCard(range: DateRange, breakdown: CategoryBreakdown, onOpenCategory:
     val noSpending = stringResource(R.string.stats_no_spending)
     var selected by rememberSaveable(range) { mutableStateOf<Long?>(null) }
     var expanded by rememberSaveable(range) { mutableStateOf(false) }
+    val reduced = LocalReducedMotion.current
 
     Column(
         modifier = modifier
@@ -116,7 +142,14 @@ fun CategoryCard(range: DateRange, breakdown: CategoryBreakdown, onOpenCategory:
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(horizontal = 4.dp).clearAndSetSemantics { contentDescription = spoken },
+            // Тег до clearAndSetSemantics: семантика после него (в том числе тег) стирается.
+            modifier = Modifier.padding(horizontal = 4.dp).testTag(STATS_DONUT_TAG).clearAndSetSemantics {
+                contentDescription = spoken
+                // Выбранная доля — то же, что текст справа от кольца.
+                if (selectedSlice != null) {
+                    stateDescription = "Выбрано: ${selectedSlice.category?.name ?: rest}, ${SpokenMoney.amount(selectedSlice.kopecks)}, ${spokenPercent(selectedSlice.percent)}"
+                }
+            },
         ) {
             Donut(
                 slices = breakdown.slices,
@@ -127,23 +160,36 @@ fun CategoryCard(range: DateRange, breakdown: CategoryBreakdown, onOpenCategory:
                     selected = if (selected == key) null else key
                     if (key == REST_KEY && selected == REST_KEY) expanded = true
                 },
-                modifier = Modifier.size(DONUT_SIZE).testTag(STATS_DONUT_TAG),
+                modifier = Modifier.size(DONUT_SIZE),
             )
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
-                if (selectedSlice == null) {
+            // Текст справа от кольца плавно сменяется при выборе доли (spec ui-motion «Графики статистики»).
+            AnimatedContent(
+                targetState = selected.takeIf { selectedSlice != null },
+                transitionSpec = {
+                    val change = if (reduced) EnterTransition.None togetherWith ExitTransition.None else fadeIn(tween(Motion.ITEM)) togetherWith fadeOut(tween(Motion.ITEM))
+                    change.using(SizeTransform { _, _ -> if (reduced) snap() else tween(Motion.ITEM) })
+                },
+                contentAlignment = Alignment.CenterStart,
+                label = "donut side",
+                modifier = Modifier.weight(1f),
+            ) { shownKey ->
+            val shownSlice = breakdown.slices.getOrNull(sliceKeys.indexOf(shownKey))
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (shownSlice == null) {
                     Text(StatsFormat.range(range), fontSize = 13.sp, color = colors.muted, maxLines = 1)
                     Amount(breakdown.totalKopecks)
                     Text(categoriesCount(breakdown.all.size), fontSize = 13.sp, color = colors.muted)
                 } else {
-                    Text(selectedSlice.category?.name ?: rest, fontSize = 13.sp, color = colors.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Amount(selectedSlice.kopecks)
-                    val details = if (selectedSlice.category == null) {
-                        "${categoriesCount(breakdown.hidden.size)} · ${selectedSlice.percent}%"
+                    Text(shownSlice.category?.name ?: rest, fontSize = 13.sp, color = colors.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Amount(shownSlice.kopecks)
+                    val details = if (shownSlice.category == null) {
+                        "${categoriesCount(breakdown.hidden.size)} · ${shownSlice.percent}%"
                     } else {
-                        "${selectedSlice.percent}%"
+                        "${shownSlice.percent}%"
                     }
                     Text(details, fontSize = 13.sp, color = colors.muted)
                 }
+            }
             }
         }
 
@@ -199,6 +245,28 @@ private fun Donut(
     val values = slices.map { it.kopecks }
     // Обработчик меняется вместе с набором категорий, а pointerInput перезапускается только при новых суммах.
     val onTap by rememberUpdatedState(onSliceTap)
+    // Кольцо дорисовывается по кругу от верхней точки при открытии и при смене долей (design.md add-animations, решение 7).
+    val reduced = LocalReducedMotion.current
+    val sweepProgress = remember { Animatable(if (reduced) 1f else 0f) }
+    LaunchedEffect(values) {
+        if (reduced) {
+            sweepProgress.snapTo(1f)
+        } else {
+            sweepProgress.snapTo(0f)
+            sweepProgress.animateTo(1f, tween(Motion.CHART, easing = FastOutSlowInEasing))
+        }
+    }
+    // Выбор доли: остальные плавно бледнеют, выбранная плавно утолщается.
+    val alphas = slices.indices.map { index ->
+        key(index) {
+            animateFloatAsState(if (selectedIndex == null || selectedIndex == index) 1f else DIMMED_ALPHA, motionTween(Motion.ITEM), label = "slice alpha").value
+        }
+    }
+    val extraWidths = slices.indices.map { index ->
+        key(index) {
+            animateDpAsState(if (selectedIndex == index) SELECTED_EXTRA else 0.dp, motionTween(Motion.ITEM), label = "slice width").value
+        }
+    }
     Canvas(
         modifier.pointerInput(values) {
             detectTapGestures { offset ->
@@ -216,16 +284,24 @@ private fun Donut(
         val stroke = DONUT_STROKE.toPx()
         val total = values.sum().toFloat()
         val gap = if (slices.size > 1) SLICE_GAP else 0f
+        val drawn = sweepProgress.value * 360f
         var start = -90f
         slices.forEachIndexed { index, slice ->
             val sweep = slice.kopecks / total * 360f
-            val isSelected = index == selectedIndex
-            val width = if (isSelected) stroke + 6.dp.toPx() else stroke
+            val width = stroke + extraWidths[index].toPx()
             val inset = stroke / 2
+            // Пока кольцо дорисовывается, видна только часть доли до текущего угла.
+            // После развёртки — как раньше: каждая доля не меньше 0,5°.
+            val full = (sweep - gap).coerceAtLeast(0.5f)
+            val visible = if (sweepProgress.value < 1f) full.coerceAtMost(drawn - (start + 90f) - gap / 2) else full
+            if (visible <= 0f) {
+                start += sweep
+                return@forEachIndexed
+            }
             drawArc(
-                color = sliceColors[index].copy(alpha = if (selectedIndex == null || isSelected) 1f else 0.25f),
+                color = sliceColors[index].copy(alpha = alphas[index]),
                 startAngle = start + gap / 2,
-                sweepAngle = (sweep - gap).coerceAtLeast(0.5f),
+                sweepAngle = visible,
                 useCenter = false,
                 topLeft = Offset(inset, inset),
                 size = Size(size.width - stroke, size.height - stroke),
@@ -244,7 +320,7 @@ private fun CategoryRow(slice: CategorySlice, color: Color, highlighted: Boolean
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
-        color = if (highlighted) colors.background else colors.card,
+        color = animatedColor(if (highlighted) colors.background else colors.card),
         contentColor = colors.ink,
         modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
     ) {

@@ -2,6 +2,8 @@ package ru.hznik.budget.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -125,6 +127,21 @@ class AssistantChatFlowTest : FlowTestBase() {
         waitForText("На кафе ушло 340 ₽", timeoutMs = 10_000)
         rule.onNodeWithText("Нет соединения с интернетом").assertDoesNotExist()
         assertEquals("вопрос не задублировался", 1, rule.onAllNodes(hasText("Сколько ушло на кафе?")).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun tapOutsideClosesKeyboardAndKeepsText() {
+        enabled()
+        val input = rule.onNodeWithTag(ASSISTANT_INPUT_TAG)
+        input.performClick()
+        input.performTextInput("Сколько ушло")
+        input.assertIsFocused()
+
+        // Пустое место над полем: заголовок «Чем помочь?» не нажимается сам.
+        rule.onNodeWithText("Чем помочь?").performClick()
+        input.assertIsNotFocused()
+        rule.onNodeWithText("Сколько ушло").assertIsDisplayed()
+        assertTrue("нажатие вне поля ничего не отправило", TestLlmProvider.calls.isEmpty())
     }
 
     @Test

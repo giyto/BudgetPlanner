@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import ru.hznik.budget.R
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.Money
@@ -129,25 +130,27 @@ fun ChoiceChip(icon: Int?, text: String, onClick: () -> Unit, modifier: Modifier
 @Composable
 fun <T> SegmentedChoice(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
     val colors = BudgetTheme.colors
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    SlidingSelectionRow(
+        selectedIndex = options.indexOfFirst { it.first == selected },
+        indicatorColor = colors.segmentOn,
+        indicatorShape = RoundedCornerShape(20.dp),
         modifier = modifier
             .background(colors.segmentTrack, RoundedCornerShape(24.dp))
             .padding(4.dp),
-    ) {
-        options.forEach { (value, label) ->
+    ) { segment ->
+        options.forEachIndexed { index, (value, label) ->
             val isSelected = value == selected
             Surface(
                 selected = isSelected,
                 onClick = { onSelect(value) },
                 shape = RoundedCornerShape(20.dp),
-                color = if (isSelected) colors.segmentOn else colors.segmentTrack,
+                color = Color.Transparent,
                 contentColor = colors.ink,
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 44.dp),
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 10.dp)) {
+                Box(contentAlignment = Alignment.Center, modifier = segment(index).padding(horizontal = 10.dp)) {
                     Text(label, style = MaterialTheme.typography.titleSmall, maxLines = 1)
                 }
             }

@@ -35,9 +35,7 @@ private fun rub(rubles: Long) = MoneyFormat.amount(rubles * 100)
 private fun FlowTestBase.tapText(text: String) = rule.onNode(hasText(text) and hasClickAction()).performClick()
 
 /** Онбординг (spec onboarding, задача 9.2): приложение запускается впервые, данных нет. */
-@HiltAndroidTest
-@RunWith(AndroidJUnit4::class)
-class OnboardingFlowTest : FlowTestBase() {
+abstract class OnboardingFlowCases : FlowTestBase() {
     init {
         TestStart.onboarded = false
     }
@@ -134,6 +132,19 @@ class OnboardingFlowTest : FlowTestBase() {
         next()
         Espresso.pressBack()
         rule.onNodeWithText("Шаг 1 из 5").assertIsDisplayed()
+    }
+}
+
+@HiltAndroidTest
+@RunWith(AndroidJUnit4::class)
+class OnboardingFlowTest : OnboardingFlowCases()
+
+/** Те же шаги с включёнными анимациями: шаги сменяются сдвигом, тесты дожидаются конца (spec ui-motion, задача 3.2). */
+@HiltAndroidTest
+@RunWith(AndroidJUnit4::class)
+class OnboardingAnimatedFlowTest : OnboardingFlowCases() {
+    init {
+        TestStart.animations = true
     }
 }
 

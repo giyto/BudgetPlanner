@@ -42,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -74,7 +75,17 @@ import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.lock.Badge
 import ru.hznik.budget.ui.lock.PointsCard
+import ru.hznik.budget.ui.components.pressScale
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.LocalReducedMotion
+import ru.hznik.budget.ui.components.itemMotion
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.StartOffset
+import ru.hznik.budget.ui.components.AppearFromBelow
 
 const val ASSISTANT_INPUT_TAG = "assistant_input"
 const val ASSISTANT_SEND_TAG = "assistant_send"
@@ -214,6 +225,8 @@ private fun AssistantChat(
     var input by rememberSaveable { mutableStateOf("") }
     var askNewDialog by rememberSaveable { mutableStateOf(false) }
     val send: (String) -> Unit = { text -> if (onSend(text) && text == input) input = "" }
+    // Сообщения, которые уже были при открытии раздела, показываются сразу; анимируются только новые.
+    val historyIds = remember { state.messages.map { it.id }.toSet() }
     val suggestions = listOf(
         stringResource(R.string.assistant_suggest_headphones),
         stringResource(R.string.assistant_suggest_top),
@@ -239,7 +252,7 @@ private fun AssistantChat(
                         onClick = { send(text) },
                         shape = RoundedCornerShape(16.dp),
                         color = colors.card,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).heightIn(min = 48.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).pressScale().heightIn(min = 48.dp),
                     ) {
                         Text(text, fontSize = 15.sp, color = colors.ink, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
                     }
@@ -255,14 +268,19 @@ private fun AssistantChat(
                 contentPadding = PaddingValues(16.dp),
                 modifier = Modifier.weight(1f).fillMaxWidth().testTag(ASSISTANT_MESSAGES_TAG),
             ) {
+                // Новые сообщения въезжают снизу с проявлением; история при открытии показывается сразу.
                 items(state.messages, key = { it.id }) { message ->
-                    when (message.role) {
-                        ChatRole.USER -> UserBubble(message.text)
-                        ChatRole.ASSISTANT -> AssistantBubble(message)
-                        ChatRole.ERROR -> ErrorCard(message, retryEnabled = !state.sending && message == state.messages.last(), onRetry = { onRetry(message.id) })
+                    Box(itemMotion(fadeIn = false)) {
+                        AppearFromBelow(animate = message.id !in historyIds) {
+                            when (message.role) {
+                                ChatRole.USER -> UserBubble(message.text)
+                                ChatRole.ASSISTANT -> AssistantBubble(message)
+                                ChatRole.ERROR -> ErrorCard(message, retryEnabled = !state.sending && message == state.messages.last(), onRetry = { onRetry(message.id) })
+                            }
+                        }
                     }
                 }
-                if (state.sending) item(key = "thinking") { Thinking() }
+                if (state.sending) item(key = "thinking") { Box(itemMotion(fadeIn = false)) { AppearFromBelow(animate = true) { Thinking() } } }
             }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -275,7 +293,7 @@ private fun AssistantChat(
                         shape = RoundedCornerShape(16.dp),
                         color = colors.background,
                         border = BorderStroke(1.dp, colors.chipBorder),
-                        modifier = Modifier.heightIn(min = 44.dp),
+                        modifier = Modifier.pressScale().heightIn(min = 44.dp),
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                             Text(text, fontSize = 15.sp, color = colors.ink, maxLines = 1)
@@ -435,6 +453,9 @@ private fun ErrorCard(message: ChatMessage, retryEnabled: Boolean, onRetry: () -
     }
 }
 
+private const val DOT_CYCLE = 1_200
+private const val DOT_DIM = 0.3f
+
 @Composable
 private fun Thinking() {
     val colors = BudgetTheme.colors
@@ -446,8 +467,29 @@ private fun Thinking() {
             .padding(horizontal = 16.dp, vertical = 14.dp)
             .semantics { contentDescription = label },
     ) {
-        repeat(3) {
-            Box(Modifier.size(8.dp).background(colors.primaryText, CircleShape))
+        // Точки мигают по очереди, каждая раз в 1,2 с; при выключенных анимациях неподвижны (spec ui-motion).
+        val reduced = LocalReducedMotion.current
+        val blinking = rememberInfiniteTransition(label = "thinking")
+        repeat(3) { index ->
+            val alpha = if (reduced) {
+                1f
+            } else {
+                blinking.animateFloat(
+                    initialValue = DOT_DIM,
+                    targetValue = DOT_DIM,
+                    animationSpec = infiniteRepeatable(
+                        animation = keyframes {
+                            durationMillis = DOT_CYCLE
+                            DOT_DIM at 0
+                            1f at DOT_CYCLE / 4
+                            DOT_DIM at DOT_CYCLE / 2
+                        },
+                        initialStartOffset = StartOffset(index * DOT_CYCLE / 6),
+                    ),
+                    label = "dot $index",
+                ).value
+            }
+            Box(Modifier.size(8.dp).graphicsLayer { this.alpha = alpha }.background(colors.primaryText, CircleShape))
             Spacer(Modifier.width(6.dp))
         }
         Spacer(Modifier.width(4.dp))

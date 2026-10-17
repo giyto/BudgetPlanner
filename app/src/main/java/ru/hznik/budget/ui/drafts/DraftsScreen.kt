@@ -85,6 +85,7 @@ import ru.hznik.budget.domain.usecase.DraftHint
 import ru.hznik.budget.domain.usecase.MarkOwnTransfer
 import ru.hznik.budget.domain.usecase.ObserveDrafts
 import ru.hznik.budget.domain.usecase.SplitOwnTransfer
+import ru.hznik.budget.ui.components.animatedColor
 import ru.hznik.budget.ui.components.NavigationHeader
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
@@ -95,6 +96,7 @@ import java.time.Clock
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import ru.hznik.budget.ui.components.itemMotion
 
 const val DRAFTS_LIST_TAG = "drafts_list"
 
@@ -339,26 +341,28 @@ fun DraftsScreen(
             modifier = Modifier.weight(1f).testTag(DRAFTS_LIST_TAG),
         ) {
             items(state.drafts, key = { it.operation.id }) { item ->
-                if (item.operation.type == OperationType.OWN_TRANSFER) {
-                    OwnTransferCard(
-                        item,
-                        state.today,
-                        confirmed = item.operation.id in state.chosen,
-                        onConfirm = { onChoose(item.operation.id, item.operation.categoryId) },
-                        onSplit = { onSplit(item.operation.id) },
-                    )
-                } else {
-                    val id = item.operation.id
-                    DraftCard(
-                        item, state.today, state.categoriesFor(item), state.selectedFor(item),
-                        userChose = id in state.chosen,
-                        onMarkOwn = { onMarkOwn(item) },
-                        knownStore = id in state.knownStores,
-                        aiHint = id in state.aiHints,
-                        rememberable = id in state.rememberable,
-                        remember = id in state.remember,
-                        onToggleRemember = { onToggleRemember(item) },
-                    ) { onChoose(id, it) }
+                Box(itemMotion()) {
+                    if (item.operation.type == OperationType.OWN_TRANSFER) {
+                        OwnTransferCard(
+                            item,
+                            state.today,
+                            confirmed = item.operation.id in state.chosen,
+                            onConfirm = { onChoose(item.operation.id, item.operation.categoryId) },
+                            onSplit = { onSplit(item.operation.id) },
+                        )
+                    } else {
+                        val id = item.operation.id
+                        DraftCard(
+                            item, state.today, state.categoriesFor(item), state.selectedFor(item),
+                            userChose = id in state.chosen,
+                            onMarkOwn = { onMarkOwn(item) },
+                            knownStore = id in state.knownStores,
+                            aiHint = id in state.aiHints,
+                            rememberable = id in state.rememberable,
+                            remember = id in state.remember,
+                            onToggleRemember = { onToggleRemember(item) },
+                        ) { onChoose(id, it) }
+                    }
                 }
             }
         }
@@ -512,9 +516,10 @@ private fun DraftCard(
                 Surface(
                     onClick = { onChoose(category.id) },
                     shape = RoundedCornerShape(16.dp),
-                    color = if (selected) colors.primary else colors.card,
-                    contentColor = if (selected) colors.onPrimary else colors.ink,
-                    border = if (selected) null else BorderStroke(1.dp, colors.chipBorder),
+                    color = animatedColor(if (selected) colors.primary else colors.card),
+                    contentColor = animatedColor(if (selected) colors.onPrimary else colors.ink),
+                    // Рамка цвета чипа у выбранного неотличима от её отсутствия, зато цвет меняется плавно.
+                    border = BorderStroke(1.dp, animatedColor(if (selected) colors.primary else colors.chipBorder)),
                     modifier = Modifier.heightIn(min = 44.dp).semantics {
                         role = Role.RadioButton
                         this.selected = selected

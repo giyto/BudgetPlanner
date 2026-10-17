@@ -1,5 +1,6 @@
 package ru.hznik.budget.ui.home
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,13 +56,19 @@ import ru.hznik.budget.ui.autoimport.AutoImportStoppedBanner
 import ru.hznik.budget.ui.autoimport.AutoImportViewModel
 import ru.hznik.budget.ui.autoimport.RefreshOnResume
 import ru.hznik.budget.ui.autoimport.rememberStepOpener
+import ru.hznik.budget.ui.components.AnimatedBanner
+import ru.hznik.budget.ui.components.RollingAmount
+import ru.hznik.budget.ui.components.animateFloatSaved
 import ru.hznik.budget.ui.components.formatDayMonth
+import ru.hznik.budget.ui.components.pressScale
 import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.operations.OperationRow
 import ru.hznik.budget.ui.reconcile.MismatchBanner
 import ru.hznik.budget.ui.reconcile.MismatchBannerViewModel
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.Motion
+import ru.hznik.budget.ui.theme.motionTween
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -92,21 +100,27 @@ fun HomeRoute(
         state, onAddOperation, onOpenSettings, onOpenPeriod, onStartNewPeriod, onOpenOperation, onAllOperations,
         topBanner = {
             // Плашка дня дохода главнее: вторую в этот день не показываем (design.md add-notification-import, решение 7).
-            val income = bannersState.suggestedIncome
-            if (income != null && state.status?.isIncomeDue == false) {
-                IncomeSuggestionBanner(income, onStart = onStartNewPeriod, onDismiss = importBanners::dismissSuggestion)
+            val income = bannersState.suggestedIncome.takeIf { state.status?.isIncomeDue == false }
+            AnimatedBanner(income, bottom = BANNER_GAP) {
+                IncomeSuggestionBanner(it, onStart = onStartNewPeriod, onDismiss = importBanners::dismissSuggestion)
             }
         },
         banners = {
             // Расхождение с банком выше черновиков (spec home-screen «Плашка расхождения с банком»).
-            MismatchBanner(mismatches, onOpenReconcile)
-            DraftsBanner(bannersState.drafts, onOpenDrafts)
-            AutoImportStoppedBanner(importState, onFix = openStep)
+            AnimatedBanner(mismatches.takeIf { it.isNotEmpty() }, top = BANNER_GAP) { MismatchBanner(it, onOpenReconcile) }
+            AnimatedBanner(bannersState.drafts.takeIf { it > 0 }, top = BANNER_GAP, saveable = true) { DraftsBanner(it, onOpenDrafts) }
+            AnimatedBanner(importState.takeIf { it.stopped }, top = BANNER_GAP) { AutoImportStoppedBanner(it, onFix = openStep) }
         },
     )
 }
 
-/** Главная по макету Main.dc.html. */
+/** Отступ между карточками главной; у плашек он входит в анимацию появления (spec ui-motion «Появление плашек»). */
+private val BANNER_GAP = 12.dp
+
+/**
+ * Главная по макету Main.dc.html. Плашки в [topBanner] идут с отступом [BANNER_GAP] снизу, в [banners] — сверху
+ * (`AnimatedBanner`).
+ */
 @Composable
 fun HomeScreen(
     state: HomeUiState,
@@ -132,12 +146,14 @@ fun HomeScreen(
         ) {
             Header(status?.today, onOpenSettings)
             if (status != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
-                    if (status.isIncomeDue) IncomeDayBanner(onStartNewPeriod)
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    AnimatedBanner(Unit.takeIf { status.isIncomeDue }, bottom = BANNER_GAP) { IncomeDayBanner(onStartNewPeriod) }
                     topBanner()
                     HeroCard(status)
+                    Spacer(Modifier.height(BANNER_GAP))
                     PeriodCard(status, state.nextPayment, onOpenPeriod)
                     banners()
+                    Spacer(Modifier.height(BANNER_GAP))
                     RecentOperations(state, onOpenOperation, onAllOperations)
                 }
             }
@@ -229,13 +245,15 @@ private fun HeroCard(status: PeriodStatus) {
     val spentText = stringResource(R.string.home_spent_today, MoneyFormat.amount(status.spentToday))
     val spokenAmount = if (overspent) "минус " + SpokenMoney.amount(-status.canSpendToday) else SpokenMoney.amount(status.canSpendToday)
     val spoken = "$label $spokenAmount. $sub. $progressLabel. $spentText. $daysText"
-    val amountColor = if (overspent) colors.warnOnHero else colors.heroText
-    val barColor = if (overspent) colors.warnOnHero else colors.heroProgress
+    val amountColor by animateColorAsState(if (overspent) colors.warnOnHero else colors.heroText, motionTween(Motion.ITEM), label = "amount")
+    val barColor by animateColorAsState(if (overspent) colors.warnOnHero else colors.heroProgress, motionTween(Motion.ITEM), label = "bar")
+    val shownProgress by animateFloatSaved(progress)
 
     Column(
         verticalArrangement = Arrangement.spacedBy(14.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .pressScale()
             .clip(RoundedCornerShape(28.dp))
             .background(colors.hero)
             // В тёмной теме у графитовой карточки рамка, как в макете DarkMain.
@@ -246,11 +264,11 @@ private fun HeroCard(status: PeriodStatus) {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(label, fontSize = 15.sp, color = colors.heroMuted)
-            Text(amount, style = MaterialTheme.typography.displayLarge, color = amountColor, maxLines = 1)
+            RollingAmount(amount, status.canSpendToday, MaterialTheme.typography.displayLarge.copy(fontFeatureSettings = "tnum"), amountColor)
             Text(sub, fontSize = 14.sp, color = colors.heroMuted)
         }
         Box(modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(Color.White.copy(alpha = 0.16f))) {
-            Box(modifier = Modifier.fillMaxWidth(progress).height(10.dp).clip(RoundedCornerShape(5.dp)).background(barColor))
+            Box(modifier = Modifier.fillMaxWidth(shownProgress).height(10.dp).clip(RoundedCornerShape(5.dp)).background(barColor))
         }
         Row {
             Text(spentText, fontSize = 13.sp, color = colors.heroMuted, modifier = Modifier.weight(1f))
@@ -266,7 +284,16 @@ private fun PeriodCard(status: PeriodStatus, nextPayment: PlannedPayment?, onOpe
     val reserve = status.reserve.coerceAtLeast(0)
     val left = status.left.coerceAtLeast(0)
     val total = (spent + reserve + left).coerceAtLeast(1)
-    Surface(onClick = onOpenPeriod, shape = RoundedCornerShape(22.dp), color = colors.card, contentColor = colors.ink, modifier = Modifier.fillMaxWidth()) {
+    val spentShare by animateFloatSaved(spent.toFloat() / total)
+    val reserveShare by animateFloatSaved(reserve.toFloat() / total)
+    val leftShare by animateFloatSaved(left.toFloat() / total)
+    Surface(
+        onClick = onOpenPeriod,
+        shape = RoundedCornerShape(22.dp),
+        color = colors.card,
+        contentColor = colors.ink,
+        modifier = Modifier.fillMaxWidth().pressScale(),
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -277,9 +304,10 @@ private fun PeriodCard(status: PeriodStatus, nextPayment: PlannedPayment?, onOpe
                 Text(stringResource(R.string.home_period_of, MoneyFormat.amount(status.budget)), fontSize = 13.sp, color = colors.muted)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))) {
-                if (spent > 0) Box(Modifier.weight(spent.toFloat() / total).height(8.dp).background(colors.ink))
-                if (reserve > 0) Box(Modifier.weight(reserve.toFloat() / total).height(8.dp).background(colors.reserve))
-                if (left > 0) Box(Modifier.weight(left.toFloat() / total).height(8.dp).background(colors.left))
+                // Отрезок, доля которого плавно уходит в ноль, исчезает в конце анимации.
+                if (spentShare > MIN_SHARE) Box(Modifier.weight(spentShare).height(8.dp).background(colors.ink))
+                if (reserveShare > MIN_SHARE) Box(Modifier.weight(reserveShare).height(8.dp).background(colors.reserve))
+                if (leftShare > MIN_SHARE) Box(Modifier.weight(leftShare).height(8.dp).background(colors.left))
             }
             Row {
                 PeriodNumber(stringResource(R.string.home_spent), status.spentInPeriod, colors.ink, Modifier.weight(1f))
@@ -304,13 +332,16 @@ private fun PeriodCard(status: PeriodStatus, nextPayment: PlannedPayment?, onOpe
     }
 }
 
+private const val MIN_SHARE = 0.0001f
+
 @Composable
 private fun PeriodNumber(label: String, kopecks: Long, color: Color, modifier: Modifier = Modifier) {
     val text = (if (kopecks < 0) MoneyFormat.MINUS.toString() else "") + MoneyFormat.amount(kopecks)
     val spoken = label + " " + (if (kopecks < 0) "минус " else "") + SpokenMoney.amount(kopecks)
     Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = modifier.clearAndSetSemantics { contentDescription = spoken }) {
         Text(label, fontSize = 12.sp, color = BudgetTheme.colors.muted)
-        Text(text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
+        val shownColor by animateColorAsState(color, motionTween(Motion.ITEM), label = "number")
+        RollingAmount(text, kopecks, LocalTextStyle.current.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold), shownColor)
     }
 }
 

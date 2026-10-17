@@ -78,6 +78,8 @@ import ru.hznik.budget.ui.theme.BudgetTheme
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import ru.hznik.budget.ui.components.itemMotion
+import ru.hznik.budget.ui.components.contentSizeMotion
 
 const val OPERATIONS_LIST_TAG = "operations_list"
 
@@ -151,7 +153,7 @@ fun OperationsScreen(
                 item(key = "empty") { EmptyState(state.hasFilters, onReset) }
             }
             items(state.groups, key = { it.date.toEpochDay() }) { group ->
-                DayCard(group, state.today, onOpenOperation)
+                DayCard(group, state.today, onOpenOperation, itemMotion())
             }
         }
         FloatingActionButton(
@@ -311,9 +313,9 @@ private fun BudgetFilterChip(
 }
 
 @Composable
-internal fun DayCard(group: DayGroup, today: LocalDate, onOpen: (Long) -> Unit) {
+internal fun DayCard(group: DayGroup, today: LocalDate, onOpen: (Long) -> Unit, modifier: Modifier = Modifier) {
     val colors = BudgetTheme.colors
-    Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
             Text(
                 dayTitle(group.date, today),
@@ -331,9 +333,11 @@ internal fun DayCard(group: DayGroup, today: LocalDate, onOpen: (Long) -> Unit) 
                 modifier = Modifier.semantics { contentDescription = spokenTotal },
             )
         }
+        // Строка внутри дня удаляется или возвращается — карточка дня плавно меняет высоту.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .contentSizeMotion()
                 .background(colors.card, RoundedCornerShape(22.dp))
                 .padding(horizontal = 14.dp, vertical = 4.dp),
         ) {

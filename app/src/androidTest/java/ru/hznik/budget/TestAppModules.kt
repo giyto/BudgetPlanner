@@ -55,6 +55,8 @@ import ru.hznik.budget.ui.lock.AuthAvailability
 import ru.hznik.budget.ui.lock.AuthResult
 import ru.hznik.budget.ui.lock.AuthenticatorModule
 import ru.hznik.budget.ui.lock.DeviceAuthenticator
+import ru.hznik.budget.ui.theme.MotionModule
+import ru.hznik.budget.ui.theme.MotionSettings
 import java.io.File
 import java.time.Clock
 import java.time.Instant
@@ -100,6 +102,9 @@ object TestStart {
     /** В сборке есть ключ GigaChat; `false` — «Помощник недоступен в этой сборке». */
     var aiConfigured = true
 
+    /** Анимации включены. По умолчанию нет: бесконечная анимация индикатора чата не даёт тесту дождаться покоя. */
+    var animations = false
+
     fun reset() {
         onboarded = true
         periodStart = LocalDate.of(2026, 10, 1)
@@ -112,6 +117,7 @@ object TestStart {
         databaseError = false
         notificationPermissionNeeded = false
         aiConfigured = true
+        animations = false
         TestLlmProvider.reset()
         TestElapsedClock.now = 0
     }
@@ -372,16 +378,21 @@ object TestLlmProvider : LlmProvider {
     val answers = java.util.concurrent.ConcurrentLinkedQueue<LlmResult>()
     val calls = java.util.concurrent.CopyOnWriteArrayList<List<LlmMessage>>()
 
+    /** Если задано, ответ ждёт, пока тест его отпустит: так виден индикатор «Считаю…». */
+    @Volatile var gate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
     override val isConfigured: Boolean get() = TestStart.aiConfigured
 
     override suspend fun complete(messages: List<LlmMessage>, tools: List<ToolSpec>): LlmResult {
         calls += messages
+        gate?.await()
         return answers.poll() ?: LlmResult.Text("ok", TokenUsage(10))
     }
 
     fun reset() {
         answers.clear()
         calls.clear()
+        gate = null
     }
 }
 
@@ -390,4 +401,13 @@ object TestLlmProvider : LlmProvider {
 object TestAiModule {
     @Provides
     fun provideLlmProvider(): LlmProvider = TestLlmProvider
+}
+
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [MotionModule::class])
+object TestMotionModule {
+    @Provides
+    fun provideMotionSettings(): MotionSettings = object : MotionSettings {
+        override fun reduced(): Boolean = !TestStart.animations
+    }
 }

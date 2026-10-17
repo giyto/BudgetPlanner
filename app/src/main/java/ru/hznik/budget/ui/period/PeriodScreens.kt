@@ -23,6 +23,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -60,6 +61,7 @@ import ru.hznik.budget.ui.components.BudgetDatePicker
 import ru.hznik.budget.ui.components.CategoryTile
 import ru.hznik.budget.ui.components.ChoiceChip
 import ru.hznik.budget.ui.components.NavigationHeader
+import ru.hznik.budget.ui.components.RollingAmount
 import ru.hznik.budget.ui.components.PaymentForm
 import ru.hznik.budget.ui.components.formatDayMonth
 import ru.hznik.budget.ui.components.parseRubles
@@ -124,9 +126,9 @@ fun PeriodRoute(
                 )
                 PeriodLine(stringResource(R.string.period_income_date), formatDayMonth(period.nextIncomeDate)) { editDate = true }
                 HorizontalDivider(color = colors.line)
-                PeriodLine(stringResource(R.string.period_start_amount), MoneyFormat.amount(period.startAmountKopecks)) { editAmount = true }
+                PeriodLine(stringResource(R.string.period_start_amount), MoneyFormat.amount(period.startAmountKopecks), period.startAmountKopecks) { editAmount = true }
                 HorizontalDivider(color = colors.line)
-                PeriodLine(stringResource(R.string.period_budget), MoneyFormat.amount(status.budget), onChange = null)
+                PeriodLine(stringResource(R.string.period_budget), MoneyFormat.amount(status.budget), status.budget, onChange = null)
             }
             OutlinedButton(onClick = onStartNewPeriod, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                 Text(stringResource(R.string.home_start_new_period), color = colors.primaryText, fontWeight = FontWeight.SemiBold)
@@ -184,8 +186,9 @@ fun PeriodRoute(
     }
 }
 
+/** Строка карточки периода; у суммы ([kopecks] не `null`) изменившиеся цифры прокручиваются. */
 @Composable
-private fun PeriodLine(label: String, value: String, onChange: (() -> Unit)?) {
+private fun PeriodLine(label: String, value: String, kopecks: Long? = null, onChange: (() -> Unit)?) {
     val colors = BudgetTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -195,7 +198,11 @@ private fun PeriodLine(label: String, value: String, onChange: (() -> Unit)?) {
             .then(if (onChange != null) Modifier.clickable(onClickLabel = stringResource(R.string.period_change), onClick = onChange) else Modifier),
     ) {
         Text(label, fontSize = 14.sp, color = colors.muted, modifier = Modifier.weight(1f))
-        Text(value, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
+        if (kopecks != null) {
+            RollingAmount(value, kopecks, LocalTextStyle.current.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), colors.ink)
+        } else {
+            Text(value, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.ink)
+        }
         if (onChange != null) {
             Spacer(Modifier.width(8.dp))
             Icon(painterResource(R.drawable.ic_comment), contentDescription = null, tint = colors.muted)

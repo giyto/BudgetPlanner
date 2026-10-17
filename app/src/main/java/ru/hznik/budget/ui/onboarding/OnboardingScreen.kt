@@ -1,5 +1,14 @@
 package ru.hznik.budget.ui.onboarding
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -76,6 +85,9 @@ import ru.hznik.budget.ui.format.MoneyFormat
 import ru.hznik.budget.ui.format.SpokenMoney
 import ru.hznik.budget.ui.theme.BudgetTheme
 import java.time.LocalDate
+import ru.hznik.budget.ui.theme.Motion
+import ru.hznik.budget.ui.theme.LocalReducedMotion
+import ru.hznik.budget.ui.components.animatedColor
 
 @Composable
 fun OnboardingRoute(
@@ -151,19 +163,36 @@ fun OnboardingScreen(
         }
         StepProgress(state.stepNumber, state.stepCount)
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-        ) {
-            when (state.step) {
-                OnboardingStep.INTRO -> IntroStep()
-                OnboardingStep.MONEY -> MoneyStep(state, onKey, onIncomeRegular, onIncomeDay, onIncomeDate)
-                OnboardingStep.PAYMENTS -> PaymentsStep(state, onOpenPaymentForm, onRemovePayment)
-                OnboardingStep.AUTO_IMPORT -> AutoImportStep(importState)
-                OnboardingStep.NOTIFICATIONS -> NotificationsStep()
-                OnboardingStep.PROTECTION -> ProtectionStep(protection)
+        // Шаг вперёд въезжает справа, «Назад» — слева (spec ui-motion «Шаги онбординга»); нижние кнопки не двигаются.
+        val reduced = LocalReducedMotion.current
+        AnimatedContent(
+            targetState = state.step,
+            transitionSpec = {
+                if (reduced) {
+                    EnterTransition.None togetherWith ExitTransition.None
+                } else {
+                    val sign = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                    (slideInHorizontally(tween(Motion.SCREEN)) { sign * it / 3 } + fadeIn(tween(Motion.SCREEN))) togetherWith
+                        (slideOutHorizontally(tween(Motion.SCREEN)) { -sign * it / 3 } + fadeOut(tween(Motion.SCREEN)))
+                }
+            },
+            label = "onboarding step",
+            modifier = Modifier.weight(1f),
+        ) { step ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+            ) {
+                when (step) {
+                    OnboardingStep.INTRO -> IntroStep()
+                    OnboardingStep.MONEY -> MoneyStep(state, onKey, onIncomeRegular, onIncomeDay, onIncomeDate)
+                    OnboardingStep.PAYMENTS -> PaymentsStep(state, onOpenPaymentForm, onRemovePayment)
+                    OnboardingStep.AUTO_IMPORT -> AutoImportStep(importState)
+                    OnboardingStep.NOTIFICATIONS -> NotificationsStep()
+                    OnboardingStep.PROTECTION -> ProtectionStep(protection)
+                }
             }
         }
 
@@ -205,7 +234,8 @@ private fun StepProgress(step: Int, count: Int) {
                     Modifier
                         .weight(1f)
                         .height(4.dp)
-                        .background(if (index < step) colors.primary else colors.card2, RoundedCornerShape(2.dp)),
+                        // Новый отрезок закрашивается плавно.
+                        .background(animatedColor(if (index < step) colors.primary else colors.card2), RoundedCornerShape(2.dp)),
                 )
             }
         }

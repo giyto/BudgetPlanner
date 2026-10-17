@@ -1,5 +1,13 @@
 package ru.hznik.budget.ui
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -102,8 +110,18 @@ import ru.hznik.budget.ui.stats.CategoryOperationsRoute
 import ru.hznik.budget.ui.stats.PeriodStatsRoute
 import ru.hznik.budget.ui.stats.StatsRoute
 import ru.hznik.budget.ui.theme.BudgetTheme
+import ru.hznik.budget.ui.theme.Motion
+import ru.hznik.budget.ui.theme.LocalReducedMotion
+import androidx.navigation.NavBackStackEntry
 
 const val BOTTOM_BAR_TAG = "bottom_bar"
+
+/** Начальный экран вкладки нижней панели. */
+private fun NavDestination.isTabStart() = TopLevelDestination.entries.any { hasRoute(it.startRoute::class) }
+
+/** Переход между вкладками нижней панели, а не на экран поверх раздела. */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch() =
+    initialState.destination.isTabStart() && targetState.destination.isTabStart()
 
 @Composable
 fun BudgetApp(
@@ -150,12 +168,42 @@ fun BudgetApp(
             }
         },
     ) { innerPadding ->
+        // Вкладки сменяются растворением, экраны поверх въезжают сдвигом (design.md add-animations, решение 6).
+        val reduced = LocalReducedMotion.current
         NavHost(
             navController = navController,
             startDestination = startDestination,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
+            enterTransition = {
+                when {
+                    reduced -> EnterTransition.None
+                    isTabSwitch() -> fadeIn(tween(Motion.TAB))
+                    else -> slideInHorizontally(tween(Motion.SCREEN)) { it / 5 } + fadeIn(tween(Motion.SCREEN))
+                }
+            },
+            exitTransition = {
+                when {
+                    reduced -> ExitTransition.None
+                    isTabSwitch() -> fadeOut(tween(Motion.TAB))
+                    else -> slideOutHorizontally(tween(Motion.SCREEN)) { -it / 10 } + fadeOut(tween(Motion.SCREEN))
+                }
+            },
+            popEnterTransition = {
+                when {
+                    reduced -> EnterTransition.None
+                    isTabSwitch() -> fadeIn(tween(Motion.TAB))
+                    else -> slideInHorizontally(tween(Motion.SCREEN)) { -it / 10 } + fadeIn(tween(Motion.SCREEN))
+                }
+            },
+            popExitTransition = {
+                when {
+                    reduced -> ExitTransition.None
+                    isTabSwitch() -> fadeOut(tween(Motion.TAB))
+                    else -> slideOutHorizontally(tween(Motion.SCREEN)) { it / 5 } + fadeOut(tween(Motion.SCREEN))
+                }
+            },
         ) {
             // dropUnlessResumed: уходящий экран остаётся нажимаемым во время анимации перехода,
             // без защиты двойное нажатие открывало бы экран дважды или снимало со стека лишнее.

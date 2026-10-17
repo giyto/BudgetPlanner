@@ -39,6 +39,9 @@ import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import ru.hznik.budget.domain.stats.DaySpending
 import ru.hznik.budget.ui.theme.BudgetTheme
 import java.time.LocalDate
+import ru.hznik.budget.ui.theme.Motion
+import ru.hznik.budget.ui.theme.LocalReducedMotion
+import androidx.compose.animation.core.tween
 
 /** Сколько дней видно без прокрутки (решение пользователя: 7 дней, остальные — пролистыванием). */
 private const val VISIBLE_DAYS = 7.0
@@ -62,6 +65,7 @@ fun DailyChart(
     modifier: Modifier = Modifier,
 ) {
     val colors = BudgetTheme.colors
+    val reduced = LocalReducedMotion.current
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(days, todayLimitKopecks) {
         modelProducer.runTransaction {
@@ -139,6 +143,8 @@ fun DailyChart(
             minZoom = remember { Zoom.x(VISIBLE_DAYS) },
             maxZoom = remember { Zoom.x(VISIBLE_DAYS) },
         ),
-        animateIn = false,
+        // Столбики вырастают при открытии и перестраиваются при смене периода (spec ui-motion «Графики статистики»).
+        animationSpec = if (reduced) null else tween(Motion.CHART),
+        animateIn = !reduced,
     )
 }
