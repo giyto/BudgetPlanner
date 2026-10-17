@@ -45,6 +45,12 @@
 | Помощник: пустой диалог и подсказки вопросов | ![](screenshots/AssistantEmpty.png) | ![](screenshots/DarkAssistantEmpty.png) |
 | Помощник: ответ, ошибка сети, ответ готовится | ![](screenshots/AssistantStates.png) | ![](screenshots/DarkAssistantStates.png) |
 | Черновики: подсказка категорий от помощника | ![](screenshots/DraftsAiSuggest.png) | ![](screenshots/DarkDraftsAiSuggest.png) |
+| Настройки: раздел «Данные» | ![](screenshots/SettingsData.png) | ![](screenshots/DarkSettingsData.png) |
+| Экспорт в CSV | ![](screenshots/ExportCsv.png) | ![](screenshots/DarkExportCsv.png) |
+| Резервная копия | ![](screenshots/Backup.png) | ![](screenshots/DarkBackup.png) |
+| Восстановление из копии | ![](screenshots/Restore.png) | ![](screenshots/DarkRestore.png) |
+| Подтверждение восстановления | ![](screenshots/RestoreConfirm.png) | ![](screenshots/DarkRestoreConfirm.png) |
+| Удаление всех данных | ![](screenshots/DeleteAll.png) | ![](screenshots/DarkDeleteAll.png) |
 
 Исходник каждого снимка лежит в `mockups/` под тем же именем с расширением `.dc.html`. Исключение — экраны статистики (`Stats*`, `CategoryOperations`): карточку категорий переделали (список категорий под кольцом, раскрытие «Остального», переход к операциям категории), поэтому старый макет статистики удалён, а снимки сделаны с самого приложения на эмуляторе в том же размере. Запись о статистике в `canvas.json` относится к удалённому макету.
 
@@ -66,3 +72,5 @@
 Виджет, уведомления и шаг «Подсказки вовремя» (`Widgets`, `NotificationsShade`, `OnboardingNotifications`) лежат в `mockups/WidgetReminders.html` и выбираются так же, например `WidgetReminders.html?screen=NotificationsShade&theme=dark`. Раздел «Уведомления» добавлен в полный экран `Settings`.
 
 Экраны ИИ-помощника (`AssistantIntro`, `AssistantEmpty`, `AssistantStates`, `DraftsAiSuggest`) лежат в `mockups/AiAssistant.html` и выбираются так же, например `AiAssistant.html?screen=AssistantStates&theme=dark`. Чат с ответами — по-прежнему `Assistant.dc.html`. Раздел «ИИ-помощник» добавлен в `mockups/Settings.html`.
+
+Экраны данных (`SettingsData`, `ExportCsv`, `Backup`, `Restore`, `RestoreConfirm`, `DeleteAll`) лежат в `mockups/DataExport.html` и выбираются так же, например `DataExport.html?screen=Backup&theme=dark`. Анимации этих экранов показаны в `mockups/AnimationsPreview.html`, раздел «Экспорт и резервная копия».

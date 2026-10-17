@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Данные: экспорт и копия</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;overflow:hidden}
+.light{--bg:#EFF1F5;--card:#FFFFFF;--card2:#E4E7ED;--ink:#191C1F;--muted:#575E68;--sub:#3A4048;--line:#E2E5EA;--chip:#CDD2DA;--pri:#4B52E0;--priT:#4B52E0;--priS:#E4E5FC;--pos:#0B7650;--posS:#DDF5EA;--warn:#B23A0A;--warnS:#FDE7DA;--onWarn:#FFFFFF;--scrim:rgba(25,28,31,.45);--dialog:#FFFFFF}
+.dark{--bg:#0F1114;--card:#1A1D21;--card2:#24282D;--ink:#F2F4F7;--muted:#A3AAB5;--sub:#C9CED6;--line:#2C3036;--chip:#3A3F46;--pri:#5B62F0;--priT:#A4A8FF;--priS:#262A4D;--pos:#4ADE9A;--posS:#16332A;--warn:#FF9A62;--warnS:#3A2418;--onWarn:#191C1F;--scrim:rgba(0,0,0,.6);--dialog:#24282D}
+.screen{width:390px;height:844px;box-sizing:border-box;display:none;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Onest',system-ui,sans-serif;overflow:hidden;position:relative}
+.screen.on{display:flex}
+.top{display:flex;align-items:center;gap:4px;padding:12px 16px 0 8px;height:44px;flex-shrink:0}
+.back{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.title{font-family:'Unbounded',sans-serif;font-weight:600;font-size:20px}
+.group{font-size:14px;color:var(--muted);margin:18px 22px 8px}
+.item{margin:0 16px;background:var(--card);border-radius:22px;padding:12px 18px;display:flex;align-items:center;gap:12px;min-height:64px;box-sizing:border-box}
+.card{margin:0 16px;background:var(--card);border-radius:22px;padding:4px 18px}
+.row{display:flex;align-items:center;gap:12px;min-height:64px;box-sizing:border-box;padding:10px 0}
+.row+.row{border-top:1px solid var(--line)}
+.t1{font-size:16px;font-weight:600}
+.t2{font-size:13px;color:var(--muted);margin-top:3px;line-height:18px}
+.tile{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;background:var(--priS);color:var(--priT)}
+.chev{color:var(--muted);font-size:22px}
+.note{margin:12px 22px 0;font-size:13px;line-height:18px;color:var(--muted)}
+.bottom{margin-top:auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:18px;font-size:17px;font-weight:600;background:var(--pri);color:#fff}
+.btn.off{background:var(--card2);color:var(--muted)}
+.btn2{display:flex;align-items:center;justify-content:center;height:52px;box-sizing:border-box;border-radius:18px;border:1px solid var(--chip);font-size:16px;font-weight:600}
+.label{font-size:14px;color:var(--muted);margin:16px 22px 8px}
+.field{margin:0 16px;height:56px;box-sizing:border-box;border:1px solid var(--chip);border-radius:16px;background:var(--card);display:flex;align-items:center;padding:0 8px 0 16px;font-size:18px;letter-spacing:3px}
+.field.focus{border:2px solid var(--pri)}
+.field .eye{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--muted);letter-spacing:0}
+.ok{display:flex;align-items:center;gap:6px;margin:8px 22px 0;font-size:13px;color:var(--pos)}
+.warnbox{margin:16px 16px 0;background:var(--warnS);border-radius:18px;padding:14px;display:flex;gap:10px;font-size:14px;line-height:19px}
+.warnbox i{color:var(--warn);font-size:22px;flex-shrink:0}
+.scrim{position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:0 24px}
+.dialog{background:var(--dialog);border-radius:28px;padding:24px;width:100%;box-sizing:border-box}
+.dialog h2{margin:0;font-family:'Unbounded',sans-serif;font-size:20px;font-weight:600;line-height:1.25}
+.dialog p{margin:12px 0 0;font-size:15px;line-height:21px;color:var(--sub)}
+.dbtns{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+.dbtn{height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- Настройки: раздел «Данные» после «Бюджета». -->
+<div class="screen" id="SettingsData">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Настройки</span></div>
+  <div class="group">Бюджет</div>
+  <div class="item"><div style="flex:1"><div class="t1">Период и платежи</div><div class="t2">Дата дохода, стартовая сумма, обязательные платежи</div></div><i class="ti ti-chevron-right chev"></i></div>
+  <div class="item" style="margin-top:12px"><div style="flex:1"><div class="t1">Категории</div><div class="t2">Свои категории, иконки и цвета, скрытые категории</div></div><i class="ti ti-chevron-right chev"></i></div>
+  <div class="item" style="margin-top:12px"><div style="flex:1"><div class="t1">Правила для магазинов</div><div class="t2">4 правила · категории для знакомых магазинов</div></div><i class="ti ti-chevron-right chev"></i></div>
+  <div class="group">Данные</div>
+  <div class="card">
+    <div class="row"><span class="tile"><i class="ti ti-file-spreadsheet"></i></span><div style="flex:1"><div class="t1">Экспорт в CSV</div><div class="t2">Операции за выбранные даты для Excel и Google Таблиц</div></div><i class="ti ti-chevron-right chev"></i></div>
+    <div class="row"><span class="tile"><i class="ti ti-lock"></i></span><div style="flex:1"><div class="t1">Резервная копия</div><div class="t2">Все данные в один файл под вашим паролем</div></div><i class="ti ti-chevron-right chev"></i></div>
+    <div class="row"><span class="tile"><i class="ti ti-restore"></i></span><div style="flex:1"><div class="t1">Восстановить из копии</div><div class="t2">Например, на новом телефоне</div></div><i class="ti ti-chevron-right chev"></i></div>
+  </div>
+  <div class="item" style="margin-top:12px"><span class="tile" style="background:var(--warnS);color:var(--warn)"><i class="ti ti-trash"></i></span><div style="flex:1"><div class="t1" style="color:var(--warn)">Удалить все данные</div><div class="t2">Операции, настройки и ключ удаляются с телефона</div></div></div>
+</div>
+
+<!-- Экспорт в CSV. -->
+<div class="screen" id="ExportCsv">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Экспорт в CSV</span></div>
+  <div class="label">Даты · текущий период</div>
+  <div class="card">
+    <div class="row"><div style="flex:1"><div class="t2" style="margin:0">С</div><div class="t1" style="margin-top:2px">1 октября 2026</div></div><i class="ti ti-calendar" style="font-size:22px;color:var(--muted)"></i></div>
+    <div class="row"><div style="flex:1"><div class="t2" style="margin:0">По</div><div class="t1" style="margin-top:2px">25 октября 2026</div></div><i class="ti ti-calendar" style="font-size:22px;color:var(--muted)"></i></div>
+  </div>
+  <div class="label">В файле</div>
+  <div class="card">
+    <div class="row" style="min-height:56px"><span class="tile" style="background:var(--posS);color:var(--pos)"><i class="ti ti-list-details"></i></span><div class="t1" style="flex:1">128 операций</div></div>
+    <div class="row" style="align-items:flex-start"><div class="t2" style="margin:0">Дата, время, тип, сумма, категория, магазин, комментарий, источник, банк, черновик. Номера карт в файл не попадают.</div></div>
+  </div>
+  <div class="note">Файл открывается в Excel и Google Таблицах без настройки. Место для сохранения выберете в следующем окне.</div>
+  <div class="bottom"><div class="btn"><i class="ti ti-download" style="font-size:22px"></i>Сохранить файл</div></div>
+</div>
+
+<!-- Резервная копия: пароль введён дважды. -->
+<div class="screen" id="Backup">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Резервная копия</span></div>
+  <div class="note" style="margin-top:14px;font-size:14px;line-height:20px;color:var(--sub)">Операции, категории, периоды, платежи, правила, сверка, история помощника и настройки - в одном файле. Без пароля файл не открыть.</div>
+  <div class="label">Пароль</div>
+  <div class="field">••••••••••<span class="eye"><i class="ti ti-eye"></i></span></div>
+  <div class="label">Повторите пароль</div>
+  <div class="field focus">••••••••••<span class="eye"><i class="ti ti-eye"></i></span></div>
+  <div class="ok"><i class="ti ti-circle-check"></i>Пароли совпадают</div>
+  <div class="warnbox"><i class="ti ti-alert-triangle"></i><span>Запишите пароль. Если его забыть, восстановить копию не получится - приложение пароль не хранит.</span></div>
+  <div class="bottom"><div class="btn"><i class="ti ti-lock" style="font-size:22px"></i>Сохранить копию</div></div>
+</div>
+
+<!-- Восстановление: файл выбран, ошибка пароля. -->
+<div class="screen" id="Restore">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Восстановить</span></div>
+  <div class="label">Файл копии</div>
+  <div class="card">
+    <div class="row"><span class="tile"><i class="ti ti-file-text"></i></span><div style="flex:1;min-width:0"><div class="t1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">budget-backup-2026-10-17.bpbackup</div><div class="t2">1,2 МБ</div></div><span style="color:var(--priT);font-weight:600;font-size:15px">Другой</span></div>
+  </div>
+  <div class="label">Пароль копии</div>
+  <div class="field" style="border:2px solid var(--warn)">•••••••<span class="eye"><i class="ti ti-eye"></i></span></div>
+  <div class="ok" style="color:var(--warn)"><i class="ti ti-alert-circle"></i>Неверный пароль или файл повреждён</div>
+  <div class="warnbox"><i class="ti ti-info-circle"></i><span>Данные на этом телефоне заменятся данными из копии целиком. После восстановления приложение перезапустится.</span></div>
+  <div class="bottom"><div class="btn">Восстановить</div></div>
+</div>
+
+<!-- Подтверждение замены данных. -->
+<div class="screen" id="RestoreConfirm">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Восстановить</span></div>
+  <div class="label">Файл копии</div>
+  <div class="card"><div class="row"><span class="tile"><i class="ti ti-file-text"></i></span><div style="flex:1"><div class="t1">budget-backup-2026-10-17</div><div class="t2">Создана 17 октября 2026 · 1 284 операции</div></div></div></div>
+  <div class="scrim">
+    <div class="dialog">
+      <h2>Заменить данные на телефоне?</h2>
+      <p>Сейчас здесь 312 операций. Они удалятся, а на их место встанут 1 284 операции и настройки из копии от 17 октября. Приложение перезапустится.</p>
+      <div class="dbtns">
+        <div class="dbtn" style="background:var(--pri);color:#fff">Заменить и перезапустить</div>
+        <div class="dbtn" style="color:var(--priT)">Отмена</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Удалить все данные: диалог поверх настроек. -->
+<div class="screen" id="DeleteAll">
+  <div class="top"><span class="back"><i class="ti ti-chevron-left"></i></span><span class="title">Настройки</span></div>
+  <div class="group">Данные</div>
+  <div class="card">
+    <div class="row"><span class="tile"><i class="ti ti-file-spreadsheet"></i></span><div style="flex:1"><div class="t1">Экспорт в CSV</div></div></div>
+    <div class="row"><span class="tile"><i class="ti ti-lock"></i></span><div style="flex:1"><div class="t1">Резервная копия</div></div></div>
+  </div>
+  <div class="scrim">
+    <div class="dialog">
+      <h2>Удалить все данные?</h2>
+      <p>Операции, категории, периоды, платежи, история помощника и настройки удалятся с телефона, вернуть их нельзя. Приложение откроется заново с первого шага.</p>
+      <p>Доступ к уведомлениям и разрешения остаются в настройках Android, отключите их там, если нужно.</p>
+      <div class="dbtns">
+        <div class="dbtn" style="background:var(--warn);color:var(--onWarn)">Удалить всё</div>
+        <div class="dbtn" style="border:1px solid var(--chip)">Сначала сделать копию</div>
+        <div class="dbtn" style="color:var(--priT)">Отмена</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ?screen=Backup&theme=dark - какой экран и тема; без параметров - раздел «Данные» в светлой теме.
+const q = new URLSearchParams(location.search);
+document.body.className = q.get('theme') === 'dark' ? 'dark' : 'light';
+document.getElementById(q.get('screen') || 'SettingsData').classList.add('on');
+</script>
+</body>
+</html>

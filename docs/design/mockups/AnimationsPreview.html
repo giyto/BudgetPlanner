@@ -28,6 +28,17 @@ button.ghost{background:var(--card2);color:var(--ink)}
 .hero .lbl{font-size:13px;color:#B9BEC7}
 .amount{font-family:'Unbounded',sans-serif;font-weight:600;font-size:40px;display:flex;line-height:1.15;height:46px;overflow:hidden;margin-top:6px;font-variant-numeric:tabular-nums}
 .amount.over{color:var(--over)}
+.dcol{position:relative;display:inline-block;overflow:hidden;height:22px;vertical-align:top}
+.dcol span{display:block;height:22px}
+.dlabel{font-size:12px;color:var(--muted);margin:12px 16px 6px}
+.dfield{margin:0 14px;height:44px;border:1px solid var(--chip);border-radius:14px;background:var(--card);display:flex;align-items:center;padding:0 14px;font-size:16px;letter-spacing:3px;transition:border-color .25s}
+.dhint{margin:6px 18px 0;font-size:12px;height:16px;opacity:0;transition:opacity .25s}
+.dhint.show{opacity:1}
+.dbtn{margin:14px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;background:var(--card2);color:var(--muted);transition:background-color .25s,color .25s}
+.dbtn.on{background:var(--pri);color:#fff}
+.spin{width:18px;height:18px;border-radius:9px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.reduced .dhint,.reduced .dbtn,.reduced .dfield{transition:none}
 .col{position:relative;display:inline-block;overflow:hidden;height:46px}
 .col span{display:block;height:46px}
 .track{height:10px;border-radius:5px;background:rgba(255,255,255,.16);margin-top:14px;overflow:hidden}
@@ -240,6 +251,27 @@ button.ghost{background:var(--card2);color:var(--ink)}
     <div class="phone" id="list" style="padding-top:12px;display:flex;flex-direction:column;gap:10px"></div>
     <div class="btns"><button id="saveDrafts">Сохранить 2 операции</button><button class="ghost" id="resetList">Сначала</button></div>
   </section>
+
+  <!-- 10. Экраны данных -->
+  <section class="demo">
+    <h2>Экспорт и резервная копия</h2>
+    <p class="note">Число операций прокручивается при смене дат, подсказки под паролем появляются плавно, кнопка плавно становится доступной, пока идёт сохранение, на кнопке крутится индикатор.</p>
+    <div class="phone" style="height:auto;padding-bottom:4px">
+      <div class="dlabel">Экспорт в CSV · <span id="dRange">текущий период</span></div>
+      <div class="plain" style="margin:0 14px;display:flex;align-items:center;gap:6px;font-weight:600"><span id="dCount"></span><span>операций</span></div>
+      <div class="dlabel">Резервная копия: повторите пароль</div>
+      <div class="dfield" id="dField"><span id="dDots">••••</span></div>
+      <div class="dhint" id="dHint"></div>
+      <div class="dbtn" id="dSave">Сохранить копию</div>
+    </div>
+    <div class="btns">
+      <button id="dDates">Сменить даты</button>
+      <button id="dMatch">Пароли совпали</button>
+      <button id="dWrong">Неверный пароль</button>
+      <button id="dSaveBtn">Сохранить копию</button>
+      <button class="ghost" id="dReset">Сначала</button>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -447,6 +479,64 @@ document.getElementById('saveDrafts').onclick = () => {
   });
 };
 document.getElementById('resetList').onclick = fillList; fillList();
+
+// 10. Экраны данных.
+const dCount = document.getElementById('dCount');
+let dValue = 128;
+function rollSmall(el, value, prev) {
+  const next = String(value), old = prev == null ? null : String(prev);
+  const n = next.length, o = old ? old.length : 0, len = Math.max(n, o);
+  const down = prev != null && value < prev;
+  el.innerHTML = '';
+  for (let i = 0; i < len; i++) {
+    const nc = next[n - len + i] ?? '', oc = old ? (old[o - len + i] ?? '') : nc;
+    const col = document.createElement('span'); col.className = 'dcol';
+    if (!old || nc === oc || R()) { if (nc === '') continue; col.textContent = nc; el.appendChild(col); continue; }
+    const inner = document.createElement('span'); inner.style.display = 'block';
+    const a = document.createElement('span'), b = document.createElement('span');
+    a.textContent = oc || nbsp; b.textContent = nc || nbsp;
+    if (down) { inner.append(b, a); inner.style.transform = 'translateY(-22px)'; } else { inner.append(a, b); }
+    col.appendChild(inner); el.appendChild(col);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      inner.style.transition = `transform ${ms(300)}ms cubic-bezier(.4,0,.2,1)`;
+      inner.style.transform = down ? 'translateY(0)' : 'translateY(-22px)';
+    }));
+  }
+}
+const dHint = document.getElementById('dHint'), dSave = document.getElementById('dSave'), dField = document.getElementById('dField'), dDots = document.getElementById('dDots');
+function dState(kind) {
+  dHint.classList.remove('show');
+  dField.style.borderColor = '';
+  if (kind === 'match') {
+    dDots.textContent = '••••••••••';
+    dHint.textContent = '✓ Пароли совпадают'; dHint.style.color = 'var(--pos)';
+    dSave.classList.add('on');
+  } else if (kind === 'wrong') {
+    dDots.textContent = '•••••••';
+    dHint.textContent = '! Неверный пароль или файл повреждён'; dHint.style.color = 'var(--warn)';
+    dField.style.borderColor = 'var(--warn)';
+    dSave.classList.remove('on');
+  } else {
+    dDots.textContent = '••••'; dHint.textContent = ''; dSave.classList.remove('on');
+  }
+  dSave.innerHTML = 'Сохранить копию';
+  if (kind) requestAnimationFrame(() => requestAnimationFrame(() => dHint.classList.add('show')));
+}
+document.getElementById('dDates').onclick = () => {
+  const prev = dValue; dValue = dValue === 128 ? 96 : 128;
+  document.getElementById('dRange').textContent = dValue === 128 ? 'текущий период' : 'прошлый период';
+  rollSmall(dCount, dValue, prev);
+};
+document.getElementById('dMatch').onclick = () => dState('match');
+document.getElementById('dWrong').onclick = () => dState('wrong');
+document.getElementById('dSaveBtn').onclick = () => {
+  if (!dSave.classList.contains('on')) dState('match');
+  // Без анимации — текст вместо вращения.
+  dSave.innerHTML = R() ? 'Сохраняю…' : '<span class="spin"></span>';
+  setTimeout(() => { dSave.innerHTML = 'Копия сохранена'; }, 1800);
+};
+document.getElementById('dReset').onclick = () => { dValue = 128; document.getElementById('dRange').textContent = 'текущий период'; rollSmall(dCount, dValue, null); dState(null); };
+rollSmall(dCount, dValue, null);
 
 // 8. Переключатели: выделение переезжает.
 document.querySelectorAll('[data-seg]').forEach(seg => {
