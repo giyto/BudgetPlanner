@@ -43,7 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.hznik.budget.R
 import ru.hznik.budget.domain.budget.PeriodStatus
@@ -56,6 +56,7 @@ import ru.hznik.budget.ui.components.AddOperationFab
 import ru.hznik.budget.ui.components.AnimatedBanner
 import ru.hznik.budget.ui.components.ButtonSize
 import ru.hznik.budget.ui.components.PrimaryButton
+import ru.hznik.budget.ui.components.FittedRollingAmount
 import ru.hznik.budget.ui.components.RollingAmount
 import ru.hznik.budget.ui.components.animateFloatSaved
 import ru.hznik.budget.ui.components.formatDayMonth
@@ -71,6 +72,9 @@ import ru.hznik.budget.ui.theme.motionTween
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.activity.compose.ReportDrawnWhen
+import androidx.compose.foundation.layout.FlowRow
 
 const val HOME_HERO_TAG = "home_hero"
 
@@ -95,6 +99,8 @@ fun HomeRoute(
     val mismatches by mismatchBanner.mismatches.collectAsStateWithLifecycle()
     val openStep = rememberStepOpener(autoImport)
     RefreshOnResume(autoImport)
+    // Холодный запуск считается до показа суммы «можно сегодня», а не до пустого кадра (задача 7.1, «Fully drawn»).
+    ReportDrawnWhen { state.loaded && state.status != null }
     HomeScreen(
         state, onAddOperation, onOpenSettings, onOpenPeriod, onStartNewPeriod, onOpenOperation, onAllOperations,
         topBanner = {
@@ -248,14 +254,22 @@ private fun HeroCard(status: PeriodStatus) {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(label, fontSize = 15.sp, color = colors.heroMuted)
-            RollingAmount(amount, status.canSpendToday, MaterialTheme.typography.displayLarge.copy(fontFeatureSettings = "tnum"), amountColor)
+            FittedRollingAmount(
+                amount,
+                status.canSpendToday,
+                MaterialTheme.typography.displayLarge.copy(fontFeatureSettings = "tnum"),
+                amountColor,
+                minFontSize = MaterialTheme.typography.titleLarge.fontSize,
+                modifier = Modifier.fillMaxWidth(),
+            )
             Text(sub, fontSize = 14.sp, color = colors.heroMuted)
         }
         Box(modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(Color.White.copy(alpha = 0.16f))) {
             Box(modifier = Modifier.fillMaxWidth(shownProgress).height(10.dp).clip(RoundedCornerShape(5.dp)).background(barColor))
         }
-        Row {
-            Text(spentText, fontSize = 13.sp, color = colors.heroMuted, modifier = Modifier.weight(1f))
+        // При крупном шрифте «дни до дохода» уходят на следующую строку, а не рвут соседнюю подпись по буквам.
+        FlowRow(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Text(spentText, fontSize = 13.sp, color = colors.heroMuted, modifier = Modifier.padding(end = 8.dp))
             Text(daysText, fontSize = 13.sp, color = colors.heroMuted)
         }
     }
@@ -293,7 +307,7 @@ private fun PeriodCard(status: PeriodStatus, nextPayment: PlannedPayment?, onOpe
                 if (reserveShare > MIN_SHARE) Box(Modifier.weight(reserveShare).height(8.dp).background(colors.reserve))
                 if (leftShare > MIN_SHARE) Box(Modifier.weight(leftShare).height(8.dp).background(colors.left))
             }
-            Row {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PeriodNumber(stringResource(R.string.home_spent), status.spentInPeriod, colors.ink, Modifier.weight(1f))
                 PeriodNumber(stringResource(R.string.home_reserve), status.reserve, colors.ink, Modifier.weight(1f))
                 PeriodNumber(stringResource(R.string.home_left), status.left, if (status.left >= 0) colors.positive else colors.warn, Modifier.weight(1f))
@@ -323,9 +337,10 @@ private fun PeriodNumber(label: String, kopecks: Long, color: Color, modifier: M
     val text = (if (kopecks < 0) MoneyFormat.MINUS.toString() else "") + MoneyFormat.amount(kopecks)
     val spoken = label + " " + (if (kopecks < 0) "минус " else "") + SpokenMoney.amount(kopecks)
     Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = modifier.clearAndSetSemantics { contentDescription = spoken }) {
-        Text(label, fontSize = 12.sp, color = BudgetTheme.colors.muted)
+        // Три числа в ряд: при крупном шрифте подпись и сумма уменьшаются, чтобы не наезжать на соседние.
+        Text(label, color = BudgetTheme.colors.muted, maxLines = 1, softWrap = false, autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 12.sp))
         val shownColor by animateColorAsState(color, motionTween(Motion.ITEM), label = "number")
-        RollingAmount(text, kopecks, LocalTextStyle.current.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold), shownColor)
+        FittedRollingAmount(text, kopecks, LocalTextStyle.current.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold), shownColor, minFontSize = 10.sp)
     }
 }
 

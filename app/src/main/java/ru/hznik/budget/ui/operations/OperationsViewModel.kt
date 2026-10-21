@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import ru.hznik.budget.domain.model.Category
 import ru.hznik.budget.domain.model.OperationSource
@@ -38,6 +40,8 @@ data class OperationsUiState(
     val selectedCategory: Category? = null,
     val filterCategories: List<Category> = emptyList(),
     val groups: List<DayGroup> = emptyList(),
+    /** В базе есть операции старше показанных: при прокрутке к концу догружается следующая порция. */
+    val hasMore: Boolean = false,
     val today: LocalDate,
     /** Фильтр «счёт с даты» из экрана сверки; `null` — без него. */
     val accountFilter: AccountFilter? = null,
@@ -71,23 +75,35 @@ class OperationsViewModel @Inject constructor(
     private val accountFilter = savedStateHandle.getStateFlow<Long?>(ARG_FROM, null)
         .mapLatest { from -> from?.let { accountOperationsFilter(account, Instant.ofEpochMilli(it)) } }
 
-    private val groups = combine(
+    // Сколько новых операций читать (задача 7.2); новый поиск или фильтр начинается с первой порции.
+    private val limit = MutableStateFlow(PAGE_SIZE)
+
+    // Порция, которая уже показана: следующая запрашивается только после неё, а не на каждый кадр прокрутки.
+    private var shownLimit = 0
+
+    private val filter = combine(
         query.debounce { if (it.isBlank()) 0 else SEARCH_DEBOUNCE_MS },
         source,
         categoryId,
         accountFilter,
     ) { q, s, c, a -> OperationFilter(SearchQuery(q), s?.let(OperationSource::valueOf), c, account = a) }
-        .flatMapLatest { observeOperations(it) }
+        .distinctUntilChanged()
+        .onEach { limit.value = PAGE_SIZE }
+
+    private val page = combine(filter, limit) { f, l -> f.copy(limit = l) }
+        .distinctUntilChanged()
+        .flatMapLatest { f -> observeOperations.page(f).onEach { shownLimit = f.limit ?: 0 } }
 
     val uiState: StateFlow<OperationsUiState> =
-        combine(combine(query, source, categoryId, ::Triple), allCategories, groups, accountFilter) { (q, s, c), cats, g, a ->
+        combine(combine(query, source, categoryId, ::Triple), allCategories, page, accountFilter) { (q, s, c), cats, p, a ->
             OperationsUiState(
                 loaded = true,
                 query = q,
                 source = s?.let(OperationSource::valueOf),
                 selectedCategory = cats.firstOrNull { it.id == c },
                 filterCategories = cats,
-                groups = g,
+                groups = p.groups,
+                hasMore = p.hasMore,
                 today = clock.today(),
                 accountFilter = a,
                 zone = clock.zone,
@@ -110,6 +126,11 @@ class OperationsViewModel @Inject constructor(
         savedStateHandle[ARG_FROM] = null
     }
 
+    /** Конец списка близко: догрузить следующую порцию, если она есть и предыдущая уже пришла. */
+    fun loadMore() {
+        if (uiState.value.hasMore && limit.value == shownLimit) limit.value += PAGE_SIZE
+    }
+
     fun resetFilters() {
         onQueryChanged("")
         onSourceSelected(null)
@@ -119,6 +140,8 @@ class OperationsViewModel @Inject constructor(
 
     companion object {
         const val SEARCH_DEBOUNCE_MS = 200L
+        /** Порция списка: несколько недель операций, первая выдача быстрая и на 50 000 операций. */
+        const val PAGE_SIZE = 300
         private const val KEY_QUERY = "query"
         private const val KEY_SOURCE = "source"
         private const val KEY_CATEGORY = "categoryId"

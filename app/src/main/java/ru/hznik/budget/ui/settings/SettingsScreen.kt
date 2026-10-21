@@ -41,6 +41,7 @@ fun SettingsScreen(
     notifications: @Composable () -> Unit = {},
     protection: @Composable () -> Unit = {},
     rules: @Composable () -> Unit = {},
+    data: @Composable () -> Unit = {},
     extra: @Composable () -> Unit = {},
 ) {
     val colors = BudgetTheme.colors
@@ -60,6 +61,7 @@ fun SettingsScreen(
                 SettingsItem(stringResource(R.string.settings_categories), stringResource(R.string.settings_categories_hint), onOpenCategories)
                 rules()
             }
+            data()
             extra()
         }
     }

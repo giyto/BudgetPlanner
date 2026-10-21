@@ -15,6 +15,12 @@ val gigachatAuthKey: String = Properties()
     .getProperty("gigachat.authKey", "")
     .trim()
 
+// Подпись release (design.md harden-and-release-v1): путь к ключу, alias и пароли — в keystore.properties вне git.
+// Без файла release-сборка остаётся неподписанной, чтобы случайно не выпустить её с чужим ключом.
+val keystoreProperties: Properties? = rootProject.file("keystore.properties")
+    .takeIf { it.exists() }
+    ?.let { file -> Properties().apply { file.inputStream().use { load(it) } } }
+
 android {
     namespace = "ru.hznik.budget"
     compileSdk {
@@ -34,10 +40,24 @@ android {
         buildConfigField("String", "GIGACHAT_AUTH_KEY", "\"${gigachatAuthKey.replace("\\", "").replace("\"", "")}\"")
     }
 
+    signingConfigs {
+        if (keystoreProperties != null) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (keystoreProperties != null) signingConfig = signingConfigs.getByName("release")
+            // R8: сжатие кода и ресурсов (AGP 9.3+: один переключатель). Свои правила — только в src/main/keepRules/*.keep,
+            // если библиотека их не даёт; SQLCipher, kotlinx.serialization, Ktor, OkHttp, Room, Hilt приносят свои.
             optimization {
-                enable = false
+                enable = true
             }
         }
     }
@@ -47,7 +67,7 @@ android {
     }
     buildFeatures {
         compose = true
-        // BuildConfig.DEBUG прячет раздел «Для разработки» (демо-данные) из релизной сборки.
+        // BuildConfig нужен для ключа GigaChat; раздел «Для разработки» живёт в src/debug (задача 9.2).
         buildConfig = true
     }
     testOptions {
@@ -80,7 +100,7 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     // Виджет и фоновые задачи (add-widget-and-reminders).
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
@@ -101,7 +121,9 @@ dependencies {
     testImplementation(libs.ktor.client.mock)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4.accessibility)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.room.testing)

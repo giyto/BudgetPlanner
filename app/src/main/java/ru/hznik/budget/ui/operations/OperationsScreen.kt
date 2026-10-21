@@ -35,6 +35,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,7 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.hznik.budget.R
 import ru.hznik.budget.domain.model.Category
@@ -104,6 +107,7 @@ fun OperationsRoute(
         onOpenOperation = onOpenOperation,
         onClearAccount = viewModel::clearAccountFilter,
         onBack = onBack,
+        onLoadMore = viewModel::loadMore,
     )
 }
 
@@ -120,10 +124,22 @@ fun OperationsScreen(
     modifier: Modifier = Modifier,
     onClearAccount: () -> Unit = {},
     onBack: (() -> Unit)? = null,
+    onLoadMore: () -> Unit = {},
 ) {
     val colors = BudgetTheme.colors
     var showCategoryFilter by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
+    // Следующая порция просится заранее, за несколько дней до конца списка (задача 7.2).
+    val nearEnd by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            (info.visibleItemsInfo.lastOrNull()?.index ?: 0) >= info.totalItemsCount - LOAD_MORE_AHEAD
+        }
+    }
+    // По числу операций, а не дней: порция может добавить операции в тот же день, и тогда тоже нужна следующая.
+    LaunchedEffect(nearEnd, state.hasMore, state.groups.sumOf { it.items.size }) {
+        if (nearEnd && state.hasMore) onLoadMore()
+    }
 
     Box(modifier = modifier.fillMaxSize().background(colors.background)) {
         LazyColumn(
@@ -457,3 +473,6 @@ private fun CategoryFilterSheet(categories: List<Category>, selectedId: Long?, o
         }
     }
 }
+
+/** За сколько дней до конца списка догружается следующая порция. */
+private const val LOAD_MORE_AHEAD = 5

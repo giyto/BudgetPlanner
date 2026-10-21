@@ -21,6 +21,8 @@ data class OperationFilter(
     val dateRange: DateRange? = null,
     /** Только операции счёта сверки начиная с момента — для поиска пропущенной операции (spec operations «Фильтр по счёту»). */
     val account: AccountFilter? = null,
+    /** Не больше стольких новых операций — экран операций грузит список порциями (задача 7.2); `null` — все. */
+    val limit: Int? = null,
 )
 
 /** Операции счёта, включая обе стороны перевода себе, не раньше [from]. [includeNoDigits] — как в сверке. */
@@ -55,6 +57,12 @@ interface OperationRepository {
 
     /** Черновики из уведомлений банка, новые сверху (spec drafts). */
     fun observeDrafts(): Flow<List<OperationItem>>
+
+    /** Операции с категорией за даты [range] включительно, от ранних к поздним — для экспорта в CSV. */
+    suspend fun getForExport(range: DateRange): List<OperationItem>
+
+    /** Сколько операций за даты [range] включительно. */
+    fun observeCount(range: DateRange): Flow<Int>
 
     /** Подтверждает категории черновиков одной транзакцией. */
     suspend fun confirmDrafts(confirmations: List<DraftConfirmation>)

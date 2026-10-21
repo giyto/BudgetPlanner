@@ -144,7 +144,7 @@ fun DailyChart(
             maxZoom = remember { Zoom.x(VISIBLE_DAYS) },
         ),
         // Столбики вырастают при открытии и перестраиваются при смене периода (spec ui-motion «Графики статистики»).
+        // initialAnimationSpec по умолчанию равен animationSpec: при уменьшенной анимации нет и начального появления.
         animationSpec = if (reduced) null else tween(Motion.CHART),
-        animateIn = !reduced,
     )
 }

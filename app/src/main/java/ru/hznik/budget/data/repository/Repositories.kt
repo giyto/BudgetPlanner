@@ -22,6 +22,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
+import ru.hznik.budget.domain.stats.DateRange
 
 class RoomOperationRepository @Inject constructor(
     private val dao: OperationDao,
@@ -40,6 +41,7 @@ class RoomOperationRepository @Inject constructor(
             accountCard = filter.account?.account?.cardLast4,
             includeNoDigits = filter.account?.includeNoDigits ?: false,
             accountFromMillis = filter.account?.from?.toEpochMilli() ?: 0,
+            limit = filter.limit ?: -1,
         ).map { rows -> rows.map { it.toDomain() } }
 
     override fun observeFrom(from: LocalDate): Flow<List<Operation>> =
@@ -50,6 +52,12 @@ class RoomOperationRepository @Inject constructor(
 
     override fun observeRecent(limit: Int): Flow<List<OperationItem>> =
         dao.observeRecent(limit).map { rows -> rows.map { it.toDomain() } }
+
+    override suspend fun getForExport(range: DateRange): List<OperationItem> =
+        dao.getBetweenWithCategory(range.start.toEpochDay(), range.endInclusive.toEpochDay()).map { it.toDomain() }
+
+    override fun observeCount(range: DateRange): Flow<Int> =
+        dao.observeCountBetween(range.start.toEpochDay(), range.endInclusive.toEpochDay())
 
     override fun observeCategoryUsage(since: LocalDate): Flow<Map<Long, Int>> =
         dao.observeCategoryUsage(since.toEpochDay()).map { rows -> rows.associate { it.categoryId to it.count } }

@@ -61,6 +61,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.foundation.text.TextAutoSize
 
 private val RU = Locale.forLanguageTag("ru")
 private val DAY_MONTH = DateTimeFormatter.ofPattern("d MMMM", RU)
@@ -127,7 +128,13 @@ fun ChoiceChip(icon: Int?, text: String, onClick: () -> Unit, modifier: Modifier
                 Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
             }
-            Text(text, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                text,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                autoSize = TextAutoSize.StepBased(minFontSize = MIN_LABEL_SIZE, maxFontSize = 14.sp),
+            )
         }
     }
 }
@@ -135,7 +142,7 @@ fun ChoiceChip(icon: Int?, text: String, onClick: () -> Unit, modifier: Modifier
 /**
  * Переключатель из нескольких вариантов в стиле макета (как «Трата / Доход / Возврат»). [equalWidths] — варианты
  * делят ширину поровну; `false` — каждый шириной по тексту с полями [segmentPadding], как переключатель типа
- * операции в заголовке экрана ввода. [maxLines] — строк в подписи варианта.
+ * операции в заголовке экрана ввода; при нехватке места такой вариант не шире равной доли.
  */
 @Composable
 fun <T> SegmentedChoice(
@@ -146,7 +153,6 @@ fun <T> SegmentedChoice(
     equalWidths: Boolean = true,
     segmentPadding: Dp = 10.dp,
     segmentMinHeight: Dp = 44.dp,
-    maxLines: Int = 1,
 ) {
     val colors = BudgetTheme.colors
     SlidingSelectionRow(
@@ -166,11 +172,18 @@ fun <T> SegmentedChoice(
                 color = Color.Transparent,
                 contentColor = colors.ink,
                 modifier = Modifier
-                    .then(if (equalWidths) Modifier.weight(1f) else Modifier)
+                    .weight(1f, fill = equalWidths)
                     .heightIn(min = segmentMinHeight),
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = segment(index).padding(horizontal = segmentPadding)) {
-                    Text(label, style = MaterialTheme.typography.titleSmall, maxLines = maxLines)
+                    // При крупном шрифте подпись уменьшается, а не ломается по буквам (spec app-theme «Основные экраны при крупном шрифте»).
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        softWrap = false,
+                        autoSize = TextAutoSize.StepBased(minFontSize = MIN_LABEL_SIZE, maxFontSize = MaterialTheme.typography.titleSmall.fontSize),
+                    )
                 }
             }
         }
@@ -326,3 +339,6 @@ fun CategorySheetRow(text: String, selected: Boolean, onClick: () -> Unit, categ
         if (selected) Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = colors.primaryText)
     }
 }
+
+/** Наименьший размер подписи кнопок и чипов, до которого она уменьшается при крупном шрифте. */
+internal val MIN_LABEL_SIZE = 8.sp

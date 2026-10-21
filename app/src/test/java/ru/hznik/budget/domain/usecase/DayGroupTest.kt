@@ -1,13 +1,20 @@
 package ru.hznik.budget.domain.usecase
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.hznik.budget.domain.model.Money
 import ru.hznik.budget.domain.model.Operation
 import ru.hznik.budget.domain.model.OperationItem
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.model.OperationType
+import ru.hznik.budget.domain.repository.OperationFilter
 import ru.hznik.budget.testing.CAFE
+import ru.hznik.budget.testing.FakeCategoryRepository
+import ru.hznik.budget.testing.FakeOperationRepository
 import ru.hznik.budget.testing.SALARY
 import ru.hznik.budget.testing.TODAY
 import ru.hznik.budget.testing.TRANSFERS
@@ -48,5 +55,23 @@ class DayGroupTest {
 
         assertEquals(listOf(TODAY, TODAY.minusDays(1), TODAY.minusDays(2)), groups.map { it.date })
         assertEquals(listOf(100L, 200L), groups.first().items.map { it.operation.amount.kopecks })
+    }
+
+    @Test
+    fun `page hides the possibly incomplete last day until the next portion`() = runTest {
+        val repository = FakeOperationRepository(FakeCategoryRepository())
+        listOf(TODAY to 2, TODAY.minusDays(1) to 2, TODAY.minusDays(2) to 2).forEach { (day, count) ->
+            repeat(count) { repository.insert(item(OperationType.EXPENSE, 100, day, 10 + it).operation.copy(categoryId = CAFE.id)) }
+        }
+        val observe = ObserveOperations(repository)
+
+        // 5 из 6 операций: позавчера пришло не целиком, его нет в порции.
+        val first = observe.page(OperationFilter(limit = 5)).first()
+        assertEquals(listOf(TODAY, TODAY.minusDays(1)), first.groups.map { it.date })
+        assertTrue(first.hasMore)
+
+        val all = observe.page(OperationFilter(limit = 10)).first()
+        assertEquals(3, all.groups.size)
+        assertFalse(all.hasMore)
     }
 }

@@ -63,6 +63,11 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
+import ru.hznik.budget.domain.export.DataWipe
+import ru.hznik.budget.domain.export.BackupStore
+import ru.hznik.budget.domain.export.BackupCheck
+import ru.hznik.budget.domain.export.AppRestarter
+import ru.hznik.budget.data.backup.BackupModule
 
 val TEST_ZONE: ZoneId = ZoneId.of("Europe/Moscow")
 val TEST_TODAY: LocalDate = LocalDate.of(2026, 10, 13)
@@ -114,7 +119,67 @@ object TestStart {
         animations = false
         TestLlmProvider.reset()
         TestElapsedClock.now = 0
+        TestBackups.reset()
     }
+}
+
+/**
+ * Копия, удаление всех данных и перезапуск в UI-тестах: настоящая копия на SQLCipher проверяется в
+ * `BackupRestoreTest`, здесь — только экраны.
+ */
+object TestBackups : BackupStore, DataWipe, AppRestarter {
+    val created = java.util.concurrent.CopyOnWriteArrayList<Pair<String, String>>()
+    @Volatile var nextCheck: BackupCheck = BackupCheck.Valid(java.time.Instant.EPOCH, backupOperations = 120, currentOperations = 5)
+    /** Если задано, создание копии ждёт, пока тест его отпустит: так видно ожидание на кнопке. */
+    @Volatile var createGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+    @Volatile var scheduled = 0
+    @Volatile var discarded = 0
+    @Volatile var wipes = 0
+    @Volatile var restarts = 0
+
+    override suspend fun create(target: String, password: String) {
+        createGate?.await()
+        created += target to password
+    }
+
+    override suspend fun check(source: String, password: String): BackupCheck = nextCheck
+
+    override suspend fun scheduleRestore(): Boolean = (nextCheck is BackupCheck.Valid).also { if (it) scheduled++ }
+
+    override suspend fun discard() {
+        discarded++
+    }
+
+    override suspend fun schedule() {
+        wipes++
+    }
+
+    override fun restart() {
+        restarts++
+    }
+
+    fun reset() {
+        created.clear()
+        nextCheck = BackupCheck.Valid(java.time.Instant.EPOCH, backupOperations = 120, currentOperations = 5)
+        createGate = null
+        scheduled = 0
+        discarded = 0
+        wipes = 0
+        restarts = 0
+    }
+}
+
+@Module
+@TestInstallIn(components = [SingletonComponent::class], replaces = [BackupModule::class])
+object TestBackupModule {
+    @Provides
+    fun provideBackupStore(): BackupStore = TestBackups
+
+    @Provides
+    fun provideDataWipe(): DataWipe = TestBackups
+
+    @Provides
+    fun provideAppRestarter(): AppRestarter = TestBackups
 }
 
 /** Монотонные часы блокировки в UI-тестах: тест сам переводит их вперёд. */

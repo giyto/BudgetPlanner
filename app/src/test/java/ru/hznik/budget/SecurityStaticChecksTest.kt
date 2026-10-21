@@ -196,6 +196,21 @@ class SecurityStaticChecksTest {
         assertTrue("Отладочный вывод в коде приложения:\n" + violations.joinToString("\n"), violations.isEmpty())
     }
 
+    // --- Аналитика и реклама (раздел 10.3 ТЗ «не содержит аналитики и рекламы») ---
+
+    @Test
+    fun `dependencies contain no analytics, ads or crash reporting sdks`() {
+        val files = listOf(File("../gradle/libs.versions.toml"), File("build.gradle.kts"))
+        val violations = files.flatMap { file ->
+            assertTrue("Не найден файл ${file.absolutePath}", file.isFile)
+            file.readLines().withIndex()
+                .filter { (_, line) -> !line.trimStart().startsWith("#") && !line.trimStart().startsWith("//") }
+                .filter { (_, line) -> TRACKING_SDKS.containsMatchIn(line) }
+                .map { (i, line) -> "${file.name}:${i + 1}: ${line.trim()}" }
+        }
+        assertTrue("Зависимости аналитики или рекламы:\n" + violations.joinToString("\n"), violations.isEmpty())
+    }
+
     private fun assertExcludesAllDomains(where: String, section: Element) {
         assertTrue("$where: есть <include>, бэкап не должен ничего включать", elements(section, "include").isEmpty())
         val excluded = elements(section, "exclude")
@@ -205,13 +220,16 @@ class SecurityStaticChecksTest {
         assertEquals("$where: исключены не все домены", BACKUP_DOMAINS, excluded)
     }
 
+    /** Исходники приложения: `src/main` и, если есть, наборы только отладочной и только release-сборки. */
     private fun sources(): List<Pair<String, String>> {
         assertTrue("Не найден каталог ${sourcesDir.absolutePath}", sourcesDir.isDirectory)
-        return sourcesDir.walkTopDown()
-            .filter { it.isFile && (it.extension == "kt" || it.extension == "java") }
-            .map { it.relativeTo(sourcesDir).invariantSeparatorsPath to it.readText() }
-            .toList()
-            .also { assertTrue("В ${sourcesDir.absolutePath} нет исходников", it.isNotEmpty()) }
+        val variantDirs = listOf("debug", "release").map { "$it/" to File("src/$it/java/ru/hznik/budget") }.filter { it.second.isDirectory }
+        return (listOf("" to sourcesDir) + variantDirs).flatMap { (prefix, dir) ->
+            dir.walkTopDown()
+                .filter { it.isFile && (it.extension == "kt" || it.extension == "java") }
+                .map { prefix + it.relativeTo(dir).invariantSeparatorsPath to it.readText() }
+                .toList()
+        }.also { assertTrue("В ${sourcesDir.absolutePath} нет исходников", it.isNotEmpty()) }
     }
 
     private fun parse(file: File) = run {
@@ -247,5 +265,12 @@ class SecurityStaticChecksTest {
 
         /** Домены, в которых приложение хранит данные; device_* (хранилище до разблокировки) приложение не использует. */
         val BACKUP_DOMAINS = setOf("root", "file", "database", "sharedpref", "external")
+
+        /** Группы и артефакты SDK аналитики, рекламы и сбора сбоев. */
+        val TRACKING_SDKS = Regex(
+            """firebase|com\.google\.android\.gms|play-services|crashlytics|appmetrica|yandex\.mobile\.ads|mytarget|facebook|""" +
+                """adjust|appsflyer|amplitude|mixpanel|sentry|admob|\bads\b|analytics""",
+            RegexOption.IGNORE_CASE,
+        )
     }
 }

@@ -1,13 +1,11 @@
 package ru.hznik.budget.notifications
 
 import dagger.Lazy
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import ru.hznik.budget.BuildConfig
+import ru.hznik.budget.devtools.recordNotificationSample
 import ru.hznik.budget.domain.notifications.BankNotification
 import ru.hznik.budget.domain.notifications.NotificationRepository
-import ru.hznik.budget.domain.notifications.SampleMasker
 import ru.hznik.budget.domain.notifications.SampleSettings
 import ru.hznik.budget.domain.notifications.SupportedBanks
 import ru.hznik.budget.domain.notifications.parser.BankNotificationParser
@@ -48,10 +46,8 @@ class NotificationIntake @Inject constructor(
         // Сервис может проснуться без открытого приложения: базу сначала нужно проверить и открыть ключом.
         if (database.open() != DatabaseState.READY) return
         val cutoff = purgeExpiredSamples()
-        // Режима образцов нет в релизной сборке, даже если флаг остался в настройках.
-        if (BuildConfig.DEBUG && sampleSettings.enabled.first() && !notification.postedAt.isBefore(cutoff)) {
-            repository.addSample(bank.id, notification.postedAt, SampleMasker.mask(text))
-        }
+        // Режим образцов есть только в отладочной сборке (src/debug); в release вызов пустой, даже если флаг остался в настройках.
+        if (!notification.postedAt.isBefore(cutoff)) recordNotificationSample(sampleSettings, repository, bank.id, notification.postedAt, text)
         val parser = parsers.firstOrNull { notification.packageName in it.packageNames } ?: return
         // Непонятный формат — null: уведомление просто пропускается (NFR-02).
         val parsed = parser.parse(notification) ?: return

@@ -217,4 +217,16 @@ class DatabaseTest {
         assertEquals("изменено", operations.get(id)!!.comment)
         assertEquals(2, operations.observe(OperationFilter()).first().size)
     }
+
+    @Test
+    fun exportQueryTakesDatesInclusiveFromEarlyToLate() = runTest {
+        val products = categoryNamed("Продукты")
+        add(products, 100, merchant = "До", date = today.minusDays(13))
+        add(products, 200, merchant = "Первый день", date = today.minusDays(12))
+        add(products, 300, merchant = "Сегодня", date = today)
+        val range = ru.hznik.budget.domain.stats.DateRange(today.minusDays(12), today)
+        assertEquals(listOf("Первый день", "Сегодня"), operations.getForExport(range).map { it.operation.merchant })
+        assertEquals("Продукты", operations.getForExport(range).first().category.name)
+        assertEquals(2, operations.observeCount(range).first())
+    }
 }

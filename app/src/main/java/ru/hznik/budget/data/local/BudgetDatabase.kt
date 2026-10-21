@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         BankBalanceEntity::class, NotificationKeyEntity::class, NotificationSampleEntity::class,
         ReconciliationAccountEntity::class, CategoryRuleEntity::class, ChatMessageEntity::class,
     ],
-    version = 7,
+    version = BudgetDatabase.VERSION,
     exportSchema = true,
 )
 abstract class BudgetDatabase : RoomDatabase() {
@@ -41,5 +41,8 @@ abstract class BudgetDatabase : RoomDatabase() {
 
     companion object {
         const val NAME = "budget.db"
+
+        /** Версия схемы: копии с номером больше этого созданы более новой версией приложения. */
+        const val VERSION = 7
     }
 }

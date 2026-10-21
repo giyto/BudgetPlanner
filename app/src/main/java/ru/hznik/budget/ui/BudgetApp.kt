@@ -39,7 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,8 +55,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
-import ru.hznik.budget.BuildConfig
 import ru.hznik.budget.R
+import ru.hznik.budget.devtools.DevSettingsSection
+import ru.hznik.budget.devtools.devRoutes
 import ru.hznik.budget.domain.stats.DateRange
 import ru.hznik.budget.reminders.AppAction
 import ru.hznik.budget.ui.assistant.AssistantScreen
@@ -75,7 +76,6 @@ import ru.hznik.budget.ui.navigation.Drafts
 import ru.hznik.budget.ui.navigation.Home
 import ru.hznik.budget.ui.navigation.HomeGraph
 import ru.hznik.budget.ui.navigation.NewPeriod
-import ru.hznik.budget.ui.navigation.NotificationSamples
 import ru.hznik.budget.ui.navigation.Onboarding
 import ru.hznik.budget.ui.navigation.OperationEditor
 import ru.hznik.budget.ui.navigation.Operations
@@ -101,8 +101,6 @@ import ru.hznik.budget.ui.rules.CategoryRulesRoute
 import ru.hznik.budget.ui.rules.RulesSettingsItem
 import ru.hznik.budget.ui.settings.AssistantSettingsSection
 import ru.hznik.budget.ui.settings.AutoImportSection
-import ru.hznik.budget.ui.settings.DemoDataSection
-import ru.hznik.budget.ui.settings.NotificationSamplesRoute
 import ru.hznik.budget.ui.settings.NotificationsSection
 import ru.hznik.budget.ui.settings.ProtectionSection
 import ru.hznik.budget.ui.settings.SettingsScreen
@@ -113,6 +111,17 @@ import ru.hznik.budget.ui.theme.BudgetTheme
 import ru.hznik.budget.ui.theme.Motion
 import ru.hznik.budget.ui.theme.LocalReducedMotion
 import androidx.navigation.NavBackStackEntry
+import androidx.compose.ui.platform.LocalContext
+import ru.hznik.budget.ui.navigation.ExportCsv
+import ru.hznik.budget.ui.userdata.ExportRoute
+import ru.hznik.budget.ui.settings.DataSection
+import ru.hznik.budget.ui.userdata.RestoreRoute
+import ru.hznik.budget.ui.userdata.BackupRoute
+import ru.hznik.budget.ui.navigation.Restore
+import ru.hznik.budget.ui.navigation.Backup
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.foundation.text.TextAutoSize
 
 const val BOTTOM_BAR_TAG = "bottom_bar"
 
@@ -132,6 +141,7 @@ fun BudgetApp(
     UndoDeletionSnackbar(appViewModel, snackbarHostState)
     ScreenLockRemovedSnackbar(appViewModel, snackbarHostState)
     SaveFailedSnackbar(snackbarHostState)
+    NoticeSnackbar(snackbarHostState)
 
     // Пока неизвестно, пройден ли онбординг, виден только фон окна: вернувшийся пользователь не увидит мигания онбординга.
     val onboardingDone by appViewModel.onboardingDone.collectAsStateWithLifecycle()
@@ -329,9 +339,20 @@ fun BudgetApp(
                     notifications = { NotificationsSection() },
                     rules = { RulesSettingsItem(onOpen = dropUnlessResumed { navController.navigate(CategoryRules) }) },
                     protection = { ProtectionSection() },
-                    extra = { if (BuildConfig.DEBUG) DemoDataSection(onOpenSamples = dropUnlessResumed { navController.navigate(NotificationSamples) }) },
+                    data = {
+                        DataSection(
+                            onExport = dropUnlessResumed { navController.navigate(ExportCsv) },
+                            onBackup = dropUnlessResumed { navController.navigate(Backup) },
+                            onRestore = dropUnlessResumed { navController.navigate(Restore) },
+                        )
+                    },
+                    // Раздел «Для разработки» только в отладочной сборке (src/debug), в release пусто.
+                    extra = { DevSettingsSection(navController) },
                 )
             }
+            composable<ExportCsv> { ExportRoute(onBack = dropUnlessResumed { navController.popBackStack() }) }
+            composable<Backup> { BackupRoute(onBack = dropUnlessResumed { navController.popBackStack() }) }
+            composable<Restore> { RestoreRoute(onBack = dropUnlessResumed { navController.popBackStack() }) }
             composable<Categories> {
                 val lifecycle = LocalLifecycleOwner.current.lifecycle
                 val resumed = { lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) }
@@ -348,7 +369,7 @@ fun BudgetApp(
                 )
             }
             composable<CategoryRules> { CategoryRulesRoute(onBack = dropUnlessResumed { navController.popBackStack() }) }
-            composable<NotificationSamples> { NotificationSamplesRoute(onBack = dropUnlessResumed { navController.popBackStack() }) }
+            devRoutes(navController)
             composable<CategoryEditor> { CategoryEditorRoute(onClose = dropUnlessResumed { navController.popBackStack() }) }
         }
     }
@@ -385,6 +406,15 @@ private fun ScreenLockRemovedSnackbar(viewModel: AppViewModel, hostState: Snackb
     }
 }
 
+/** Сообщения об успехе из экранов (Notices). */
+@Composable
+private fun NoticeSnackbar(hostState: SnackbarHostState) {
+    val resources = LocalContext.current.resources
+    LaunchedEffect(Unit) {
+        Notices.events.collect { hostState.showSnackbar(resources.getString(it)) }
+    }
+}
+
 /** «Не удалось сохранить…», если запись из экрана сорвалась (SaveFailures). */
 @Composable
 private fun SaveFailedSnackbar(hostState: SnackbarHostState) {
@@ -409,7 +439,15 @@ private fun BudgetBottomBar(
                     onClick = { onTabClick(tab) },
                     // Подпись вкладки озвучивается TalkBack, поэтому у иконки описания нет.
                     icon = { Icon(painterResource(tab.icon), contentDescription = null) },
-                    label = { Text(stringResource(tab.label)) },
+                    // При крупном шрифте название уменьшается в одну строку, а не ломается по слогам («Операц-ии»).
+                    label = {
+                        Text(
+                            stringResource(tab.label),
+                            maxLines = 1,
+                            softWrap = false,
+                            autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = LocalTextStyle.current.fontSize),
+                        )
+                    },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = colors.primaryText,
                         selectedTextColor = colors.ink,

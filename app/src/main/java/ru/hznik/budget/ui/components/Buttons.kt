@@ -20,11 +20,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.hznik.budget.R
 import ru.hznik.budget.ui.theme.BudgetTheme
 import ru.hznik.budget.ui.theme.TextRoles
+import ru.hznik.budget.ui.theme.LocalReducedMotion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.material3.CircularProgressIndicator
 
 /** Размер кнопки по макетам: наименьшая высота, скругление и текст. */
 enum class ButtonSize(internal val minHeight: Dp, internal val corner: Dp, internal val textStyle: TextStyle) {
@@ -39,8 +44,11 @@ enum class ButtonSize(internal val minHeight: Dp, internal val corner: Dp, inter
 }
 
 /**
- * Главная кнопка по макетам (.btn): синяя, на всю ширину, не ниже высоты [size]. [danger] — необратимое действие
- * (удаление данных): кнопка цвета перерасхода. [icon] стоит перед текстом с отступом 10 dp, как в макете.
+ * Главная кнопка по макетам (.btn): синяя, на всю ширину, не ниже высоты [size]. Недоступная — серая плашка
+ * с приглушённым текстом (.btn.off), смена плавная. [danger] — необратимое действие (удаление данных): кнопка цвета
+ * перерасхода. [icon] стоит перед текстом с отступом 10 dp, как в макете. [busy] — действие выполняется: вместо
+ * текста крутится индикатор, нажатия не принимаются; при выключенных анимациях вместо индикатора [busyText]
+ * (spec ui-motion «Анимации экранов данных»).
  */
 @Composable
 fun PrimaryButton(
@@ -50,25 +58,52 @@ fun PrimaryButton(
     enabled: Boolean = true,
     size: ButtonSize = ButtonSize.Large,
     danger: Boolean = false,
+    busy: Boolean = false,
+    busyText: String = text,
     icon: (@Composable () -> Unit)? = null,
 ) {
     val colors = BudgetTheme.colors
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(size.corner),
-        colors = if (danger) {
-            ButtonDefaults.buttonColors(containerColor = colors.warn, contentColor = if (colors.isDark) colors.background else Color.White)
-        } else {
-            ButtonDefaults.buttonColors(containerColor = colors.primary, contentColor = colors.onPrimary)
+    val container = animatedColor(
+        when {
+            danger -> colors.warn
+            enabled || busy -> colors.primary
+            else -> colors.card2
         },
+    )
+    val content = animatedColor(
+        when {
+            danger -> if (colors.isDark) colors.background else Color.White
+            enabled || busy -> colors.onPrimary
+            else -> colors.muted
+        },
+    )
+    Button(
+        onClick = { if (!busy) onClick() },
+        enabled = enabled || busy,
+        shape = RoundedCornerShape(size.corner),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = container,
+            contentColor = content,
+            disabledContainerColor = container,
+            disabledContentColor = content,
+        ),
         modifier = modifier.fillMaxWidth().heightIn(min = size.minHeight),
     ) {
-        if (icon != null) {
-            icon()
-            Spacer(Modifier.width(10.dp))
+        when {
+            busy && LocalReducedMotion.current -> Text(busyText, style = size.textStyle, textAlign = TextAlign.Center)
+            busy -> CircularProgressIndicator(
+                color = content,
+                strokeWidth = 2.5.dp,
+                modifier = Modifier.size(22.dp).semantics { contentDescription = busyText },
+            )
+            else -> {
+                if (icon != null) {
+                    icon()
+                    Spacer(Modifier.width(10.dp))
+                }
+                Text(text, style = size.textStyle, textAlign = TextAlign.Center)
+            }
         }
-        Text(text, style = size.textStyle)
     }
 }
 
@@ -98,7 +133,7 @@ fun SecondaryButton(
             icon()
             Spacer(Modifier.width(8.dp))
         }
-        Text(text, style = size.textStyle)
+        Text(text, style = size.textStyle, textAlign = TextAlign.Center)
     }
 }
 

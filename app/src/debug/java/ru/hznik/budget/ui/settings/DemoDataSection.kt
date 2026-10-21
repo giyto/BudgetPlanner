@@ -19,7 +19,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -71,7 +71,7 @@ class DemoDataViewModel @Inject constructor(private val demo: DemoData) : ViewMo
     }
 }
 
-/** Раздел «Для разработки»: показывается только в отладочной сборке (BuildConfig.DEBUG). */
+/** Раздел «Для разработки»: есть только в отладочной сборке (набор src/debug, см. devtools/DevTools.kt). */
 @Composable
 fun DemoDataSection(onOpenSamples: () -> Unit, viewModel: DemoDataViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()

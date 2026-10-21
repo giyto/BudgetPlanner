@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import ru.hznik.budget.common.runLogged
+import androidx.annotation.StringRes
 
 /** Сбои записи из экранов: общий экран показывает «Не удалось сохранить» (BudgetApp). */
 object SaveFailures {
@@ -18,6 +19,16 @@ object SaveFailures {
 
     fun report() {
         _events.tryEmit(Unit)
+    }
+}
+
+/** Короткие сообщения об успехе для общего экрана: «Файл сохранён», «Копия сохранена» (BudgetApp). */
+object Notices {
+    private val _events = MutableSharedFlow<Int>(extraBufferCapacity = 4, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val events: SharedFlow<Int> = _events.asSharedFlow()
+
+    fun show(@StringRes message: Int) {
+        _events.tryEmit(message)
     }
 }
 

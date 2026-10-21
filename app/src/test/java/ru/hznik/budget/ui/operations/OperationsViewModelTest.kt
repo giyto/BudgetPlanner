@@ -95,4 +95,35 @@ class OperationsViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `list loads by portions and a new filter starts from the first one`() = runTest(mainRule.dispatcher) {
+        // 400 операций, по 10 в день.
+        repeat(400) { i ->
+            operations.insert(Operation(type = OperationType.EXPENSE, amount = Money(100), categoryId = PRODUCTS.id,
+                source = OperationSource.MANUAL, occurredAt = at(TODAY.minusDays(i / 10L), 8 + i % 10)))
+        }
+        val vm = viewModel()
+        vm.uiState.test {
+            advanceUntilIdle()
+            val first = expectMostRecentItem()
+            // 300 операций, неполный тридцатый день скрыт.
+            assertEquals(290, first.groups.sumOf { it.items.size })
+            assertTrue(first.hasMore)
+
+            vm.loadMore()
+            vm.loadMore()
+            advanceUntilIdle()
+            val all = expectMostRecentItem()
+            assertEquals(400, all.groups.sumOf { it.items.size })
+            assertFalse(all.hasMore)
+
+            vm.onCategorySelected(CAFE.id)
+            advanceUntilIdle()
+            vm.onCategorySelected(null)
+            advanceUntilIdle()
+            assertEquals(290, expectMostRecentItem().groups.sumOf { it.items.size })
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }

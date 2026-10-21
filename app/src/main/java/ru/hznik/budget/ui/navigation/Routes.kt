@@ -17,9 +17,6 @@ import kotlinx.serialization.Serializable
 /** Черновики из уведомлений банка (spec drafts). */
 @Serializable data object Drafts
 
-/** Образцы уведомлений банков (раздел «Для разработки», только отладочная сборка). */
-@Serializable data object NotificationSamples
-
 // Экраны поверх разделов, без нижней панели.
 
 /**
@@ -40,6 +37,13 @@ import kotlinx.serialization.Serializable
 @Serializable data class AccountOperations(val bankId: String? = null, val cardLast4: String? = null, val fromMillis: Long)
 
 @Serializable data object Settings
+
+/** Экспорт операций в CSV, резервная копия и восстановление (раздел «Данные» в настройках). */
+@Serializable data object ExportCsv
+
+@Serializable data object Backup
+
+@Serializable data object Restore
 
 @Serializable data object Categories
 

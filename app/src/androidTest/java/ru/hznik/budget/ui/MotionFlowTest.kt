@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
@@ -29,6 +30,8 @@ import ru.hznik.budget.ui.components.AmountInput
 import ru.hznik.budget.ui.home.DRAFTS_BANNER_TAG
 import ru.hznik.budget.ui.stats.STATS_DONUT_TAG
 import ru.hznik.budget.ui.theme.Motion
+import ru.hznik.budget.ui.userdata.EXPORT_COUNT_TAG
+import ru.hznik.budget.ui.userdata.EXPORT_TO_TAG
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.math.cos
@@ -106,6 +109,24 @@ class MotionFlowTest : FlowTestBase() {
         rule.waitUntil(5_000) {
             rule.onAllNodes(hasTestTag(STATS_DONUT_TAG) and hasStateDescription("Выбрано: Продукты, 3380 рублей, 43 процента")).fetchSemanticsNodes().isNotEmpty()
         }
+    }
+
+    @Test
+    fun exportCountRollsToTheNewValue() {
+        insert("Продукты", 100, date = LocalDate.of(2026, 10, 2))
+        insert("Продукты", 200, date = LocalDate.of(2026, 10, 10))
+        insert("Продукты", 300, date = LocalDate.of(2026, 10, 12))
+        waitForHero("Можно потратить сегодня")
+        openSettings()
+        rule.waitUntil(5_000) { runCatching { rule.onNode(hasText("Экспорт в CSV")).performScrollTo() }.isSuccess }
+        tapText("Экспорт в CSV")
+        val count = { text: String -> rule.onAllNodes(hasTestTag(EXPORT_COUNT_TAG) and hasContentDescription(text)).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(5_000) { count("3 операции") }
+        // «По» 5 октября: остаётся одна операция, цифра прокручивается к «1».
+        rule.onNodeWithTag(EXPORT_TO_TAG).performClick()
+        rule.onNode(calendarDay(5)).performClick()
+        tapText("Готово")
+        rule.waitUntil(5_000) { count("1 операция") }
     }
 
     @Test

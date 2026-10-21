@@ -35,6 +35,11 @@ import ru.hznik.budget.ui.theme.Motion
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.foundation.layout.BoxWithConstraints
 
 /**
  * Разбор суммы на разряды для прокрутки цифр (spec ui-motion, design.md add-animations, решение 3). Символы
@@ -118,3 +123,37 @@ fun RollingAmount(text: String, value: Long, style: TextStyle, color: Color, mod
         shownText = text
     }
 }
+
+/**
+ * [RollingAmount], который при нехватке места уменьшает шрифт, чтобы сумма уместилась в одну строку без обрезки
+ * (spec home-screen «Сумма «можно сегодня» при крупном шрифте»). При обычном шрифте размер не меняется; меньше
+ * [minFontSize] не уменьшается.
+ */
+@Composable
+fun FittedRollingAmount(
+    text: String,
+    value: Long,
+    style: TextStyle,
+    color: Color,
+    minFontSize: TextUnit,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier) {
+        val measurer = rememberTextMeasurer()
+        val maxWidth = constraints.maxWidth
+        val fitted = remember(text, style, maxWidth, measurer) {
+            val width = measurer.measure(text, style, maxLines = 1, softWrap = false).size.width
+            if (maxWidth == Constraints.Infinity || width <= maxWidth) {
+                style
+            } else {
+                // Небольшой запас: цифры рисуются по одной, без общего кернинга строки.
+                val scale = maxWidth.toFloat() / width * FIT_MARGIN
+                val size = (style.fontSize.value * scale).coerceAtLeast(minFontSize.value).sp
+                style.copy(fontSize = size, lineHeight = if (style.lineHeight.isSp) (style.lineHeight.value * scale).sp else style.lineHeight)
+            }
+        }
+        RollingAmount(text, value, fitted, color)
+    }
+}
+
+private const val FIT_MARGIN = 0.96f

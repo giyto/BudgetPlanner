@@ -126,6 +126,7 @@ class FakeOperationRepository(val categories: FakeCategoryRepository) : Operatio
                         (q.rubles != null && item.operation.amount.rubles == q.rubles)
                 }
                 .sortedByDescending { it.operation.occurredAt.toInstant() }
+                .let { items -> filter.limit?.let { items.take(it) } ?: items }
         }
 
     override fun observeFrom(from: LocalDate): Flow<List<Operation>> =
@@ -148,6 +149,14 @@ class FakeOperationRepository(val categories: FakeCategoryRepository) : Operatio
     }
 
     override suspend fun update(operation: Operation) = state.update { list -> list.map { if (it.id == operation.id) operation else it } }
+
+    override suspend fun getForExport(range: DateRange): List<OperationItem> =
+        state.value.filter { it.localDate in range.start..range.endInclusive }
+            .sortedWith(compareBy({ it.occurredAt.toInstant() }, { it.id }))
+            .map { op -> OperationItem(op, categories.state.value.first { it.id == op.categoryId }) }
+
+    override fun observeCount(range: DateRange): Flow<Int> =
+        state.map { list -> list.count { it.localDate in range.start..range.endInclusive } }
 
     override suspend fun updateAndInsert(updated: Operation, counterpart: Operation?) {
         update(updated)

@@ -2,6 +2,8 @@ package ru.hznik.budget.data.local
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import dagger.Binds
 import dagger.Module
@@ -56,9 +58,16 @@ object DatabaseModule {
     fun provideDatabase(
         @ApplicationContext context: Context,
         openHelperFactory: SupportSQLiteOpenHelper.Factory,
+        encryption: DatabaseEncryption,
     ): BudgetDatabase = Room.databaseBuilder(context, BudgetDatabase::class.java, BudgetDatabase.NAME)
         .openHelperFactory(openHelperFactory)
         .addCallback(BudgetDatabase.SeedCallback)
+        // Room открыл базу после миграций: восстановленная копия рабочая, прежнюю базу можно удалять.
+        .addCallback(
+            object : RoomDatabase.Callback() {
+                override fun onOpen(db: SupportSQLiteDatabase) = encryption.confirmOpened()
+            },
+        )
         .addMigrations(*ALL_MIGRATIONS)
         .build()
 

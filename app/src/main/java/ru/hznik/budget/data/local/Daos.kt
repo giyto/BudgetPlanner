@@ -70,6 +70,7 @@ interface OperationDao {
                 OR (:rubles IS NOT NULL AND o.amount_kopecks / 100 = :rubles)
             )
         ORDER BY o.occurred_at DESC, o.id DESC
+        LIMIT :limit
         """,
     )
     fun observe(
@@ -84,7 +85,27 @@ interface OperationDao {
         accountCard: String? = null,
         includeNoDigits: Boolean = false,
         accountFromMillis: Long = 0,
+        // -1 в SQLite — без ограничения.
+        limit: Int = -1,
     ): Flow<List<OperationWithCategory>>
+
+    /** Операции с категорией за даты включительно, по времени — для экспорта в CSV (spec data-export). */
+    @Query(
+        """
+        SELECT o.*,
+            c.id AS c_id, c.kind AS c_kind, c.name AS c_name, c.name_search AS c_name_search,
+            c.icon AS c_icon, c.color AS c_color, c.default_key AS c_default_key,
+            c.sort_order AS c_sort_order, c.hidden AS c_hidden
+        FROM operations o
+        JOIN categories c ON c.id = o.category_id
+        WHERE o.local_date BETWEEN :fromEpochDay AND :toEpochDay
+        ORDER BY o.occurred_at, o.id
+        """,
+    )
+    suspend fun getBetweenWithCategory(fromEpochDay: Long, toEpochDay: Long): List<OperationWithCategory>
+
+    @Query("SELECT COUNT(*) FROM operations WHERE local_date BETWEEN :fromEpochDay AND :toEpochDay")
+    fun observeCountBetween(fromEpochDay: Long, toEpochDay: Long): Flow<Int>
 
     @Query("SELECT category_id, COUNT(*) AS count FROM operations WHERE local_date >= :sinceEpochDay GROUP BY category_id")
     fun observeCategoryUsage(sinceEpochDay: Long): Flow<List<CategoryUsage>>

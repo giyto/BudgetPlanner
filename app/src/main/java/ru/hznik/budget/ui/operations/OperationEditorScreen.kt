@@ -54,7 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,6 +74,9 @@ import ru.hznik.budget.ui.theme.BudgetTheme
 import java.time.LocalDate
 import ru.hznik.budget.domain.reconcile.ReconAccount
 import ru.hznik.budget.ui.format.accountLabel
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.unit.em
+import ru.hznik.budget.ui.components.WholeWordsAutoSize
 
 @Composable
 fun OperationEditorRoute(onClose: () -> Unit, viewModel: OperationEditorViewModel = hiltViewModel()) {
@@ -244,8 +247,6 @@ private fun TypeSegment(selected: InputType, onSelect: (InputType) -> Unit) {
         equalWidths = false,
         segmentPadding = 14.dp,
         segmentMinHeight = 40.dp,
-        // При крупном шрифте подпись переносится, а не обрезается.
-        maxLines = Int.MAX_VALUE,
     )
 }
 
@@ -312,14 +313,15 @@ private fun CategoryChoice(category: Category, selected: Boolean, onClick: () ->
         modifier = modifier.heightIn(min = 48.dp),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
+            // Крупный шрифт: название уменьшается, пока слова не перестанут рваться по буквам.
             Text(
                 text = category.name,
-                fontSize = 14.sp,
-                lineHeight = 16.sp,
+                style = LocalTextStyle.current.copy(lineHeight = 1.15.em),
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                autoSize = WholeWordsAutoSize(minFontSize = 8.sp, maxFontSize = 14.sp),
             )
         }
     }
@@ -362,7 +364,7 @@ private fun AllCategoriesSheet(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp)) {
                         CategoryTile(category, size = 36.dp)
                         Spacer(Modifier.height(6.dp))
-                        Text(category.name, fontSize = 13.sp, lineHeight = 15.sp, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(category.name, lineHeight = 1.15.em, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis, autoSize = WholeWordsAutoSize(minFontSize = 8.sp, maxFontSize = 13.sp))
                     }
                 }
             }

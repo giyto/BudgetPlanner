@@ -16,15 +16,20 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.hznik.budget.CountingWidgetRefresher
 import ru.hznik.budget.TEST_ZONE
 import ru.hznik.budget.TestStart
 import ru.hznik.budget.domain.model.OperationSource
 import ru.hznik.budget.domain.notifications.BankNotification
+import ru.hznik.budget.domain.reminders.WidgetRefresher
 import ru.hznik.budget.notifications.toBankNotification
 import ru.hznik.budget.ui.drafts.DRAFTS_LIST_TAG
 import ru.hznik.budget.ui.home.DRAFTS_BANNER_TAG
+import ru.hznik.budget.ui.home.HOME_HERO_TAG
 import ru.hznik.budget.ui.home.INCOME_SUGGESTION_TAG
+import javax.inject.Inject
 
 /**
  * Уведомление Сбера → черновик → «можно сегодня» → подтверждение (spec notification-import, drafts, задачи 7.4 и 8.5).
@@ -32,6 +37,25 @@ import ru.hznik.budget.ui.home.INCOME_SUGGESTION_TAG
  */
 @HiltAndroidTest
 class ImportFlowTest : FlowTestBase() {
+    @Inject lateinit var widget: WidgetRefresher
+
+    /** От уведомления банка до суммы в приложении и обновления виджета — не дольше 3 секунд (раздел 9 ТЗ, задача 7.3). */
+    @Test
+    fun purchaseReachesAppAndWidgetWithinThreeSeconds() {
+        val refreshes = (widget as CountingWidgetRefresher).refreshes
+        waitForHero("Можно потратить сегодня 1500 рублей")
+        val before = refreshes.get()
+        val start = System.nanoTime()
+        sber("Покупка 450 ₽ Пятёрочка. Карта *1234. Баланс 12 300 ₽")
+        rule.waitUntil(IMPORT_LIMIT_MS) {
+            refreshes.get() > before &&
+                rule.onAllNodes(hasTestTag(HOME_HERO_TAG) and hasContentDescription("Можно потратить сегодня 1050 рублей", substring = true))
+                    .fetchSemanticsNodes().isNotEmpty()
+        }
+        val elapsedMs = (System.nanoTime() - start) / 1_000_000
+        assertTrue("От уведомления до приложения и виджета $elapsedMs мс", elapsedMs <= IMPORT_LIMIT_MS)
+    }
+
     @Test
     fun purchaseBecomesDraftLowersLimitAndIsConfirmed() {
         waitForHero("Можно потратить сегодня 1500 рублей")
@@ -168,5 +192,9 @@ class ImportFlowTest : FlowTestBase() {
         openTab("Операции")
         rule.waitUntil(5_000) { rowCount("Ozon") == 1 }
         rule.onNode(hasContentDescription("ждёт категорию", substring = true)).assertIsDisplayed()
+    }
+
+    private companion object {
+        const val IMPORT_LIMIT_MS = 3_000L
     }
 }
