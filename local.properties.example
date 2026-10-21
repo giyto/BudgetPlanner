@@ -1,0 +1,7 @@
+# Пример local.properties. Скопируйте в local.properties (он в .gitignore и в git не попадает).
+
+# Путь к Android SDK; Android Studio обычно прописывает его сама.
+sdk.dir=C\:\\Users\\<имя>\\AppData\\Local\\Android\\Sdk
+
+# Ключ авторизации GigaChat API для ИИ-помощника. Если пусто, помощник недоступен, остальное работает.
+gigachat.authKey=
