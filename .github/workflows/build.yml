@@ -1,0 +1,35 @@
+# Сборка отладочной версии и unit-тесты при каждом пуше и pull request.
+# Ключа GigaChat здесь нет: помощник в такой сборке «не настроен», остальное собирается и тестируется как обычно.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Unit-тесты и отладочная сборка
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug
+
+      - name: Отчёт unit-тестов
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-report
+          path: app/build/reports/tests/testDebugUnitTest
