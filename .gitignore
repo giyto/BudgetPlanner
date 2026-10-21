@@ -16,3 +16,13 @@ local.properties
 # Ключ GigaChat хранится только в local.properties; эти файлы — на случай отладки, чтобы ключ не ушёл в git.
 gigachat.key
 secrets.properties
+# Ключ подписи release и пароли к нему: только у пользователя, в git не попадают (задача 9.3).
+keystore.properties
+*.jks
+*.keystore
+# Личные настройки Android Studio: выбранное устройство, путь к JDK и Gradle, тема — меняются на каждом компьютере.
+/.idea/deploymentTargetSelector.xml
+/.idea/deviceManager.xml
+/.idea/gradle.xml
+/.idea/misc.xml
+/.idea/material_theme_project_new.xml
